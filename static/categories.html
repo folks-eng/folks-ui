@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Categories & Services — Folks</title>
+<meta name="description" content="Browse every Folks service by category — salon & makeup, cleaning & pest control, appliance repair, electrician & plumbing, and painting — with upfront pricing.">
+<meta name="theme-color" content="#cb7651">
+
+<meta property="og:title" content="Categories & Services — Folks">
+<meta property="og:description" content="Browse every Folks service by category — salon & makeup, cleaning & pest control, appliance repair, electrician & plumbing, and painting — with upfront pricing.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<!-- ============ HEADER / STICKY NAVIGATION ============ -->
+<header class="site-header" id="siteHeader">
+  <nav class="navbar" aria-label="Primary navigation">
+    <a href="index.html#top" class="brand" aria-label="Folks home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="34" height="34">
+          <path d="M20 4 L36 16 V35 H24 V24 H16 V35 H4 V16 Z" fill="currentColor"/>
+          <circle cx="20" cy="16" r="2.6" fill="var(--color-cream)"/>
+        </svg>
+      </span>
+      <span class="brand-name">Folks</span>
+    </a>
+
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html#top" class="nav-link">Home</a></li>
+      <li><a href="categories.html" class="nav-link is-active">Categories</a></li>
+      <li><a href="about.html" class="nav-link">About Us</a></li>
+      <li><a href="contact.html" class="nav-link">Contact Us</a></li>
+      <li><a href="faq.html" class="nav-link">FAQs</a></li>
+      <li><a href="#" class="nav-link nav-link-pro">Become a Professional</a></li>
+    </ul>
+
+    <div class="nav-actions" id="navActions">
+      <a href="#login" class="btn btn-ghost" id="loginBtn">Log In</a>
+      <a href="#signup" class="btn btn-primary btn-ripple" id="signupBtn">Sign Up</a>
+    </div>
+
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle navigation menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+</header>
+
+<main id="main-content">
+
+  <!-- ============ PAGE HERO ============ -->
+  <section class="page-hero">
+    <div class="section-inner">
+      <p class="breadcrumb"><a href="index.html">Home</a><span aria-hidden="true">/</span><span>Categories</span></p>
+      <p class="eyebrow" id="catStatTotal">Loading services…</p>
+      <h1>Browse every service</h1>
+      <p class="page-lede">From a quick tap repair to a full home makeover — find the exact service you need, see the price upfront, and add it to your booking.</p>
+
+      <div class="cat-search">
+        <div class="cat-search-field">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm10 2-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <label for="catSearchInput" class="visually-hidden">Search services</label>
+          <input type="text" id="catSearchInput" placeholder="Search for a service, e.g. &quot;AC repair&quot; or &quot;facial&quot;" autocomplete="off">
+          <button type="button" class="cat-search-clear" id="catSearchClear" aria-label="Clear search">&times;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CATEGORY / SUBCATEGORY NAV ============ -->
+  <nav class="cat-subnav" aria-label="Service categories">
+    <div class="section-inner">
+      <div class="cat-pill-row" id="catPillRow"></div>
+      <div class="subcat-chip-row" id="subcatChipRow"></div>
+    </div>
+  </nav>
+
+  <!-- ============ SERVICE GRID ============ -->
+  <section class="section" style="padding-top: var(--space-md);">
+    <div class="section-inner">
+      <div class="cat-banner" id="catBanner" aria-hidden="true"></div>
+      <p class="cat-results-meta" id="catResultsMeta" aria-live="polite"></p>
+      <div class="sku-grid" id="skuGrid"></div>
+    </div>
+  </section>
+
+  <!-- ============ STICKY CART BAR ============ -->
+  <div class="cart-bar" id="cartBar" aria-live="polite">
+    <div class="cart-bar-info">
+      <span class="cart-bar-count" id="cartBarCount">0 services added</span>
+      <span class="cart-bar-total" id="cartBarTotal">₹0</span>
+    </div>
+    <button type="button" class="cart-bar-cta" id="cartBarCta">Continue</button>
+  </div>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site-footer">
+  <div class="footer-top section-inner">
+    <div class="footer-brand">
+      <a href="index.html#top" class="brand brand-footer" aria-label="Folks home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" width="30" height="30"><path d="M20 4 L36 16 V35 H24 V24 H16 V35 H4 V16 Z" fill="currentColor"/><circle cx="20" cy="16" r="2.6" fill="var(--color-espresso)"/></svg>
+        </span>
+        <span class="brand-name">Folks</span>
+      </a>
+      <p>Trusted home services, booked in minutes. Verified pros, upfront pricing, guaranteed work.</p>
+      <div class="social-links" aria-label="Folks on social media">
+        <a href="#" aria-label="Folks on Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
+        <a href="#" aria-label="Folks on X"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3l7.5 9.5L3.4 21H6l5.8-6.8L16.5 21H21l-8-10.1L20.6 3H18l-5.3 6.2L8.5 3H3z"/></svg></a>
+        <a href="#" aria-label="Folks on LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9h4v12H3zM9.5 9H13v1.7c.6-1 1.9-2 3.9-2 3.3 0 4.6 2.1 4.6 5.6V21H17v-6.1c0-1.6-.6-2.7-2-2.7-1.1 0-1.7.8-2 1.5-.1.3-.1.6-.1 1V21H9.5Z"/></svg></a>
+      </div>
+    </div>
+
+    <nav class="footer-col" aria-label="Company">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Press</a></li>
+        <li><a href="contact.html">Contact Us</a></li>
+      </ul>
+    </nav>
+
+    <nav class="footer-col" aria-label="Services">
+      <h4>Services</h4>
+      <ul>
+        <li><a href="categories.html#cleaning-pest-control">Home Cleaning</a></li>
+        <li><a href="categories.html#salon-makeup">Salon at Home</a></li>
+        <li><a href="categories.html#appliance-repair">AC Repair</a></li>
+        <li><a href="categories.html#electrician-plumbing-carpentry">Electrician</a></li>
+        <li><a href="categories.html#electrician-plumbing-carpentry">Plumbing</a></li>
+      </ul>
+    </nav>
+
+    <nav class="footer-col" aria-label="Legal">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="terms.html">Terms of Service</a></li>
+        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="refund.html">Refund Policy</a></li>
+        <li><a href="faq.html">FAQs</a></li>
+      </ul>
+    </nav>
+
+    <div class="footer-col footer-newsletter">
+      <h4>Stay in the loop</h4>
+      <p>Offers and service tips, once a month — no spam.</p>
+      <form class="newsletter-form" aria-label="Subscribe to newsletter">
+        <label for="newsletterEmail" class="visually-hidden">Email address</label>
+        <input type="email" id="newsletterEmail" placeholder="you@email.com" required>
+        <button type="submit" class="btn btn-primary btn-sm btn-ripple">Subscribe</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="footer-bottom section-inner">
+    <p>&copy; 2026 Folks Technologies Pvt. Ltd. All rights reserved.</p>
+    <p>Made with care, for homes everywhere.</p>
+  </div>
+</footer>
+
+<button class="back-to-top" id="backToTop" aria-label="Back to top">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
+
+<script src="api.js"></script>
+<script src="script.js"></script>
+<script src="scheduling.js"></script>
+<script src="categories-data.js"></script>
+<script src="categories.js"></script>
+</body>
+</html>

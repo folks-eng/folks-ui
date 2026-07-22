@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile — Folks</title>
+<meta name="description" content="View and update your Folks account profile and saved address.">
+<meta name="theme-color" content="#cb7651">
+
+<meta property="og:title" content="My Profile — Folks">
+<meta property="og:description" content="View and update your Folks account profile and saved address.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<!-- ============ HEADER / STICKY NAVIGATION ============ -->
+<header class="site-header" id="siteHeader">
+  <nav class="navbar" aria-label="Primary navigation">
+    <a href="index.html#top" class="brand" aria-label="Folks home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="34" height="34">
+          <path d="M20 4 L36 16 V35 H24 V24 H16 V35 H4 V16 Z" fill="currentColor"/>
+          <circle cx="20" cy="16" r="2.6" fill="var(--color-cream)"/>
+        </svg>
+      </span>
+      <span class="brand-name">Folks</span>
+    </a>
+
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html#top" class="nav-link">Home</a></li>
+      <li><a href="categories.html" class="nav-link">Categories</a></li>
+      <li><a href="about.html" class="nav-link">About Us</a></li>
+      <li><a href="contact.html" class="nav-link">Contact Us</a></li>
+      <li><a href="faq.html" class="nav-link">FAQs</a></li>
+      <li><a href="#" class="nav-link nav-link-pro">Become a Professional</a></li>
+    </ul>
+
+    <div class="nav-actions" id="navActions">
+      <a href="#login" class="btn btn-ghost" id="loginBtn">Log In</a>
+      <a href="#signup" class="btn btn-primary btn-ripple" id="signupBtn">Sign Up</a>
+    </div>
+
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle navigation menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+</header>
+
+<main id="main-content">
+
+  <!-- ============ PAGE HERO ============ -->
+  <section class="page-hero">
+    <div class="section-inner">
+      <p class="breadcrumb"><a href="index.html">Home</a><span aria-hidden="true">/</span><span>My Profile</span></p>
+      <p class="eyebrow">Your account</p>
+      <h1>My Profile</h1>
+      <p class="page-lede">Keep your details up to date so professionals and support can always reach the right person, at the right place.</p>
+    </div>
+  </section>
+
+  <!-- ============ LOGGED-OUT GATE ============ -->
+  <section class="section" id="profileGate" hidden>
+    <div class="section-inner section-inner-narrow">
+      <div class="address-empty-state" style="background: var(--color-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-lg);">
+        <span class="address-empty-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <p>You'll need to sign up or log in to view your profile.</p>
+        <button type="button" class="btn btn-primary btn-ripple" id="profileGateSignupBtn">Sign Up / Log In</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROFILE CONTENT ============ -->
+  <div id="profileContent">
+
+    <!-- ============ SECTION 1: PROFILE DETAILS ============ -->
+    <section class="section" style="padding-bottom: var(--space-md);">
+      <div class="section-inner">
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <h2>Profile Details</h2>
+            <div class="profile-card-actions" id="profileCardActions"></div>
+          </div>
+          <p class="modal-error" id="profileFormError" hidden></p>
+          <div class="profile-fields-grid" id="profileFieldsGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 2: ADDRESS ============ -->
+    <section class="section" style="padding-top: 0;">
+      <div class="section-inner">
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <h2>Address</h2>
+            <div class="profile-card-actions" id="addressCardActions"></div>
+          </div>
+          <p class="modal-error" id="addressFormError" hidden></p>
+          <div id="addressCardBody"></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site-footer">
+  <div class="footer-top section-inner">
+    <div class="footer-brand">
+      <a href="index.html#top" class="brand brand-footer" aria-label="Folks home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" width="30" height="30"><path d="M20 4 L36 16 V35 H24 V24 H16 V35 H4 V16 Z" fill="currentColor"/><circle cx="20" cy="16" r="2.6" fill="var(--color-espresso)"/></svg>
+        </span>
+        <span class="brand-name">Folks</span>
+      </a>
+      <p>Trusted home services, booked in minutes. Verified pros, upfront pricing, guaranteed work.</p>
+      <div class="social-links" aria-label="Folks on social media">
+        <a href="#" aria-label="Folks on Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
+        <a href="#" aria-label="Folks on X"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3l7.5 9.5L3.4 21H6l5.8-6.8L16.5 21H21l-8-10.1L20.6 3H18l-5.3 6.2L8.5 3H3z"/></svg></a>
+        <a href="#" aria-label="Folks on LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9h4v12H3zM9.5 9H13v1.7c.6-1 1.9-2 3.9-2 3.3 0 4.6 2.1 4.6 5.6V21H17v-6.1c0-1.6-.6-2.7-2-2.7-1.1 0-1.7.8-2 1.5-.1.3-.1.6-.1 1V21H9.5Z"/></svg></a>
+      </div>
+    </div>
+
+    <nav class="footer-col" aria-label="Company">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Press</a></li>
+        <li><a href="contact.html">Contact Us</a></li>
+      </ul>
+    </nav>
+
+    <nav class="footer-col" aria-label="Services">
+      <h4>Services</h4>
+      <ul>
+        <li><a href="categories.html#cleaning-pest-control">Home Cleaning</a></li>
+        <li><a href="categories.html#salon-makeup">Salon at Home</a></li>
+        <li><a href="categories.html#appliance-repair">AC Repair</a></li>
+        <li><a href="categories.html#electrician-plumbing-carpentry">Electrician</a></li>
+        <li><a href="categories.html#electrician-plumbing-carpentry">Plumbing</a></li>
+      </ul>
+    </nav>
+
+    <nav class="footer-col" aria-label="Legal">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="terms.html">Terms of Service</a></li>
+        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="refund.html">Refund Policy</a></li>
+        <li><a href="faq.html">FAQs</a></li>
+      </ul>
+    </nav>
+
+    <div class="footer-col footer-newsletter">
+      <h4>Stay in the loop</h4>
+      <p>Offers and service tips, once a month — no spam.</p>
+      <form class="newsletter-form" aria-label="Subscribe to newsletter">
+        <label for="newsletterEmail" class="visually-hidden">Email address</label>
+        <input type="email" id="newsletterEmail" placeholder="you@email.com" required>
+        <button type="submit" class="btn btn-primary btn-sm btn-ripple">Subscribe</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="footer-bottom section-inner">
+    <p>&copy; 2026 Folks Technologies Pvt. Ltd. All rights reserved.</p>
+    <p>Made with care, for homes everywhere.</p>
+  </div>
+</footer>
+
+<button class="back-to-top" id="backToTop" aria-label="Back to top">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
+
+<script src="api.js"></script>
+<script src="script.js"></script>
+<script src="profile.js"></script>
+</body>
+</html>
