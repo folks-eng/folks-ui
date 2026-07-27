@@ -18,7 +18,7 @@
    ========================================================================= */
 
 const FolksAPI = (function () {
-  const DEMO_MODE = true;
+  const DEMO_MODE = false;
 
   /**
    * POST /api/v1/otp
@@ -36,6 +36,7 @@ const FolksAPI = (function () {
     try {
       const res = await fetch('/api/v1/otp', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -62,6 +63,7 @@ const FolksAPI = (function () {
     try {
       const res = await fetch('/api/v1/otp/verify', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -86,6 +88,7 @@ const FolksAPI = (function () {
     try {
       const res = await fetch('/api/v1/users', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -110,6 +113,7 @@ const FolksAPI = (function () {
     try {
       const res = await fetch('/api/v1/users', {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -134,6 +138,7 @@ const FolksAPI = (function () {
     try {
       const res = await fetch('/api/v1/addresses', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -158,6 +163,7 @@ const FolksAPI = (function () {
     try {
       const res = await fetch('/api/v1/addresses', {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -171,7 +177,11 @@ const FolksAPI = (function () {
 
   /**
    * POST /api/v1/bookings
-   * Payload: { customer, services: [{ name, date, timeSlot, quantity, price }], paymentMethod, amount }
+   * Payload: { services: [{ name, date, timeSlot, quantity, price, address }], paymentMethod, amount }
+   * Note: no `customer` field — the server identifies who's booking from
+   * the JWT cookie set at OTP-verify / signup time, not from the request
+   * body. This keeps the browser from ever having to (re)send identity
+   * details it already proved once.
    * @returns {Promise<{success: boolean, message?: string, booking?: object}>}
    */
   async function createBooking(payload) {
@@ -182,6 +192,7 @@ const FolksAPI = (function () {
     try {
       const res = await fetch('/api/v1/bookings', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -189,13 +200,23 @@ const FolksAPI = (function () {
       return await res.json();
     } catch (err) {
       console.warn('[Folks] /api/v1/bookings unreachable, falling back to demo mode.', err);
-      return simulateCreateBooking(payload);
+      // The demo simulator has no server-side session to read a customer
+      // from, so — only on this client-side-only fallback path — attach
+      // whoever script.js currently considers logged in.
+      const demoPayload = {
+        ...payload,
+        customer: (typeof getCurrentUser === 'function' && getCurrentUser()) || null,
+      };
+      return simulateCreateBooking(demoPayload);
     }
   }
 
   /**
-   * GET /api/v1/bookings?userId={id}
-   * Returns every booking (current and past) belonging to a customer.
+   * GET /api/v1/bookings
+   * Returns every booking (current and past) belonging to the signed-in
+   * customer. The server identifies who that is from the JWT cookie, not
+   * from a query parameter — `userId` is only still accepted here to keep
+   * the demo-mode fallback (which has no server-side session) working.
    * @returns {Promise<{success: boolean, message?: string, bookings?: object[]}>}
    */
   async function getBookings(userId) {
@@ -204,15 +225,41 @@ const FolksAPI = (function () {
     }
 
     try {
-      const res = await fetch(`/api/v1/bookings?userId=${encodeURIComponent(userId)}`, {
+      const res = await fetch('/api/v1/bookings', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
       });
       if (!res.ok) throw new Error(`Fetching bookings failed with status ${res.status}`);
       return await res.json();
     } catch (err) {
       console.warn('[Folks] GET /api/v1/bookings unreachable, falling back to demo mode.', err);
       return simulateGetBookings(userId);
+    }
+  }
+
+  /**
+   * PUT /api/v1/bookings/{id}
+   * Cancels an upcoming booking. Payload: { status: 'cancelled' }
+   * @returns {Promise<{success: boolean, message?: string, booking?: object}>}
+   */
+  async function cancelBooking(bookingId) {
+    if (DEMO_MODE) {
+      return simulateCancelBooking(bookingId);
+    }
+
+    try {
+      const res = await fetch(`/api/v1/bookings/${encodeURIComponent(bookingId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'cancelled' }),
+      });
+      if (!res.ok) throw new Error(`Booking cancellation failed with status ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.warn(`[Folks] PUT /api/v1/bookings/${bookingId} unreachable, falling back to demo mode.`, err);
+      return simulateCancelBooking(bookingId);
     }
   }
 
@@ -231,6 +278,7 @@ const FolksAPI = (function () {
     try {
       const res = await fetch('/api/v1/professionals', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -335,6 +383,17 @@ const FolksAPI = (function () {
     return delay({ success: true, bookings }, 600);
   }
 
+  function simulateCancelBooking(bookingId) {
+    const booking = _demoBookingsDb.find(b => b.id === bookingId);
+    if (!booking) {
+      return delay({ success: false, message: 'Booking not found.' }, 400);
+    }
+    booking.status = 'cancelled';
+    booking.cancelledOn = new Date().toISOString();
+    _persistDemoBookings();
+    return delay({ success: true, booking }, 700);
+  }
+
   function simulateApplyAsProfessional(payload) {
     return delay({
       success: true,
@@ -361,6 +420,7 @@ const FolksAPI = (function () {
     updateAddress,
     createBooking,
     getBookings,
+    cancelBooking,
     applyAsProfessional,
   };
 })();

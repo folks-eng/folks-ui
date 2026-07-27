@@ -1,0 +1,24 @@
+[
+  {
+    "id": "bkg-1785050590778",
+    "status": "confirmed",
+    "createdOn": "2026-07-26T07:23:10.778Z",
+    "customer": {
+      "id": "usr-1785050559103",
+      "name": "Sudiptasish Chanda",
+      "mobile": "9916335208"
+    },
+    "services": [
+      {
+        "name": "AC Repair Visit",
+        "date": "2026-07-29",
+        "timeSlot": "2:00 – 4:00 PM",
+        "quantity": 1,
+        "price": 299,
+        "address": "57/1C P.G.H. Shah Road, Kolkata"
+      }
+    ],
+    "paymentMethod": "cash",
+    "amount": 299
+  }
+]

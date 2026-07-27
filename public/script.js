@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initSearchForm();
   initAuthState();
   initSignupFlow();
+  initLoginFlow();
+  initProfessionalLinkGate();
+  initFavouriteToggles();
 });
 
 /* -------------------------------------------------------------------------
@@ -244,6 +247,28 @@ function initSearchForm() {
   });
 }
 
+/**
+ * "Become a Professional" requires an account, same as checkout does.
+ * Logged in -> go straight there. Logged out -> open signup (with a
+ * "Log in instead" link already built into that modal for existing users)
+ * and resume this destination once that completes.
+ */
+function initProfessionalLinkGate() {
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('.nav-link-pro');
+    if (!trigger) return;
+
+    e.preventDefault();
+    if (isLoggedIn() && getCurrentUser()) {
+      window.location.href = 'become-professional.html';
+      return;
+    }
+    safeStorageSet(FOLKS_STORAGE_KEYS.postSignupRedirect, 'become-professional.html');
+    const signupBtn = document.getElementById('signupBtn');
+    if (signupBtn) signupBtn.click();
+  });
+}
+
 
 /* =========================================================================
    SIGNUP / REGISTRATION FLOW
@@ -377,6 +402,18 @@ function initSignupFlow() {
     if (trigger) {
       e.preventDefault();
       openModal();
+    }
+  });
+
+  document.getElementById('switchToLoginBtn')?.addEventListener('click', () => {
+    closeModal();
+    document.dispatchEvent(new CustomEvent('folks:open-login', { detail: { mobile: mobileInput.value.trim() } }));
+  });
+
+  document.addEventListener('folks:open-signup', (e) => {
+    openModal();
+    if (e.detail && e.detail.mobile) {
+      setTimeout(() => { mobileInput.value = e.detail.mobile; }, 50);
     }
   });
 
@@ -591,20 +628,389 @@ function initSignupFlow() {
 }
 
 /* =========================================================================
+   LOGIN FLOW
+   A mobile-screen-sized popup mirroring the signup flow's navigation style
+   (mobile -> waiting -> otp -> waiting -> success), but shorter — no
+   profile step, since the person already has one. Reuses the same
+   FolksAPI.requestOtp / verifyOtp endpoints signup uses (a real backend
+   would share OTP delivery between login and signup too).
+
+   This demo has no server-side user registry, so "is this number
+   registered?" is answered by checking the locally-stored account
+   (getCurrentUser()) for a matching mobile number. If it matches, the
+   session is restored. If not, a dedicated screen offers to sign up
+   instead — it does not fabricate an account for an unrecognized number.
+   ========================================================================= */
+
+function initLoginFlow() {
+  injectLoginModalMarkup();
+  initRipple();
+
+  const overlay = document.getElementById('loginOverlay');
+  const modal = document.getElementById('loginModal');
+  const closeBtn = document.getElementById('loginCloseBtn');
+  const screens = {
+    mobile: modal.querySelector('[data-screen="login-mobile"]'),
+    waiting: modal.querySelector('[data-screen="login-waiting"]'),
+    otp: modal.querySelector('[data-screen="login-otp"]'),
+    notFound: modal.querySelector('[data-screen="login-not-found"]'),
+    success: modal.querySelector('[data-screen="login-success"]'),
+  };
+  const waitingLabel = document.getElementById('loginWaitingLabel');
+
+  const state = {
+    mobile: '',
+    activeScreen: screens.mobile,
+    resendTimer: null,
+    resendSecondsLeft: 30,
+  };
+
+  function goTo(targetScreen, direction) {
+    const outgoing = state.activeScreen;
+    if (outgoing === targetScreen) return;
+
+    targetScreen.classList.remove('screen-off-left', 'screen-off-right');
+    targetScreen.classList.add(direction === 'forward' ? 'screen-off-right' : 'screen-off-left');
+    targetScreen.inert = false;
+    targetScreen.removeAttribute('aria-hidden');
+    void targetScreen.offsetWidth;
+
+    requestAnimationFrame(() => {
+      outgoing.classList.remove('screen-current');
+      outgoing.classList.add(direction === 'forward' ? 'screen-off-left' : 'screen-off-right');
+      outgoing.inert = true;
+      outgoing.setAttribute('aria-hidden', 'true');
+
+      targetScreen.classList.remove('screen-off-left', 'screen-off-right');
+      targetScreen.classList.add('screen-current');
+    });
+
+    state.activeScreen = targetScreen;
+  }
+
+  function goToWaiting(label, direction) {
+    waitingLabel.textContent = label;
+    goTo(screens.waiting, direction);
+  }
+
+  function resetModal() {
+    Object.values(screens).forEach(screen => {
+      screen.classList.remove('screen-current', 'screen-off-left', 'screen-off-right');
+      screen.classList.add('screen-off-right');
+      screen.inert = true;
+      screen.setAttribute('aria-hidden', 'true');
+    });
+    screens.mobile.classList.remove('screen-off-right');
+    screens.mobile.classList.add('screen-current');
+    screens.mobile.inert = false;
+    screens.mobile.removeAttribute('aria-hidden');
+    state.activeScreen = screens.mobile;
+
+    document.getElementById('loginMobile').value = '';
+    modal.querySelectorAll('.otp-box').forEach(b => { b.value = ''; b.classList.remove('is-filled'); });
+    hideError('loginMobileError');
+    hideError('loginOtpError');
+    clearInterval(state.resendTimer);
+  }
+
+  function openModal(presetMobile) {
+    resetModal();
+    if (presetMobile) document.getElementById('loginMobile').value = presetMobile;
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('loginMobile')?.focus(), 300);
+  }
+
+  function closeModal() {
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    clearInterval(state.resendTimer);
+  }
+
+  // Event delegation so this keeps working even if #loginBtn is destroyed
+  // and recreated later (e.g. after logout rebuilds nav-actions).
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('#loginBtn');
+    if (trigger) {
+      e.preventDefault();
+      openModal();
+    }
+  });
+
+  document.addEventListener('folks:open-login', (e) => {
+    openModal(e.detail && e.detail.mobile);
+  });
+
+  closeBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.classList.contains('is-open')) closeModal();
+  });
+
+  function showError(fieldId, message) {
+    const el = document.getElementById(fieldId);
+    if (!el) return;
+    el.textContent = message;
+    el.hidden = false;
+  }
+  function hideError(fieldId) {
+    const el = document.getElementById(fieldId);
+    if (!el) return;
+    el.hidden = true;
+    el.textContent = '';
+  }
+
+  // ---- SCREEN 1: mobile number -> waiting -> otp ------------------------
+  const mobileInput = document.getElementById('loginMobile');
+  const sendOtpBtn = document.getElementById('loginSendOtpBtn');
+
+  mobileInput.addEventListener('input', () => {
+    mobileInput.value = mobileInput.value.replace(/\D/g, '').slice(0, 10);
+  });
+
+  document.getElementById('switchToSignupBtn')?.addEventListener('click', () => {
+    closeModal();
+    document.dispatchEvent(new CustomEvent('folks:open-signup', { detail: { mobile: mobileInput.value.trim() } }));
+  });
+  document.getElementById('switchToSignupFromNotFoundBtn')?.addEventListener('click', () => {
+    closeModal();
+    document.dispatchEvent(new CustomEvent('folks:open-signup', { detail: { mobile: state.mobile } }));
+  });
+  document.getElementById('loginTryAnotherNumberBtn')?.addEventListener('click', () => {
+    goTo(screens.mobile, 'back');
+    setTimeout(() => mobileInput.focus(), 300);
+  });
+
+  sendOtpBtn.addEventListener('click', async () => {
+    hideError('loginMobileError');
+    const mobile = mobileInput.value.trim();
+
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      showError('loginMobileError', 'Enter a valid 10-digit mobile number.');
+      mobileInput.focus();
+      return;
+    }
+
+    state.mobile = mobile;
+    goToWaiting('Sending your OTP…', 'forward');
+
+    const result = await FolksAPI.requestOtp(mobile);
+
+    if (!result.success) {
+      goTo(screens.mobile, 'back');
+      showError('loginMobileError', result.message || 'Could not send OTP. Please try again.');
+      return;
+    }
+
+    document.getElementById('loginOtpMobileDisplay').textContent = `+91 ${mobile}`;
+    const hint = document.getElementById('loginOtpDemoHint');
+    if (hint) {
+      if (result.demoOtp) {
+        hint.hidden = false;
+        hint.textContent = `Demo mode — no SMS gateway connected. Your OTP is ${result.demoOtp}.`;
+      } else {
+        hint.hidden = true;
+      }
+    }
+
+    goTo(screens.otp, 'forward');
+    startResendCountdown();
+    setTimeout(() => modal.querySelector('.otp-box[data-otp-index="0"]')?.focus(), 300);
+  });
+
+  // ---- SCREEN 2: OTP entry -> waiting -> success / not-found -------------
+  const otpBoxes = Array.from(modal.querySelectorAll('.otp-box'));
+  const verifyOtpBtn = document.getElementById('loginVerifyOtpBtn');
+  const changeMobileBtn = document.getElementById('loginChangeMobileBtn');
+  const resendOtpBtn = document.getElementById('loginResendOtpBtn');
+  const resendTimerLabel = document.getElementById('loginResendTimer');
+
+  otpBoxes.forEach((box, index) => {
+    box.addEventListener('input', () => {
+      box.value = box.value.replace(/\D/g, '').slice(0, 1);
+      box.classList.toggle('is-filled', box.value !== '');
+      if (box.value && index < otpBoxes.length - 1) otpBoxes[index + 1].focus();
+    });
+    box.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !box.value && index > 0) otpBoxes[index - 1].focus();
+    });
+    box.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const digits = (e.clipboardData.getData('text') || '').replace(/\D/g, '').split('');
+      digits.forEach((d, i) => {
+        if (otpBoxes[i]) { otpBoxes[i].value = d; otpBoxes[i].classList.add('is-filled'); }
+      });
+      const nextEmpty = otpBoxes.find(b => !b.value) || otpBoxes[otpBoxes.length - 1];
+      nextEmpty.focus();
+    });
+  });
+
+  changeMobileBtn.addEventListener('click', () => {
+    clearInterval(state.resendTimer);
+    goTo(screens.mobile, 'back');
+    setTimeout(() => mobileInput.focus(), 300);
+  });
+
+  function startResendCountdown() {
+    state.resendSecondsLeft = 30;
+    resendOtpBtn.disabled = true;
+    resendTimerLabel.textContent = state.resendSecondsLeft;
+    clearInterval(state.resendTimer);
+    state.resendTimer = setInterval(() => {
+      state.resendSecondsLeft -= 1;
+      if (state.resendSecondsLeft <= 0) {
+        clearInterval(state.resendTimer);
+        resendOtpBtn.disabled = false;
+        resendOtpBtn.textContent = 'Resend OTP';
+      } else {
+        resendTimerLabel.textContent = state.resendSecondsLeft;
+      }
+    }, 1000);
+  }
+
+  resendOtpBtn.addEventListener('click', async () => {
+    resendOtpBtn.disabled = true;
+    resendOtpBtn.textContent = 'Resending…';
+    const result = await FolksAPI.requestOtp(state.mobile);
+    const hint = document.getElementById('loginOtpDemoHint');
+    if (hint && result.demoOtp) {
+      hint.hidden = false;
+      hint.textContent = `Demo mode — no SMS gateway connected. Your new OTP is ${result.demoOtp}.`;
+    }
+    resendOtpBtn.textContent = 'Resend in ';
+    resendOtpBtn.appendChild(resendTimerLabel);
+    startResendCountdown();
+  });
+
+  verifyOtpBtn.addEventListener('click', async () => {
+    hideError('loginOtpError');
+    const otp = otpBoxes.map(b => b.value).join('');
+
+    if (otp.length !== 6) {
+      showError('loginOtpError', 'Enter the full 6-digit OTP.');
+      return;
+    }
+
+    clearInterval(state.resendTimer);
+    goToWaiting('Verifying your code…', 'forward');
+
+    const result = await FolksAPI.verifyOtp(state.mobile, otp);
+
+    if (!result.success) {
+      goTo(screens.otp, 'back');
+      showError('loginOtpError', result.message || 'Incorrect OTP. Please try again.');
+      otpBoxes.forEach(b => { b.value = ''; b.classList.remove('is-filled'); });
+      otpBoxes[0].focus();
+      startResendCountdown();
+      return;
+    }
+
+    // OTP is verified — a real phone, but is there an account behind it?
+    const existingUser = getCurrentUser();
+    if (existingUser && existingUser.mobile === state.mobile) {
+      document.getElementById('loginSuccessMessage').textContent =
+        `Good to see you again, ${existingUser.name.split(' ')[0]}.`;
+      goTo(screens.success, 'forward');
+      completeLogin(existingUser);
+      setTimeout(closeModal, 1800);
+    } else {
+      goTo(screens.notFound, 'forward');
+    }
+  });
+}
+
+/* ---- inject login modal markup once per page --------------------------- */
+function injectLoginModalMarkup() {
+  if (document.getElementById('loginOverlay')) return;
+
+  const markup = `
+<div class="modal-overlay" id="loginOverlay" aria-hidden="true">
+  <div class="modal-phone" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
+    <button type="button" class="modal-close" id="loginCloseBtn" aria-label="Close log in">&times;</button>
+
+    <div class="modal-screens">
+
+      <div class="modal-screen screen-current" data-screen="login-mobile">
+        <h2 id="loginModalTitle" class="modal-title">Welcome back</h2>
+        <p class="modal-sub">Enter your registered mobile number and we'll send you a one-time password.</p>
+        <div class="otp-mobile-field">
+          <span class="otp-country-code">+91</span>
+          <input type="tel" inputmode="numeric" maxlength="10" id="loginMobile" placeholder="98765 43210" autocomplete="tel">
+        </div>
+        <p class="modal-error" id="loginMobileError" hidden></p>
+        <button type="button" class="btn btn-primary btn-ripple modal-submit" id="loginSendOtpBtn">Send OTP</button>
+        <p class="modal-switch">New to Folks? <button type="button" class="link-btn" id="switchToSignupBtn">Sign up</button></p>
+      </div>
+
+      <div class="modal-screen screen-off-right" data-screen="login-waiting" inert aria-hidden="true">
+        <div class="modal-waiting">
+          <span class="modal-spinner" aria-hidden="true"></span>
+          <p class="modal-waiting-label" id="loginWaitingLabel">Just a moment…</p>
+        </div>
+      </div>
+
+      <div class="modal-screen screen-off-right" data-screen="login-otp" inert aria-hidden="true">
+        <h2 class="modal-title">Verify your number</h2>
+        <p class="modal-sub">Enter the 6-digit code sent to <strong id="loginOtpMobileDisplay"></strong> ·
+          <button type="button" class="link-btn" id="loginChangeMobileBtn">Change</button>
+        </p>
+        <p class="modal-hint" id="loginOtpDemoHint" hidden></p>
+        <div class="otp-boxes">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-otp-index="0">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-otp-index="1">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-otp-index="2">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-otp-index="3">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-otp-index="4">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-otp-index="5">
+        </div>
+        <p class="modal-error" id="loginOtpError" hidden></p>
+        <button type="button" class="btn btn-primary btn-ripple modal-submit" id="loginVerifyOtpBtn">Verify OTP</button>
+        <p class="modal-resend">Didn't get it? <button type="button" class="link-btn" id="loginResendOtpBtn" disabled>Resend in <span id="loginResendTimer">30</span>s</button></p>
+      </div>
+
+      <div class="modal-screen screen-off-right" data-screen="login-not-found" inert aria-hidden="true">
+        <div class="modal-notfound-icon" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9 15l6 6M15 15l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h2 class="modal-title">No account found</h2>
+        <p class="modal-sub">We verified your number, but couldn't find a Folks account for it yet.</p>
+        <button type="button" class="btn btn-primary btn-ripple modal-submit" id="switchToSignupFromNotFoundBtn">Sign up instead</button>
+        <p class="modal-resend"><button type="button" class="link-btn" id="loginTryAnotherNumberBtn">Try another number</button></p>
+      </div>
+
+      <div class="modal-screen screen-off-right" data-screen="login-success" inert aria-hidden="true">
+        <div class="modal-success-icon" aria-hidden="true">&check;</div>
+        <h2 class="modal-title">You're logged in!</h2>
+        <p class="modal-sub" id="loginSuccessMessage">Good to see you again.</p>
+      </div>
+
+    </div>
+  </div>
+</div>`;
+
+  document.body.insertAdjacentHTML('beforeend', markup);
+}
+
+/* =========================================================================
    SESSION / AUTH STATE
-   A lightweight, localStorage-backed stand-in for a real session. There's
-   no login endpoint in this build (only signup), so "logging out" clears
-   the active session flag but keeps the underlying user/address records —
-   signing up again simulates creating a (new) account, same as it would
-   against a real backend without a login flow wired up yet.
+   A lightweight, localStorage-backed stand-in for a real session/database.
+   "Logging out" clears the active session flag but keeps the underlying
+   user/address records in storage, so logging back in with the same
+   mobile number (see the login flow above) restores the same account
+   rather than losing it.
    ========================================================================= */
 
 const FOLKS_STORAGE_KEYS = {
   user: 'folks_user',
-  address: 'folks_address',
+  address: 'folks_address', // legacy single-address key, migrated on first read
+  addresses: 'folks_addresses',
   session: 'folks_logged_in',
   cart: 'folks_cart',
   postSignupRedirect: 'folks_post_signup_redirect',
+  favouritePros: 'folks_favourite_pros',
+  wishlist: 'folks_wishlist',
 };
 
 function safeStorageGet(key) {
@@ -642,13 +1048,75 @@ function setLoggedIn(flag) {
   if (flag) safeStorageSet(FOLKS_STORAGE_KEYS.session, 'true');
   else safeStorageRemove(FOLKS_STORAGE_KEYS.session);
 }
+/* ---- saved addresses (a person can have several: Home, Work, etc.) -----
+   getStoredAddress()/saveStoredAddress() are kept as thin wrappers around
+   "the first saved address" so existing callers (become-professional.js's
+   quick-fill, for instance) keep working unchanged. -------------------- */
+function getAddresses() {
+  const raw = safeStorageGet(FOLKS_STORAGE_KEYS.addresses);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (err) { /* fall through to migration */ }
+  }
+
+  // Migrate a legacy single-address record into the new list, once.
+  const legacyRaw = safeStorageGet(FOLKS_STORAGE_KEYS.address);
+  if (legacyRaw) {
+    try {
+      const legacy = JSON.parse(legacyRaw);
+      if (legacy && legacy.line1) {
+        const migrated = [{ id: legacy.id || `addr-${Date.now()}`, label: 'Home', ...legacy }];
+        saveAddresses(migrated);
+        return migrated;
+      }
+    } catch (err) { /* no-op */ }
+  }
+  return [];
+}
+function saveAddresses(list) {
+  safeStorageSet(FOLKS_STORAGE_KEYS.addresses, JSON.stringify(list));
+}
+function getAddressById(id) {
+  return getAddresses().find(a => a.id === id) || null;
+}
+function addAddress(address) {
+  const list = getAddresses();
+  const withId = { id: `addr-${Date.now()}`, label: address.label || 'Home', ...address };
+  list.push(withId);
+  saveAddresses(list);
+  return withId;
+}
+function updateAddressById(id, updates) {
+  const list = getAddresses();
+  const idx = list.findIndex(a => a.id === id);
+  if (idx === -1) return null;
+  list[idx] = { ...list[idx], ...updates, id };
+  saveAddresses(list);
+  return list[idx];
+}
+function deleteAddressById(id) {
+  saveAddresses(getAddresses().filter(a => a.id !== id));
+}
+function formatAddressSummary(address) {
+  if (!address) return '';
+  return [address.line1, address.city].filter(Boolean).join(', ');
+}
+
+/** Back-compat wrappers: "the" saved address is just the first one. */
 function getStoredAddress() {
-  const raw = safeStorageGet(FOLKS_STORAGE_KEYS.address);
-  if (!raw) return null;
-  try { return JSON.parse(raw); } catch (err) { return null; }
+  const list = getAddresses();
+  return list.length ? list[0] : null;
 }
 function saveStoredAddress(address) {
-  safeStorageSet(FOLKS_STORAGE_KEYS.address, JSON.stringify(address));
+  const list = getAddresses();
+  if (list.length && list[0].id === address.id) {
+    list[0] = address;
+  } else if (list.length === 0) {
+    list.push({ id: address.id || `addr-${Date.now()}`, label: 'Home', ...address });
+  }
+  saveAddresses(list);
 }
 
 /* ---- cart persistence (shared between categories.html and checkout.html) --
@@ -678,6 +1146,138 @@ function getCartTotal(cartItems) {
 }
 function getCartCount(cartItems) {
   return cartItems.reduce((sum, item) => sum + item.qty, 0);
+}
+
+/* ---- favourite professionals + wishlisted services -----------------------
+   Both are simple, self-contained lists a person can build up while
+   browsing (home page pro cards, categories page service cards) and later
+   review from the Favourites & Wishlist account page. ------------------- */
+function getFavouriteProfessionals() {
+  const raw = safeStorageGet(FOLKS_STORAGE_KEYS.favouritePros);
+  if (!raw) return [];
+  try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch (err) { return []; }
+}
+function saveFavouriteProfessionals(list) {
+  safeStorageSet(FOLKS_STORAGE_KEYS.favouritePros, JSON.stringify(list));
+}
+/** Adds/removes a professional from favourites. Returns true if now favourited. */
+function toggleFavouriteProfessional(pro) {
+  let list = getFavouriteProfessionals();
+  const exists = list.some(p => p.id === pro.id);
+  list = exists ? list.filter(p => p.id !== pro.id) : [...list, pro];
+  saveFavouriteProfessionals(list);
+  return !exists;
+}
+
+function getWishlist() {
+  const raw = safeStorageGet(FOLKS_STORAGE_KEYS.wishlist);
+  if (!raw) return [];
+  try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch (err) { return []; }
+}
+function saveWishlist(list) {
+  safeStorageSet(FOLKS_STORAGE_KEYS.wishlist, JSON.stringify(list));
+}
+/** Adds/removes a service from the wishlist. Returns true if now wishlisted. */
+function toggleWishlistItem(item) {
+  let list = getWishlist();
+  const exists = list.some(i => i.skuId === item.skuId);
+  list = exists ? list.filter(i => i.skuId !== item.skuId) : [...list, item];
+  saveWishlist(list);
+  return !exists;
+}
+
+/** Wires up the static professional cards on the home page. Categories.html's
+ *  service-card wishlist buttons are wired separately in categories.js since
+ *  those cards are re-rendered dynamically, not present at page load. */
+function initFavouriteToggles() {
+  document.querySelectorAll('[data-favourite-toggle]').forEach(btn => {
+    const card = btn.closest('[data-pro-id]');
+    if (!card) return;
+    const pro = {
+      id: card.dataset.proId,
+      name: card.dataset.proName,
+      role: card.dataset.proRole,
+      price: card.dataset.proPrice,
+      rating: card.dataset.proRating,
+      photo: card.dataset.proPhoto || '',
+    };
+    const isFav = getFavouriteProfessionals().some(p => p.id === pro.id);
+    btn.setAttribute('aria-pressed', String(isFav));
+
+    btn.addEventListener('click', () => {
+      const nowFav = toggleFavouriteProfessional(pro);
+      btn.setAttribute('aria-pressed', String(nowFav));
+    });
+  });
+}
+
+/* =========================================================================
+   CONFIRMATION DIALOG
+   A small, generic "are you sure?" dialog any page can call — first use
+   is cancelling a booking, but it's intentionally not booking-specific.
+   ========================================================================= */
+let _confirmDialogCallback = null;
+
+function injectConfirmDialogMarkup() {
+  if (document.getElementById('confirmDialogOverlay')) return;
+
+  const markup = `
+<div class="confirm-dialog-overlay" id="confirmDialogOverlay" aria-hidden="true">
+  <div class="confirm-dialog-box" role="alertdialog" aria-modal="true" aria-labelledby="confirmDialogTitle" aria-describedby="confirmDialogMessage">
+    <h3 class="confirm-dialog-title" id="confirmDialogTitle">Are you sure?</h3>
+    <p class="confirm-dialog-message" id="confirmDialogMessage"></p>
+    <div class="confirm-dialog-actions">
+      <button type="button" class="btn btn-ghost btn-sm" id="confirmDialogCancelBtn">Cancel</button>
+      <button type="button" class="btn btn-sm btn-ripple confirm-dialog-danger-btn" id="confirmDialogConfirmBtn">Confirm</button>
+    </div>
+  </div>
+</div>`;
+
+  document.body.insertAdjacentHTML('beforeend', markup);
+
+  const overlay = document.getElementById('confirmDialogOverlay');
+  const cancelBtn = document.getElementById('confirmDialogCancelBtn');
+  const confirmBtn = document.getElementById('confirmDialogConfirmBtn');
+
+  function close() {
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    _confirmDialogCallback = null;
+  }
+
+  cancelBtn.addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.classList.contains('is-open')) close();
+  });
+  confirmBtn.addEventListener('click', () => {
+    const cb = _confirmDialogCallback;
+    close();
+    if (cb) cb();
+  });
+
+  window.__openConfirmDialogInternal = function (options) {
+    document.getElementById('confirmDialogTitle').textContent = options.title || 'Are you sure?';
+    document.getElementById('confirmDialogMessage').textContent = options.message || '';
+    confirmBtn.textContent = options.confirmLabel || 'Confirm';
+    cancelBtn.textContent = options.cancelLabel || 'Cancel';
+    confirmBtn.classList.toggle('confirm-dialog-danger-btn', options.danger !== false);
+    _confirmDialogCallback = options.onConfirm;
+
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  };
+}
+
+/**
+ * @param {{title?: string, message?: string, confirmLabel?: string, cancelLabel?: string, danger?: boolean, onConfirm: () => void}} options
+ */
+function showConfirmDialog(options) {
+  injectConfirmDialogMarkup();
+  initRipple();
+  window.__openConfirmDialogInternal(options);
 }
 
 /** Called once at signup success: persists the session and swaps the header. */
@@ -722,6 +1322,10 @@ function renderUserChip(user) {
           <a href="profile.html" role="menuitem" class="user-dropdown-item">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             View Profile
+          </a>
+          <a href="bookings.html" role="menuitem" class="user-dropdown-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            My Bookings
           </a>
           <button type="button" role="menuitem" class="user-dropdown-item user-dropdown-item-danger" id="logoutBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -804,6 +1408,7 @@ function injectSignupModalMarkup() {
         </div>
         <p class="modal-error" id="mobileError" hidden></p>
         <button type="button" class="btn btn-primary btn-ripple modal-submit" id="sendOtpBtn">Send OTP</button>
+        <p class="modal-switch">Already have an account? <button type="button" class="link-btn" id="switchToLoginBtn">Log in</button></p>
       </div>
 
       <div class="modal-screen screen-off-right" data-screen="waiting" inert aria-hidden="true">

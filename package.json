@@ -1,0 +1,18 @@
+{
+  "name": "folks-ui",
+  "version": "1.0.0",
+  "description": "Folks home-services marketplace — Node.js backend (no framework, no database) serving the existing frontend as static files and the REST API from JSON files on disk.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "redis": "^6.1.0"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

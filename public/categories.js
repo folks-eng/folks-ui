@@ -275,7 +275,8 @@ function initCategoriesPage() {
     if (!cartItem) return '';
     const d = new Date(cartItem.date + 'T00:00:00');
     const dateLabel = d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
-    return `${dateLabel} · ${cartItem.timeSlotLabel}`;
+    const addressPart = cartItem.addressSummary ? ` · ${cartItem.addressSummary}` : '';
+    return `${dateLabel} · ${cartItem.timeSlotLabel}${addressPart}`;
   }
 
   function isWishlisted(skuId) {
@@ -356,12 +357,16 @@ function initCategoriesPage() {
         date: schedule ? schedule.date : null,
         timeSlotId: schedule ? schedule.timeSlotId : null,
         timeSlotLabel: schedule ? schedule.timeSlotLabel : null,
+        addressId: schedule ? schedule.addressId : null,
+        addressSummary: schedule ? schedule.addressSummary : null,
       };
       cart.push(item);
     } else if (schedule) {
       item.date = schedule.date;
       item.timeSlotId = schedule.timeSlotId;
       item.timeSlotLabel = schedule.timeSlotLabel;
+      item.addressId = schedule.addressId;
+      item.addressSummary = schedule.addressSummary;
     }
     item.qty += 1;
     saveCart(cart);
@@ -385,6 +390,8 @@ function initCategoriesPage() {
     item.date = schedule.date;
     item.timeSlotId = schedule.timeSlotId;
     item.timeSlotLabel = schedule.timeSlotLabel;
+    item.addressId = schedule.addressId;
+    item.addressSummary = schedule.addressSummary;
     saveCart(cart);
   }
 

@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuthState();
   initSignupFlow();
   initLoginFlow();
+  initProfessionalLinkGate();
+  initFavouriteToggles();
 });
 
 /* -------------------------------------------------------------------------
@@ -242,6 +244,28 @@ function initSearchForm() {
     if (servicesSection) {
       servicesSection.scrollIntoView({ behavior: 'smooth' });
     }
+  });
+}
+
+/**
+ * "Become a Professional" requires an account, same as checkout does.
+ * Logged in -> go straight there. Logged out -> open signup (with a
+ * "Log in instead" link already built into that modal for existing users)
+ * and resume this destination once that completes.
+ */
+function initProfessionalLinkGate() {
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('.nav-link-pro');
+    if (!trigger) return;
+
+    e.preventDefault();
+    if (isLoggedIn() && getCurrentUser()) {
+      window.location.href = 'become-professional.html';
+      return;
+    }
+    safeStorageSet(FOLKS_STORAGE_KEYS.postSignupRedirect, 'become-professional.html');
+    const signupBtn = document.getElementById('signupBtn');
+    if (signupBtn) signupBtn.click();
   });
 }
 
@@ -984,6 +1008,8 @@ const FOLKS_STORAGE_KEYS = {
   session: 'folks_logged_in',
   cart: 'folks_cart',
   postSignupRedirect: 'folks_post_signup_redirect',
+  favouritePros: 'folks_favourite_pros',
+  wishlist: 'folks_wishlist',
 };
 
 function safeStorageGet(key) {
@@ -1059,6 +1085,69 @@ function getCartCount(cartItems) {
   return cartItems.reduce((sum, item) => sum + item.qty, 0);
 }
 
+/* ---- favourite professionals + wishlisted services -----------------------
+   Both are simple, self-contained lists a person can build up while
+   browsing (home page pro cards, categories page service cards) and later
+   review from the Favourites & Wishlist account page. ------------------- */
+function getFavouriteProfessionals() {
+  const raw = safeStorageGet(FOLKS_STORAGE_KEYS.favouritePros);
+  if (!raw) return [];
+  try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch (err) { return []; }
+}
+function saveFavouriteProfessionals(list) {
+  safeStorageSet(FOLKS_STORAGE_KEYS.favouritePros, JSON.stringify(list));
+}
+/** Adds/removes a professional from favourites. Returns true if now favourited. */
+function toggleFavouriteProfessional(pro) {
+  let list = getFavouriteProfessionals();
+  const exists = list.some(p => p.id === pro.id);
+  list = exists ? list.filter(p => p.id !== pro.id) : [...list, pro];
+  saveFavouriteProfessionals(list);
+  return !exists;
+}
+
+function getWishlist() {
+  const raw = safeStorageGet(FOLKS_STORAGE_KEYS.wishlist);
+  if (!raw) return [];
+  try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch (err) { return []; }
+}
+function saveWishlist(list) {
+  safeStorageSet(FOLKS_STORAGE_KEYS.wishlist, JSON.stringify(list));
+}
+/** Adds/removes a service from the wishlist. Returns true if now wishlisted. */
+function toggleWishlistItem(item) {
+  let list = getWishlist();
+  const exists = list.some(i => i.skuId === item.skuId);
+  list = exists ? list.filter(i => i.skuId !== item.skuId) : [...list, item];
+  saveWishlist(list);
+  return !exists;
+}
+
+/** Wires up the static professional cards on the home page. Categories.html's
+ *  service-card wishlist buttons are wired separately in categories.js since
+ *  those cards are re-rendered dynamically, not present at page load. */
+function initFavouriteToggles() {
+  document.querySelectorAll('[data-favourite-toggle]').forEach(btn => {
+    const card = btn.closest('[data-pro-id]');
+    if (!card) return;
+    const pro = {
+      id: card.dataset.proId,
+      name: card.dataset.proName,
+      role: card.dataset.proRole,
+      price: card.dataset.proPrice,
+      rating: card.dataset.proRating,
+      photo: card.dataset.proPhoto || '',
+    };
+    const isFav = getFavouriteProfessionals().some(p => p.id === pro.id);
+    btn.setAttribute('aria-pressed', String(isFav));
+
+    btn.addEventListener('click', () => {
+      const nowFav = toggleFavouriteProfessional(pro);
+      btn.setAttribute('aria-pressed', String(nowFav));
+    });
+  });
+}
+
 /** Called once at signup success: persists the session and swaps the header. */
 function completeLogin(user) {
   saveCurrentUser(user);
@@ -1101,6 +1190,10 @@ function renderUserChip(user) {
           <a href="profile.html" role="menuitem" class="user-dropdown-item">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             View Profile
+          </a>
+          <a href="bookings.html" role="menuitem" class="user-dropdown-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            My Bookings
           </a>
           <button type="button" role="menuitem" class="user-dropdown-item user-dropdown-item-danger" id="logoutBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>

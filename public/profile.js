@@ -132,97 +132,139 @@ function initProfileDetailsSection() {
   render();
 }
 
-/* ---- SECTION 2: Address -------------------------------------------------- */
+/* ---- SECTION 2: Address(es) ----------------------------------------------
+   A person can save more than one address (Home, Work, ...). Each has its
+   own card with its own Edit/Cancel/Save; a persistent "Add address"
+   button sits above the list so adding another is always one click away.
+   ------------------------------------------------------------------------ */
 function initAddressSection() {
   const actions = document.getElementById('addressCardActions');
   const body = document.getElementById('addressCardBody');
   const errorEl = document.getElementById('addressFormError');
   if (!body) return;
 
-  let address = getStoredAddress();
-  let editing = false;
-  let isNew = !address;
+  let editingId = null; // id of the address card currently in edit mode, or 'new'
 
   function render() {
     hideError(errorEl);
-    actions.innerHTML = '';
+    const addresses = getAddresses();
 
-    // ---- no address on file: empty state ----
-    if (!address && !editing) {
+    actions.innerHTML = editingId
+      ? ''
+      : `<button type="button" class="btn btn-primary btn-sm btn-ripple" id="addAddressBtn">+ Add Address</button>`;
+    if (!editingId) {
+      initRipple();
+      document.getElementById('addAddressBtn').addEventListener('click', () => {
+        editingId = 'new';
+        render();
+      });
+    }
+
+    const cards = addresses.map(a => renderAddressEntry(a, a.id === editingId)).join('');
+    const newCard = editingId === 'new' ? renderAddressEntry(null, true) : '';
+
+    if (addresses.length === 0 && editingId !== 'new') {
       body.innerHTML = `
         <div class="address-empty-state">
           <span class="address-empty-icon" aria-hidden="true">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 22s7-7.4 7-12.5A7 7 0 0 0 5 9.5C5 14.6 12 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="9.5" r="2.5" stroke="currentColor" stroke-width="2"/></svg>
           </span>
           <p>You haven't added an address yet. Add one so professionals know exactly where to show up.</p>
-          <button type="button" class="btn btn-primary btn-ripple" id="addAddressBtn">Add an Address</button>
+          <button type="button" class="btn btn-primary btn-ripple" id="addAddressBtnEmpty">Add an Address</button>
         </div>
       `;
       initRipple();
-      document.getElementById('addAddressBtn').addEventListener('click', () => {
-        isNew = true;
-        editing = true;
+      document.getElementById('addAddressBtnEmpty').addEventListener('click', () => {
+        editingId = 'new';
         render();
       });
       return;
     }
 
-    // ---- read-only view of an existing address ----
-    if (!editing) {
-      body.innerHTML = `<div class="profile-fields-grid">${[
-        readField('Primary address line', address.line1),
-        readField('Secondary address line', address.line2),
-        readField('City', address.city),
-        readField('State', address.state),
-        readField('Postal code', address.postalCode),
-        readField('Latitude', address.latitude),
-        readField('Longitude', address.longitude),
-      ].join('')}</div>`;
-
-      actions.innerHTML = `<button type="button" class="btn btn-ghost btn-sm" id="addressEditBtn">Edit</button>`;
-      document.getElementById('addressEditBtn').addEventListener('click', () => {
-        isNew = false;
-        editing = true;
-        render();
-      });
-      return;
-    }
-
-    // ---- edit form (either adding new or editing existing) ----
-    const a = address || {};
-    body.innerHTML = `<div class="profile-fields-grid">${[
-      inputField('Primary address line', 'line1', a.line1, { required: true }),
-      inputField('Secondary address line', 'line2', a.line2),
-      inputField('City', 'city', a.city, { required: true }),
-      inputField('State', 'state', a.state, { required: true }),
-      inputField('Postal code', 'postalCode', a.postalCode, { required: true }),
-      inputField('Latitude', 'latitude', a.latitude, { type: 'number', step: 'any' }),
-      inputField('Longitude', 'longitude', a.longitude, { type: 'number', step: 'any' }),
-    ].join('')}</div>`;
-
-    actions.innerHTML = `
-      ${address ? '<button type="button" class="btn btn-ghost btn-sm" id="addressCancelBtn">Cancel</button>' : ''}
-      <button type="button" class="btn btn-primary btn-sm btn-ripple" id="addressSaveBtn">${isNew ? 'Submit' : 'Save'}</button>
-    `;
+    body.innerHTML = `<div class="address-list">${cards}${newCard}</div>`;
     initRipple();
-
-    if (address) {
-      document.getElementById('addressCancelBtn').addEventListener('click', () => {
-        editing = false;
-        render();
-      });
-    }
-    document.getElementById('addressSaveBtn').addEventListener('click', onSave);
+    wireAddressEntries(addresses);
   }
 
-  async function onSave() {
-    const line1 = body.querySelector('[name="line1"]').value.trim();
-    const line2 = body.querySelector('[name="line2"]').value.trim();
-    const city = body.querySelector('[name="city"]').value.trim();
-    const state = body.querySelector('[name="state"]').value.trim();
-    const postalCode = body.querySelector('[name="postalCode"]').value.trim();
-    const latitude = body.querySelector('[name="latitude"]').value.trim();
-    const longitude = body.querySelector('[name="longitude"]').value.trim();
+  function renderAddressEntry(address, isEditing) {
+    const isNew = !address;
+    const idAttr = isNew ? 'new' : address.id;
+
+    if (!isEditing) {
+      return `
+        <div class="address-entry" data-address-id="${idAttr}">
+          <div class="address-entry-header">
+            <span class="address-entry-label">${escapeHtmlP(address.label || 'Address')}</span>
+            <div class="profile-card-actions">
+              <button type="button" class="btn btn-ghost btn-sm" data-edit-address="${idAttr}">Edit</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-delete-address="${idAttr}" style="color: var(--color-error);">Delete</button>
+            </div>
+          </div>
+          <div class="profile-fields-grid">${[
+            readField('Primary address line', address.line1),
+            readField('Secondary address line', address.line2),
+            readField('City', address.city),
+            readField('State', address.state),
+            readField('Postal code', address.postalCode),
+            readField('Latitude', address.latitude),
+            readField('Longitude', address.longitude),
+          ].join('')}</div>
+        </div>
+      `;
+    }
+
+    const a = address || {};
+    return `
+      <div class="address-entry" data-address-id="${idAttr}">
+        <div class="address-entry-header">
+          <span class="address-entry-label">${isNew ? 'New address' : escapeHtmlP(a.label || 'Address')}</span>
+        </div>
+        <div class="profile-fields-grid">
+          ${selectField('Label', 'label', a.label || 'Home', ['Home', 'Work', 'Other'])}
+          ${inputField('Primary address line', 'line1', a.line1, { required: true })}
+          ${inputField('Secondary address line', 'line2', a.line2)}
+          ${inputField('City', 'city', a.city, { required: true })}
+          ${inputField('State', 'state', a.state, { required: true })}
+          ${inputField('Postal code', 'postalCode', a.postalCode, { required: true })}
+          ${inputField('Latitude', 'latitude', a.latitude, { type: 'number', step: 'any' })}
+          ${inputField('Longitude', 'longitude', a.longitude, { type: 'number', step: 'any' })}
+        </div>
+        <div class="profile-card-actions" style="margin-top: var(--space-sm);">
+          <button type="button" class="btn btn-ghost btn-sm" data-cancel-address="${idAttr}">Cancel</button>
+          <button type="button" class="btn btn-primary btn-sm btn-ripple" data-save-address="${idAttr}">${isNew ? 'Submit' : 'Save'}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function wireAddressEntries(addresses) {
+    body.querySelectorAll('[data-edit-address]').forEach(btn => {
+      btn.addEventListener('click', () => { editingId = btn.dataset.editAddress; render(); });
+    });
+    body.querySelectorAll('[data-cancel-address]').forEach(btn => {
+      btn.addEventListener('click', () => { editingId = null; render(); });
+    });
+    body.querySelectorAll('[data-delete-address]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        deleteAddressById(btn.dataset.deleteAddress);
+        render();
+      });
+    });
+    body.querySelectorAll('[data-save-address]').forEach(btn => {
+      btn.addEventListener('click', () => onSave(btn.dataset.saveAddress, addresses));
+    });
+  }
+
+  async function onSave(idAttr) {
+    const entry = body.querySelector(`[data-address-id="${idAttr}"]`);
+    const label = entry.querySelector('[name="label"]').value;
+    const line1 = entry.querySelector('[name="line1"]').value.trim();
+    const line2 = entry.querySelector('[name="line2"]').value.trim();
+    const city = entry.querySelector('[name="city"]').value.trim();
+    const state = entry.querySelector('[name="state"]').value.trim();
+    const postalCode = entry.querySelector('[name="postalCode"]').value.trim();
+    const latitude = entry.querySelector('[name="latitude"]').value.trim();
+    const longitude = entry.querySelector('[name="longitude"]').value.trim();
 
     if (!line1) return showError(errorEl, 'Please enter the primary address line.');
     if (!city) return showError(errorEl, 'Please enter a city.');
@@ -231,14 +273,16 @@ function initAddressSection() {
     if (latitude && (Number(latitude) < -90 || Number(latitude) > 90)) return showError(errorEl, 'Latitude must be between -90 and 90.');
     if (longitude && (Number(longitude) < -180 || Number(longitude) > 180)) return showError(errorEl, 'Longitude must be between -180 and 180.');
 
-    const saveBtn = document.getElementById('addressSaveBtn');
+    const isNew = idAttr === 'new';
+    const saveBtn = body.querySelector(`[data-save-address="${idAttr}"]`);
     saveBtn.disabled = true;
     saveBtn.textContent = isNew ? 'Submitting…' : 'Saving…';
 
+    const existing = isNew ? {} : getAddressById(idAttr) || {};
     const payload = {
-      ...(address || {}),
+      ...existing,
       userId: (getCurrentUser() || {}).id,
-      line1, line2, city, state, postalCode,
+      label, line1, line2, city, state, postalCode,
       latitude: latitude ? Number(latitude) : null,
       longitude: longitude ? Number(longitude) : null,
     };
@@ -255,10 +299,12 @@ function initAddressSection() {
       return;
     }
 
-    address = result.address;
-    saveStoredAddress(address);
-    editing = false;
-    isNew = false;
+    if (isNew) {
+      addAddress(result.address);
+    } else {
+      updateAddressById(idAttr, result.address);
+    }
+    editingId = null;
     render();
   }
 

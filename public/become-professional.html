@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Checkout — Folks</title>
-<meta name="description" content="Review your scheduled services, choose a payment method, and confirm your Folks booking.">
+<title>Become a Professional — Folks</title>
+<meta name="description" content="Apply to become a verified Folks professional: confirm your identity, tell us your areas of expertise, and start earning.">
 <meta name="theme-color" content="#cb7651">
 
-<meta property="og:title" content="Checkout — Folks">
-<meta property="og:description" content="Review your scheduled services, choose a payment method, and confirm your Folks booking.">
+<meta property="og:title" content="Become a Professional — Folks">
+<meta property="og:description" content="Apply to become a verified Folks professional: confirm your identity, tell us your areas of expertise, and start earning.">
 <meta property="og:type" content="website">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -59,88 +59,131 @@
   <!-- ============ PAGE HERO ============ -->
   <section class="page-hero">
     <div class="section-inner">
-      <p class="breadcrumb"><a href="index.html">Home</a><span aria-hidden="true">/</span><a href="categories.html">Categories</a><span aria-hidden="true">/</span><span>Checkout</span></p>
-      <p class="eyebrow">Almost there</p>
-      <h1>Checkout</h1>
-      <p class="page-lede">Review your services and their scheduled slots, choose how you'd like to pay, and confirm your booking.</p>
+      <p class="breadcrumb"><a href="index.html">Home</a><span aria-hidden="true">/</span><span>Become a Professional</span></p>
+      <p class="eyebrow">Join Folks</p>
+      <h1>Become a Folks Professional</h1>
+      <p class="page-lede">Earn a steady, respected income doing work you're good at. Verify your identity, tell us where you specialize, and our team will review your application within 2–3 business days.</p>
     </div>
   </section>
 
   <!-- ============ LOGGED-OUT GATE ============ -->
-  <section class="section" id="checkoutGate" hidden>
+  <section class="section" id="proGate" hidden>
     <div class="section-inner section-inner-narrow">
       <div class="address-empty-state" style="background: var(--color-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-lg);">
         <span class="address-empty-icon" aria-hidden="true">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </span>
-        <p>You'll need to sign up or log in to check out.</p>
-        <button type="button" class="btn btn-primary btn-ripple" id="checkoutGateSignupBtn">Sign Up / Log In</button>
+        <p>You'll need a Folks account before applying as a professional.</p>
+        <button type="button" class="btn btn-primary btn-ripple" id="proGateSignupBtn">Sign Up / Log In</button>
       </div>
     </div>
   </section>
 
-  <!-- ============ EMPTY CART ============ -->
-  <section class="section" id="checkoutEmpty" hidden>
+  <!-- ============ ALREADY APPLIED ============ -->
+  <section class="section" id="proAlreadyApplied" hidden>
     <div class="section-inner section-inner-narrow">
-      <div class="address-empty-state" style="background: var(--color-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-lg);">
-        <span class="address-empty-icon" aria-hidden="true">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="20" r="1.5" fill="currentColor"/><circle cx="17" cy="20" r="1.5" fill="currentColor"/><path d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.8h7.7a2 2 0 0 0 2-1.6L21 8H6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="profile-card" style="text-align:center;">
+        <span class="address-empty-icon" style="margin: 0 auto var(--space-sm);" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>
         </span>
-        <p>Your cart is empty. Browse our categories to add a service.</p>
-        <a href="categories.html" class="btn btn-primary btn-ripple">Browse Services</a>
+        <h2>Application already submitted</h2>
+        <p style="color: var(--color-espresso); margin-bottom: var(--space-md);" id="proAlreadyAppliedMessage">Your professional application is being reviewed.</p>
+        <a href="profile.html" class="btn btn-primary btn-ripple">View My Profile</a>
       </div>
     </div>
   </section>
 
-  <!-- ============ CHECKOUT CONTENT ============ -->
-  <div id="checkoutContent" hidden>
-    <section class="section" style="padding-top: var(--space-md);">
-      <div class="section-inner">
-        <div class="checkout-layout">
+  <!-- ============ APPLICATION FORM ============ -->
+  <div id="proFormContent" hidden>
+    <section class="section" style="padding-bottom: var(--space-md);">
+      <div class="section-inner section-inner-narrow">
 
-          <div class="checkout-main">
-            <div class="profile-card">
-              <div class="profile-card-header"><h2>Order Summary</h2></div>
-              <div id="orderSummaryList"></div>
-            </div>
+        <div class="profile-card">
+          <div class="profile-card-header"><h2>Identity Verification</h2></div>
+          <p class="modal-hint" style="margin-bottom: var(--space-sm);">Used only to verify your identity before approval — never shown publicly.</p>
 
-            <div class="profile-card" style="margin-top: var(--space-md);">
-              <div class="profile-card-header"><h2>Payment Method</h2></div>
-              <div class="payment-method-list" id="paymentMethodList"></div>
-            </div>
+          <div class="profile-field" style="margin-bottom: var(--space-sm);">
+            <label class="profile-field-label" for="proAadhaar">Aadhaar number</label>
+            <input type="text" id="proAadhaar" inputmode="numeric" placeholder="XXXX XXXX XXXX" maxlength="14" autocomplete="off">
+            <p class="modal-error" id="proIdentityError" hidden></p>
           </div>
 
-          <aside class="checkout-side">
-            <div class="checkout-summary-card">
-              <h3>Total</h3>
-              <div class="checkout-summary-row">
-                <span>Subtotal</span>
-                <span id="checkoutSubtotal">₹0</span>
-              </div>
-              <div class="checkout-summary-row checkout-summary-total">
-                <span>Total Amount</span>
-                <span id="checkoutTotal">₹0</span>
-              </div>
-              <p class="modal-error" id="checkoutError" hidden></p>
-              <button type="button" class="btn btn-primary btn-ripple modal-submit" id="completeBookingBtn">Complete Booking</button>
-              <p class="form-note" style="text-align:center;">By confirming, you agree to our <a href="terms.html">Terms of Service</a>.</p>
+          <div class="profile-fields-grid">
+            <div class="profile-field">
+              <label class="profile-field-label" for="proNameOnId">Full name (as per Aadhaar)</label>
+              <input type="text" id="proNameOnId" placeholder="As printed on your ID" autocomplete="off">
             </div>
-          </aside>
-
+            <div class="profile-field">
+              <label class="profile-field-label" for="proPan">PAN number <span style="text-transform:none; letter-spacing:0;">(optional)</span></label>
+              <input type="text" id="proPan" placeholder="ABCDE1234F" maxlength="10" autocomplete="off" style="text-transform:uppercase;">
+            </div>
+          </div>
         </div>
+
+        <div class="profile-card" style="margin-top: var(--space-md);">
+          <div class="profile-card-header">
+            <h2>Current Address</h2>
+            <div class="profile-card-actions">
+              <button type="button" class="link-btn" id="proUseSavedAddressBtn" hidden>Use my saved address</button>
+            </div>
+          </div>
+          <p class="modal-hint" style="margin-bottom: var(--space-sm);">Where you're currently based for work — this can be different from the address on your Aadhaar card, e.g. if you've relocated for work.</p>
+          <div class="profile-fields-grid">
+            <div class="profile-field" style="grid-column: 1 / -1;">
+              <label class="profile-field-label" for="proAddressLine">Current address line</label>
+              <input type="text" id="proAddressLine" placeholder="House / flat no., street, building">
+            </div>
+            <div class="profile-field">
+              <label class="profile-field-label" for="proLocality">Locality / area</label>
+              <input type="text" id="proLocality" placeholder="e.g. Indiranagar">
+            </div>
+            <div class="profile-field">
+              <label class="profile-field-label" for="proCity">City</label>
+              <input type="text" id="proCity" placeholder="e.g. Bengaluru">
+            </div>
+            <div class="profile-field">
+              <label class="profile-field-label" for="proPincode">Pincode</label>
+              <input type="text" id="proPincode" inputmode="numeric" maxlength="6" placeholder="e.g. 560038">
+            </div>
+          </div>
+          <p class="modal-error" id="proAddressError" hidden></p>
+        </div>
+
+        <div class="profile-card" style="margin-top: var(--space-md);">
+          <div class="profile-card-header"><h2>Professional Details</h2></div>
+          <div class="profile-field">
+            <label class="profile-field-label" for="proExperience">Years of experience</label>
+            <input type="number" id="proExperience" min="0" max="50" placeholder="e.g. 3" style="max-width: 220px;">
+          </div>
+
+          <p class="profile-field-label" style="margin-top: var(--space-md); margin-bottom: 0.5rem;">Areas of expertise</p>
+          <p class="modal-hint" style="margin-bottom: var(--space-sm);">Select every service you're able to take bookings for.</p>
+          <div id="proExpertiseGroups"></div>
+          <p class="modal-error" id="proExpertiseError" hidden></p>
+        </div>
+
+        <div class="profile-card" style="margin-top: var(--space-md);">
+          <label class="pro-declaration">
+            <input type="checkbox" id="proDeclaration">
+            <span>I confirm the information provided is accurate and I consent to Folks verifying my identity and background before approval.</span>
+          </label>
+          <p class="modal-error" id="proDeclarationError" hidden></p>
+          <button type="button" class="btn btn-primary btn-ripple modal-submit" id="proSubmitBtn" style="margin-top: var(--space-sm);">Submit Application</button>
+        </div>
+
       </div>
     </section>
   </div>
 
-  <!-- ============ BOOKING SUCCESS ============ -->
-  <section class="section" id="checkoutSuccess" hidden>
+  <!-- ============ SUCCESS ============ -->
+  <section class="section" id="proSuccess" hidden>
     <div class="section-inner section-inner-narrow">
       <div class="profile-card" style="text-align:center;">
         <div class="modal-success-icon" style="margin: 0 auto var(--space-md);" aria-hidden="true">&check;</div>
-        <h2>Booking confirmed!</h2>
-        <p id="bookingConfirmMessage" style="color:var(--color-espresso); margin-bottom: 0.5rem;"></p>
-        <p class="form-note" style="margin-bottom: var(--space-md);">Booking ID: <strong id="bookingConfirmId">—</strong></p>
-        <a href="index.html" class="btn btn-primary btn-ripple">Back to Home</a>
+        <h2>Application submitted!</h2>
+        <p style="color: var(--color-espresso); margin-bottom: 0.5rem;">We're reviewing your details and will notify you within 2–3 business days.</p>
+        <p class="form-note" style="margin-bottom: var(--space-md);">Application ID: <strong id="proApplicationId">—</strong></p>
+        <a href="profile.html" class="btn btn-primary btn-ripple">View My Profile</a>
       </div>
     </div>
   </section>
@@ -219,7 +262,7 @@
 
 <script src="api.js"></script>
 <script src="script.js"></script>
-<script src="scheduling.js"></script>
-<script src="checkout.js"></script>
+<script src="categories-data.js"></script>
+<script src="become-professional.js"></script>
 </body>
 </html>
