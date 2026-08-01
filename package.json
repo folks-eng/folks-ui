@@ -4,13 +4,18 @@
   "description": "Folks home-services marketplace — Node.js backend (no framework, no database) serving the existing frontend as static files and the REST API from JSON files on disk.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node --env-file=.env server.js",
+    "dev": "node --watch --env-file=.env server.js"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "axios": "^1.18.1",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^6.10.0",
     "redis": "^6.1.0"
   },
   "license": "UNLICENSED",

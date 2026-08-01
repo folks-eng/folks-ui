@@ -97,6 +97,32 @@ disk.
 
 **The flow:**
 
+1. Request for Otp:
+
+```
+curl -i -X POST -H "Content-Type:application/json" -d '{"mobile" : 9911223344}' http://localhost:3000/api/v1/otp/dispatch
+```
+
+Tasks:
+* The server will will generate a 4 digit otp.
+* Store the otp along with other attributes in the redis cache. TTL: 5m. The object with the following attributes will be stored.
+```
+{
+    mobile: mobile,
+    otp: otp,
+    ttl: TTL,
+    jti: crypto.randomUUID(),
+    createdAt: new Date().getTime()
+}
+```
+* The server will will then generate a temporary jwt token (validity: 5m) and set it in the response cookie.
+
+2. Verify the Otp:
+
+```
+curl -i -b "_fks_t=token" -H "Content-Type:application/json" -d '{"mobile":9911223344, "otp":3461}' http://localhost:3000/api/v1/otp/verify
+```
+
 1. `POST /api/v1/otp/verify` succeeds → the server signs a JWT
    (`{ userId, mobile, name, iat, exp }`, RS256, 7-day expiry) with the
    private key and sets it as an **httpOnly** cookie (`folks_token`).

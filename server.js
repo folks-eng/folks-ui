@@ -1,33 +1,64 @@
-/* =========================================================================
-   server.js
-   Entry point. Plain Node.js (no Express, no npm dependencies at all) —
-   run with `node server.js` or `npm start`, nothing to install first.
-
-   Routes any /api/* request to the API router (src/apiRouter.js) and
-   everything else to the static file server (src/staticServer.js), which
-   serves the existing frontend out of /public unchanged.
-   ========================================================================= */
-
-const http = require('http');
+const express = require('express');
 const url = require('url');
+const path = require('path');
+const cookieParser = require('cookie-parser');
 
-const { handleApiRequest } = require('./src/apiRouter');
+const { getLogger } = require('./src/util/logger');
+const keyStore = require('./src/auth/keystore');
+const redisClient = require('./src/util/redis_client');
+
 const { serveStatic } = require('./src/staticServer');
+const { authenticate } = require('./src/auth/auth');
 
-const PORT = process.env.PORT || 3000;
+const signup = require('./src/routes/signup');
+const accessLog = require('./src/util/access_logger');
 
-const server = http.createServer((req, res) => {
-  const parsedUrl = url.parse(req.url, true);
+const regRoute = require('./src/routes/registration');
 
-  if (parsedUrl.pathname.startsWith('/api/')) {
-    handleApiRequest(req, res, parsedUrl);
-  } else {
-    serveStatic(req, res, parsedUrl);
-  }
-});
+const app = express();
 
-server.listen(PORT, () => {
-  console.log(`\n  Folks server running at http://localhost:${PORT}\n`);
-  console.log('  Frontend served from /public');
-  console.log('  API data files served/persisted from src/data/*\n');
-});
+const port = process.env.PORT || 3000;
+const basePath = process.env.BASE_PATH || '/api/v1';
+
+const log = getLogger(__filename);
+
+function setup() {
+    if (log.isInfoEnabled()) {
+        log.info("Starting up folks node server");
+    }
+    // Middleware to parse JSON request bodies
+    app.use(express.json());
+
+    // Middleware to parse URL-encoded request bodies
+    app.use(express.urlencoded({ extended: true }));
+    
+    // Middleware to parse cookie
+    app.use(cookieParser());
+    
+    app.use(basePath, accessLog);
+    
+    // Everything below this requires authentication
+    app.use(basePath, authenticate);
+    
+    app.use(basePath + '/signup', signup);
+    app.use(basePath + '/registration', regRoute);
+
+    // Middleware to serve static files from a directory
+    app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+}
+
+async function start() {
+    setup();
+    keyStore.init();
+    
+    await redisClient.init();
+    
+    app.listen(port, () => {
+        if (log.isInfoEnabled()) {
+            log.info(`Started folks node server. Listening to: ${port}`);
+        }
+    });
+
+}
+
+start();
