@@ -3,13 +3,15 @@ const path = require('path');
 const util = require('util');
 
 const LOG_LEVELS = {
-    debug: 0,
-    info: 1,
-    warn: 2,
-    error: 3
+    trace: 0,
+    debug: 1,
+    info: 2,
+    warn: 3,
+    error: 4
 };
 
 const COLORS = {
+    trace: '\x1b[36m',      // Cyan
     debug: '\x1b[36m',      // Cyan
     // info: '\x1b[32m',    // Green
     info: '\x1b[39m',       // Black
@@ -54,6 +56,10 @@ class Logger {
         return LOG_LEVELS[level] >= currentLevel;
     }
 
+    isTraceEnabled() {
+        return this.isEnabled('trace');
+    }
+
     isDebugEnabled() {
         return this.isEnabled('debug');
     }
@@ -87,6 +93,10 @@ class Logger {
         if (Logger.logToFile) {
             Logger.logStream.write(stmt + '\n');
         }
+    }
+    
+    trace(...args) {
+        this.log('trace', ...args);
     }
     
     debug(...args) {

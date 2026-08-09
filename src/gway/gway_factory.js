@@ -7,7 +7,7 @@ class GatewayFactory {
         const gatewayType = (type || '').toLowerCase();
 
         switch (gatewayType) {
-            case 'sms':
+            case 'mobile':
                 return sms;
             case 'email':
                 return email;

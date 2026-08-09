@@ -42,24 +42,23 @@ class RedisClient {
             log.error('Error while connecting to redis', err);
         });
 
-        this.client.connect()
-            .then(() => {
-                this.initialized = true;
-            })
-            .finally(() => {
-                // Do nothing
-            });
+        await this.client.connect();
+        this.initialized = true;
     }
 
-    async setValue(key, val, ttl) {
-        if (ttl) {
-            return this.client.set(key, val, {EX: ttl});
+    async setValue(key, val, ttlMin) {
+        if (ttlMin) {
+            return this.client.set(key, val, {EX: ttlMin * 60});
         }
         return this.client.set(key, val);
     }
 
     async getValue(key) {
         return this.client.get(key);
+    }
+
+    async remove(key) {
+        return this.client.del(key);
     }
 }
 

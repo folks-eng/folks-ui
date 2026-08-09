@@ -24,7 +24,7 @@ function login(req, res) {
         log.debug(`Obtained gateway ${gway.constructor.name} for input ${input}`);
     }
     
-    const paramName = type === 'sms' ? 'phone1' : 'email';
+    const paramName = type === 'mobile' ? 'phone1' : 'email';
     
     // Query the backend server to see if the user as identified by the input (mobile number or email address) already exists.
     let uri = '/users';

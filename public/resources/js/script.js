@@ -492,8 +492,7 @@ function initSignupFlow() {
 
         // make the REST API call
         const result = await FolksAPI.requestOtp(mobile);
-        alert(JSON.stringify(result));
-
+        
         if (! result.success) {
             goTo(screens.mobile, 'back');
             showError('mobileError', result.message || 'Could not send OTP. Please try again.');
@@ -649,7 +648,6 @@ function initSignupFlow() {
                 fullName: name,
                 email: email
             });
-            
             document.getElementById('successMessage').textContent =
                     `You're all set to browse services, ${result.fullName.split(' ')[0]}.`;
             setStepDots(0);
@@ -659,7 +657,7 @@ function initSignupFlow() {
         }
         catch (err) {
             goTo(screens.profile, 'back');
-            showError('profileError', result.message || 'Could not complete registration. Please try again.');
+            showError('profileError', err || 'Could not complete registration. Please try again.');
         }
     });
 }
@@ -774,6 +772,8 @@ function initLoginFlow() {
     // Event delegation so this keeps working even if #loginBtn is destroyed
     // and recreated later (e.g. after logout rebuilds nav-actions).
     document.addEventListener('click', (e) => {
+        alert(0);
+        alert(e.target);
         const trigger = e.target.closest('#loginBtn');
         if (trigger) {
             e.preventDefault();
@@ -846,7 +846,7 @@ function initLoginFlow() {
 
         const result = await FolksAPI.requestOtp(mobile);
 
-        if (!result.success) {
+        if (! result.success) {
             goTo(screens.mobile, 'back');
             showError('loginMobileError', result.message || 'Could not send OTP. Please try again.');
             return;

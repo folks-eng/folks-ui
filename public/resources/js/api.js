@@ -37,20 +37,23 @@ const FolksAPI = (function () {
         }
 
         try {
-            const res = await fetch('/api/v1/signup/otp/dispatch', {
+            let uri = '/api/v1/signup/otp/dispatch';
+            
+            const res = await fetch(uri, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
-            if (!res.ok) {
+            if (! res.ok) {
                 throw new Error(`OTP request failed with status ${res.status}`);
             }
             return await res.json();
         }
         catch (err) {
-            alert('Error occurred -> ' + err);
+            alert('RequestOtp Error -> ' + err);
             console.warn('[Folks] /api/v1/signup/otp/dispatch unreachable, falling back to demo mode.', err);
-            return simulateOtpRequest(payload);
+            return {success: false};
+            // return simulateOtpRequest(payload);
         }
     }
 
@@ -76,13 +79,13 @@ const FolksAPI = (function () {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
-            if (!res.ok) {
-                throw new Error(`OTP verify failed with status ${res.status}`);
+            if (! res.ok) {
+                throw new Error(`OTP verification failed with status ${res.status}`);
             }
             return await res.json();
         }
         catch (err) {
-            alert('Error occurred -> ' + err);
+            alert('VerifyOtp Error -> ' + err);
             console.warn('[Folks] /api/v1/otp/verify unreachable, falling back to demo mode.', err);
             return simulateOtpVerify(payload);
         }
@@ -105,13 +108,14 @@ const FolksAPI = (function () {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
+            console.log('User creation is complete. Status: ' + res.status);
             if (! res.ok) {
                 throw new Error(`User creation failed with status ${res.status}`);
             }
             return await res.json();
         }
         catch (err) {
-            alert('Error occurred -> ' + err);
+            alert('CreateUser Error -> ' + err);
             console.warn('[Folks] /api/v1/registration unreachable, falling back to demo mode.', err);
             throw err;
         }
@@ -137,7 +141,8 @@ const FolksAPI = (function () {
             if (!res.ok)
                 throw new Error(`User update failed with status ${res.status}`);
             return await res.json();
-        } catch (err) {
+        }
+        catch (err) {
             console.warn('[Folks] PUT /api/v1/users unreachable, falling back to demo mode.', err);
             return simulateUpdateUser(payload);
         }

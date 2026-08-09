@@ -1,4 +1,8 @@
 const axios = require('axios');
+const https = require('https');
+const fs = require('fs');
+
+const errorHandler = require('./error');
 const {getLogger} = require('./logger');
 
 const log = getLogger(__filename);
@@ -8,14 +12,24 @@ class HttpClient {
     constructor() {
         this.server = process.env.FOLKS_SERVER || 'http://localhost:8080';
         this.contextRoot = process.env.FOLKS_CONTEXT_ROOT || '/api/v1';
+        
+        const httpsAgent = new https.Agent({
+            key: fs.readFileSync(process.env.MTLS_CLIENT_KEY_PATH),
+            cert: fs.readFileSync(process.env.MTLS_CLIENT_CERT_PATH),
+            ca: fs.readFileSync(process.env.MTLS_CA_CERT_PATH),
+            
+            rejectUnauthorized: true,
+            servername: process.env.MTLS_SERVER_NAME || 'localhost',
+            minVersion: 'TLSv1.2'
+        });
 
         // Create a custom configured instance.
         this.client = axios.create({
             baseURL: this.server,
             timeout: 5000,
+            httpsAgent,
             headers: {
                 'Content-Type': 'application/json'
-                // 'Accept': 'application/json'
             }
         });
 
@@ -23,7 +37,14 @@ class HttpClient {
             let dump = '\n============================ REQUEST ============================' + '\n';
             dump += config.method.toUpperCase() + ' ' + (config.baseURL + config.url) + '\n';
             dump += config.headers + '\n';
-            dump += (typeof config.data === 'string' ? config.data : JSON.stringify(config.data, null, 2)) + '\n';
+            
+            if (config.data instanceof URLSearchParams) {
+                dump += 'Body (string): ' + config.data.toString() + '\n';
+                dump += 'Body (entries): ' + Object.fromEntries(config.data) + '\n';
+            }
+            else {
+                dump += (typeof config.data === 'string' ? config.data : JSON.stringify(config.data, null, 2)) + '\n';
+            }
             dump += '=================================================================' + '\n';
 
             if (log.isDebugEnabled()) {
@@ -50,7 +71,29 @@ class HttpClient {
         }
     }
 
-    post(req, res, uri, payload, config, onSuccess) {
+    _buildUrl(uri) {
+        if (/^https?:\/\//i.test(uri)) {
+            return uri;
+        }
+        return this.contextRoot + uri;
+    }
+
+    async post(uri, payload, config = {}) {
+        const url = this._buildUrl(uri);
+        return await this.client.post(
+                url
+                , payload
+                , config);
+    }
+
+    async get(uri, config = {}) {
+        const url = this._buildUrl(uri);
+        return await this.client.get(
+                url
+                , config);
+    }
+
+    legacyPost(req, res, uri, payload, config, onSuccess) {
         let promise = this.client.post(
             this.contextRoot + uri,
                 payload,
@@ -60,11 +103,11 @@ class HttpClient {
             onSuccess(response);
             
         }).catch(err => {
-            handleError(res, err);
+            errorHandler.handleError(res, err, true);
         });
     }
 
-    get(req, res, uri, config, onSuccess) {
+    legacyGet(req, res, uri, config, onSuccess) {
         let promise = this.client.get(
             this.contextRoot + uri,
                 config);
@@ -73,35 +116,8 @@ class HttpClient {
             onSuccess(response);
             
         }).catch(err => {
-            handleError(res, err);
+            errorHandler.handleError(res, err, true);
         });
-    }
-    
-    handleError(res, err) {
-        let status = -1;
-        let msg = null;
-
-        if (err.response) {
-            // Received invalid response.
-            log.error(`Received http status: ${err.response.status} and message: ${err.response.data} from server.`);
-
-            status = err.response.status;
-            msg = err.response.data;
-        }
-        else if (err.request) {
-            // The request was made but no response was received (e.g., Network Down, Timeout)
-            log.error('No response received from server. Network issue.');
-            status = 504;
-        }
-        else {
-            // Something happened in setting up the request that triggered an Error
-            log.error('Http client setup error:', err);
-            status = 500;
-            msg = err.message;
-        }
-        res.status(status)
-                .set('Accept', 'application/json')
-                .send(msg);
     }
 }
 

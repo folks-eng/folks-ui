@@ -66,6 +66,24 @@ class JwtUtil {
             return null;
         }
     }
+    
+    static getExpiryInMs(jwt) {
+        try {
+            const parts = jwt.split('.');
+            if (parts.length !== 3) {
+                return 0;
+            }
+            const payload = JSON.parse(base64UrlDecode(parts[1]));
+            
+            if (! payload.exp) {
+                return 0;
+            }
+            return payload.exp * 1000;
+        }
+        catch {
+            return 0;
+        }
+    }
 }
 
 module.exports = JwtUtil;

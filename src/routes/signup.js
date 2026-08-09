@@ -13,7 +13,7 @@ const log = getLogger(__filename);
 
 function signUp(req, res) {
     // This method will be called when user provides the mobile number and request for otp.
-    let validity = 5;      // 5 min
+    let validityMin = process.env.SIGN_UP_OTP_EXP_MIN || 5;      // 5 min
     
     const input = String(req.body.input);
     const type = Utility.getIdentityType(input);
@@ -24,12 +24,18 @@ function signUp(req, res) {
     }
 
     // First check if the otp has already been generated and stored in cache.
+    if (log.isTraceEnabled()) {
+        log.trace(`Calling redis server to fetch any existing otp details against ${type} ${input}`);
+    }
     let promise = redisClient.getValue(input);
     
     promise.then(data => {
         if (data === null) {
-            let val = OtpGen.generate(input, 'signup', validity * 60);
-            let promise = redisClient.setValue(input, JSON.stringify(val), validity * 60);
+            if (log.isTraceEnabled()) {
+                log.trace(`No otp details found for ${type} ${input} in redis. Generating new otp ...`);
+            }
+            let val = OtpGen.generate(input, 'signup', validityMin);
+            let promise = redisClient.setValue(input, JSON.stringify(val), validityMin);
             
             promise.then(data => {
                 if (log.isDebugEnabled()) {
@@ -117,43 +123,40 @@ function generateCookie(val) {
     return JwtUtil.sign(payload, String(val.ttl / 60) + 'm');
 }
 
-function verify(req, res) {
-    let input = String(req.body.input);
-    let otp = Number(req.body.otp);
-    
-    // First check if the otp has already been generated and stored in cache.
-    let promise = redisClient.getValue(input);
-    
-    promise.then(data => {
+async function verify(req, res) {
+    try {
+        const input = String(req.body.input);
+        const otp = Number(req.body.otp);
+        
+        const data = await redisClient.getValue(input);
         if (data === null) {
             log.warn(`No otp found in store against ${input}`);
-            res.status(401)
-                    .set('Accept', 'application/json')
-                    .send({message: 'UnAuthorized. Try generating the otp again'});
+            return res.status(401)
+                    .json({ message: 'Unauthorized. Try generating the otp again' });
         }
-        else {
-            let val = JSON.parse(data);
-            if (otp === val.otp) {
-                if (log.isDebugEnabled()) {
-                    log.debug(`Successfully verified otp ${otp} against ${input}`);
-                }
-                res.status(200)
-                        .set('Accept', 'application/json')
-                        .send({success: true, message: 'Otp verified successfully'});
+        const val = JSON.parse(data);
+        if (otp === val.otp) {
+            if (log.isDebugEnabled()) {
+                log.debug(`Successfully verified otp ${otp} against ${input}`);
             }
-            else {
-                log.error(`Supplied otp ${otp} does not match with stored otp ${val.otp}`);
-                res.status(401)
-                        .set('Accept', 'application/json')
-                        .send({message: 'UnAuthorized. Invalid otp'});
+
+            await redisClient.remove(input);
+            if (log.isDebugEnabled()) {
+                log.debug(`Removed otp details from redis for ${input}`);
             }
+
+            return res.status(200)
+                    .json({success: true, message: 'Otp verified successfully'});
         }
-    }).catch (err => {
+        log.error(`Supplied otp ${otp} does not match with stored otp ${val.otp}`);
+        return res.status(401)
+                .json({message: 'Unauthorized. Invalid otp'});
+    }
+    catch (err) {
         log.error(`Error reconciling otp from redis cache for ${input}.`, err);
-        res.status(500)
-                .set('Accept', 'application/json')
-                .send({message: err.message});
-    });
+        return res.status(500)
+                .json({message: err.message});
+    }
 }
 
 route.post('/otp/dispatch', signUp);

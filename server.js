@@ -1,3 +1,5 @@
+const fs = require('node:fs');
+const https = require('node:https');
 const express = require('express');
 const url = require('url');
 const path = require('path');
@@ -14,6 +16,7 @@ const signup = require('./src/routes/signup');
 const accessLog = require('./src/util/access_logger');
 
 const regRoute = require('./src/routes/registration');
+const loginRoute = require('./src/routes/login');
 
 const app = express();
 
@@ -42,6 +45,7 @@ function setup() {
     
     app.use(basePath + '/signup', signup);
     app.use(basePath + '/registration', regRoute);
+    app.use(basePath + '/login', loginRoute);
 
     // Middleware to serve static files from a directory
     app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
@@ -53,11 +57,20 @@ async function start() {
     
     await redisClient.init();
     
-    app.listen(port, () => {
-        if (log.isInfoEnabled()) {
-            log.info(`Started folks node server. Listening to: ${port}`);
-        }
+    const httpsOptions = {
+        key: fs.readFileSync('./cert/node-ext.key'),
+        cert: fs.readFileSync('./cert/node-ext.crt')
+    };
+    
+    https.createServer(httpsOptions, app).listen(8443, () => {
+        log.info(`Started folks node server. Listening to: ${port}`);
     });
+    
+    // app.listen(port, () => {
+    //     if (log.isInfoEnabled()) {
+    //         log.info(`Started folks node server. Listening to: ${port}`);
+    //     }
+    // });
 
 }
 
