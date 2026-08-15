@@ -19,6 +19,7 @@
 
 const FolksAPI = (function () {
     const DEMO_MODE = false;
+    const BASE_URL = '/gateway/v1';
 
     /**
      * POST /api/v1/signup/otp/dispatch
@@ -26,33 +27,35 @@ const FolksAPI = (function () {
      * Triggers OTP generation + delivery to the customer's mobile device.
      * @returns {Promise<{success: boolean, message?: string, demoOtp?: string}>}
      */
-    async function requestOtp(mobile) {
+    async function requestOtp(op, mobile) {
         const payload = {
+            op: op,
             input: mobile
         };
-        // alert(JSON.stringify(payload));
-        
+
         if (DEMO_MODE) {
             return simulateOtpRequest(payload);
         }
 
         try {
-            let uri = '/api/v1/signup/otp/dispatch';
-            
-            const res = await fetch(uri, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            if (! res.ok) {
-                throw new Error(`OTP request failed with status ${res.status}`);
+            const res = await fetch(
+                    BASE_URL + '/' + op + '/otp/request',
+                    {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return json;
+            } else {
+                return {success: false, message: json.message};
             }
-            return await res.json();
-        }
-        catch (err) {
-            alert('RequestOtp Error -> ' + err);
-            console.warn('[Folks] /api/v1/signup/otp/dispatch unreachable, falling back to demo mode.', err);
-            return {success: false};
+        } catch (e) {
+            console.error(e.message, e);
+            return {success: false, message: e.message};
+
             // return simulateOtpRequest(payload);
         }
     }
@@ -62,32 +65,72 @@ const FolksAPI = (function () {
      * Payload: { mobile: string, otp: string }
      * @returns {Promise<{success: boolean, message?: string, token?: string}>}
      */
-    async function verifyOtp(mobile, otp) {
+    async function verifyOtp(op, mobile, otp) {
         const payload = {
+            op: op,
             input: mobile,
             otp: otp
         };
-        // alert(JSON.stringify(payload));
 
         if (DEMO_MODE) {
             return simulateOtpVerify(payload);
         }
 
         try {
-            const res = await fetch('/api/v1/signup/otp/verify', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            if (! res.ok) {
-                throw new Error(`OTP verification failed with status ${res.status}`);
+            const res = await fetch(
+                    BASE_URL + '/' + op + '/otp/verify',
+                    {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                if (op === 'signup') {
+                    return json;
+                } else {
+                    // Post successful login, the response object will have the user details. 
+                    return {success: true, result: json};
+                }
+            } else if (res.status === 401) {
+                return {success: false, message: 'You are not authorized. Please wait for 5 minutes and start the flow again'};
+            } else if (res.status === 404) {
+                return {success: false, code: 404, message: json.message};
+            } else {
+                return {success: false, message: json.message};
             }
-            return await res.json();
+        } catch (e) {
+            console.error(e.message, e);
+            return {success: false, message: e.message};
+
+            // return simulateOtpVerify(payload);
         }
-        catch (err) {
-            alert('VerifyOtp Error -> ' + err);
-            console.warn('[Folks] /api/v1/otp/verify unreachable, falling back to demo mode.', err);
-            return simulateOtpVerify(payload);
+    }
+
+    /**
+     * POST /api/v1/logout
+     * Payload: { mobile: string, name: string, email: string }
+     * @returns {Promise<{success: boolean, message?: string, user?: object}>}
+     */
+    async function logout() {
+        try {
+            const res = await fetch(
+                    BASE_URL + '/logout',
+                    {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        credentials: 'include'
+                    }
+            );
+            if (res.status === 204) {
+                return {success: true};
+            } else {
+                return {success: false, message: res.message};
+            }
+        } catch (e) {
+            console.error(e.message, e);
+            return {success: false, message: e.message};
         }
     }
 
@@ -100,24 +143,27 @@ const FolksAPI = (function () {
         if (DEMO_MODE) {
             return simulateCreateUser(payload);
         }
-        // alert(JSON.stringify(payload));
 
         try {
-            const res = await fetch('/api/v1/registration', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            console.log('User creation is complete. Status: ' + res.status);
-            if (! res.ok) {
-                throw new Error(`User creation failed with status ${res.status}`);
+            const res = await fetch(
+                    BASE_URL + '/users',
+                    {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    }
+            );
+            let json = await res.json();
+            if (res.status === 201) {
+                return {success: true, result: json};
             }
-            return await res.json();
+            else {
+                return {success: false, message: json.message};
+            }
         }
-        catch (err) {
-            alert('CreateUser Error -> ' + err);
-            console.warn('[Folks] /api/v1/registration unreachable, falling back to demo mode.', err);
-            throw err;
+        catch (e) {
+            console.error(e.message, e);
+            return {success: false, message: e.message};
         }
     }
 
@@ -126,25 +172,56 @@ const FolksAPI = (function () {
      * Payload: full user object, including id, with updated field values.
      * @returns {Promise<{success: boolean, message?: string, user?: object}>}
      */
-    async function updateUser(payload) {
+    async function updateUser(id, payload) {
         if (DEMO_MODE) {
             return simulateUpdateUser(payload);
         }
 
         try {
-            const res = await fetch('/api/v1/users', {
-                method: 'PUT',
-                credentials: 'include',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok)
-                throw new Error(`User update failed with status ${res.status}`);
-            return await res.json();
+            const res = await fetch(
+                BASE_URL + '/users/' + id,
+                {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
         }
-        catch (err) {
-            console.warn('[Folks] PUT /api/v1/users unreachable, falling back to demo mode.', err);
-            return simulateUpdateUser(payload);
+        catch (e) {
+            console.error(e.message, e);
+            return {'success': false, 'message': e.message};
+
+            // return simulateUpdateUser(payload);
+        }
+    }
+
+    async function viewUser(id) {
+        try {
+            const res = await fetch(
+                BASE_URL + '/users/' + id,
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch profile:', e);
+            return {'success': false, 'message': e.message};
         }
     }
 
@@ -159,18 +236,29 @@ const FolksAPI = (function () {
         }
 
         try {
-            const res = await fetch('/api/v1/addresses', {
-                method: 'POST',
-                credentials: 'include',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok)
-                throw new Error(`Address creation failed with status ${res.status}`);
-            return await res.json();
-        } catch (err) {
-            console.warn('[Folks] /api/v1/addresses unreachable, falling back to demo mode.', err);
-            return simulateCreateAddress(payload);
+            alert(JSON.stringify(payload));
+
+            const res = await fetch(
+                BASE_URL + '/addresses',
+                {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                }
+            );
+            let json = await res.json();
+            if (res.status === 201) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error(e.message, e);
+            return {'success': false, 'message': e.message};
+
+            // return simulateCreateAddress(payload);
         }
     }
 
@@ -179,24 +267,79 @@ const FolksAPI = (function () {
      * Payload: full address object, including id, with updated field values.
      * @returns {Promise<{success: boolean, message?: string, address?: object}>}
      */
-    async function updateAddress(payload) {
+    async function updateAddress(id, payload) {
         if (DEMO_MODE) {
             return simulateUpdateAddress(payload);
         }
 
         try {
-            const res = await fetch('/api/v1/addresses', {
-                method: 'PUT',
-                credentials: 'include',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok)
-                throw new Error(`Address update failed with status ${res.status}`);
-            return await res.json();
-        } catch (err) {
-            console.warn('[Folks] PUT /api/v1/addresses unreachable, falling back to demo mode.', err);
-            return simulateUpdateAddress(payload);
+            const res = await fetch(
+                BASE_URL + '/addresses/' + id,
+                {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error(e.message, e);
+            return {'success': false, 'message': e.message};
+
+            // return simulateUpdateAddress(payload);
+        }
+    }
+
+    async function viewAddresses() {
+        try {
+            const res = await fetch(
+                BASE_URL + '/addresses',
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch all addresses:', e);
+            return {'success': false, 'message': e.message};
+        }
+    }
+
+    async function deleteAddress(id) {
+        try {
+            const res = await fetch(
+                BASE_URL + '/addresses/' + id,
+                {
+                    method: 'DELETE',
+                    credentials: 'include'
+                }
+            );
+            if (res.status === 204) {
+                return {success: true};
+            }
+            else {
+                let json = await res.json();
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch all addresses:', e);
+            return {'success': false, 'message': e.message};
         }
     }
 
@@ -215,25 +358,29 @@ const FolksAPI = (function () {
         }
 
         try {
-            const res = await fetch('/api/v1/bookings', {
+            let uri = BASE_URL + '/bookings';
+
+            const res = await fetch(uri, {
                 method: 'POST',
-                credentials: 'include',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload),
+                body: JSON.stringify(payload)
             });
-            if (!res.ok)
-                throw new Error(`Booking creation failed with status ${res.status}`);
-            return await res.json();
-        } catch (err) {
-            console.warn('[Folks] /api/v1/bookings unreachable, falling back to demo mode.', err);
+            if (res.status === 201) {
+                return await res.json();
+            }
+            throw new Error(`Booking creation request to url ${uri} has failed. Status: ${res.status}. Error Msg: ${res.message}`);
+        } catch (e) {
+            console.error(e.message, e);
+            return {'success': false, 'message': e.message};
+
             // The demo simulator has no server-side session to read a customer
             // from, so — only on this client-side-only fallback path — attach
             // whoever script.js currently considers logged in.
-            const demoPayload = {
-                ...payload,
-                customer: (typeof getCurrentUser === 'function' && getCurrentUser()) || null,
-            };
-            return simulateCreateBooking(demoPayload);
+            // const demoPayload = {
+            //     ...payload,
+            //     customer: (typeof getCurrentUser === 'function' && getCurrentUser()) || null,
+            // };
+            // return simulateCreateBooking(demoPayload);
         }
     }
 
@@ -251,17 +398,21 @@ const FolksAPI = (function () {
         }
 
         try {
-            const res = await fetch('/api/v1/bookings', {
+            let uri = BASE_URL + '/bookings';
+
+            const res = await fetch(uri, {
                 method: 'GET',
-                headers: {'Content-Type': 'application/json'},
-                credentials: 'include',
+                headers: {'Content-Type': 'application/json'}
             });
-            if (!res.ok)
-                throw new Error(`Fetching bookings failed with status ${res.status}`);
-            return await res.json();
-        } catch (err) {
-            console.warn('[Folks] GET /api/v1/bookings unreachable, falling back to demo mode.', err);
-            return simulateGetBookings(userId);
+            if (res.status === 201) {
+                return await res.json();
+            }
+            throw new Error(`Booking view request to url ${uri} has failed. Status: ${res.status}. Error Msg: ${res.message}`);
+        } catch (e) {
+            console.error(e.message, e);
+            return {'success': false, 'message': e.message};
+
+            // return simulateGetBookings(userId);
         }
     }
 
@@ -276,18 +427,23 @@ const FolksAPI = (function () {
         }
 
         try {
-            const res = await fetch(`/api/v1/bookings/${encodeURIComponent(bookingId)}`, {
+            let uri = BASE_URL + '/bookings/' + encodeURIComponent(bookingId);
+
+            const res = await fetch(uri, {
                 method: 'PUT',
                 headers: {'Content-Type': 'application/json'},
                 credentials: 'include',
-                body: JSON.stringify({status: 'cancelled'}),
+                body: JSON.stringify({status: 'CANCELLED'})
             });
-            if (!res.ok)
-                throw new Error(`Booking cancellation failed with status ${res.status}`);
-            return await res.json();
-        } catch (err) {
-            console.warn(`[Folks] PUT /api/v1/bookings/${bookingId} unreachable, falling back to demo mode.`, err);
-            return simulateCancelBooking(bookingId);
+            if (res.status === 201) {
+                return await res.json();
+            }
+            throw new Error(`Booking cancellation request to url ${uri} has failed. Status: ${res.status}. Error Msg: ${res.message}`);
+        } catch (e) {
+            console.error(e.message, e);
+            return {'success': false, 'message': e.message};
+
+            // return simulateCancelBooking(bookingId);
         }
     }
 
@@ -443,10 +599,14 @@ const FolksAPI = (function () {
         DEMO_MODE,
         requestOtp,
         verifyOtp,
+        logout,
         createUser,
         updateUser,
+        viewUser,
         createAddress,
         updateAddress,
+        viewAddresses,
+        deleteAddress,
         createBooking,
         getBookings,
         cancelBooking,

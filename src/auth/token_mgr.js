@@ -104,7 +104,7 @@ class TokenManager {
                 }
 
                 if (log.isDebugEnabled()) {
-                    log.debug('Obtained a new token from the token server. Token: %s. Validity (hr): %d ', jwt, (expiresIn / 3600));
+                    log.debug('Obtained a new token from the token server. Validity (hr): %d ', (expiresIn / 3600));
                 }
 
                 // Store it back in the cache.
@@ -121,7 +121,7 @@ class TokenManager {
                     
                     continue;
                 }
-                errorHandler.handleError();
+                errorHandler.handleError(err);
                 
                 // Remove stale token.
                 this.cache.delete(scope);

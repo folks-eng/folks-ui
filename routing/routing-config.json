@@ -1,0 +1,31 @@
+{
+    "folksBaseUrl": "https://localhost:9443",
+    "routes": [
+        {
+            "name": "otp.request",
+            "folks.ui": {
+                "method": "POST",
+                "path": "/gateway/v1/otp/request",
+                "contentType": "application/json"
+            },
+            "folks.app": {
+                "method": "POST",
+                "path": "/api/v1/otp/request",
+                "contentType": "application/json"
+            }
+        },
+        {
+            "name": "otp.verify",
+            "folks.ui": {
+                "method": "POST",
+                "path": "/gateway/v1/otp/verify",
+                "contentType": "application/json"
+            },
+            "folks.app": {
+                "method": "POST",
+                "path": "/api/v1/otp/verify",
+                "contentType": "application/json"
+            }
+        }
+    ]
+}

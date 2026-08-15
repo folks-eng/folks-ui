@@ -491,7 +491,7 @@ function initSignupFlow() {
         goToWaiting('Sending your OTP…', 'forward');
 
         // make the REST API call
-        const result = await FolksAPI.requestOtp(mobile);
+        const result = await FolksAPI.requestOtp('signup', mobile);
         
         if (! result.success) {
             goTo(screens.mobile, 'back');
@@ -505,7 +505,8 @@ function initSignupFlow() {
             if (result.demoOtp) {
                 hint.hidden = false;
                 hint.textContent = `Demo mode — no SMS gateway connected. Your OTP is ${result.demoOtp}.`;
-            } else {
+            }
+            else {
                 hint.hidden = true;
             }
         }
@@ -600,23 +601,23 @@ function initSignupFlow() {
         clearInterval(state.resendTimer);
         goToWaiting('Verifying your code…', 'forward');
 
-        const result = await FolksAPI.verifyOtp(state.mobile, otp);
+        const result = await FolksAPI.verifyOtp('signup', state.mobile, otp);
 
         if (! result.success) {
             goTo(screens.otp, 'back');
-            showError('otpError', result.message || 'Incorrect OTP. Please try again.');
+            showError('loginOtpError', result.message);
             otpBoxes.forEach(b => {
                 b.value = '';
                 b.classList.remove('is-filled');
             });
             otpBoxes[0].focus();
             startResendCountdown();
-            return;
         }
-
-        setStepDots(3);
-        goTo(screens.profile, 'forward');
-        setTimeout(() => document.getElementById('signupName')?.focus(), 300);
+        else {  // success = true
+            setStepDots(3);
+            goTo(screens.profile, 'forward');
+            setTimeout(() => document.getElementById('signupName')?.focus(), 300);
+        }
     });
 
     // ---- SCREEN 3: profile -> waiting -> success ---------------------------
@@ -642,22 +643,24 @@ function initSignupFlow() {
 
         goToWaiting('Setting up your profile…', 'forward');
 
-        try {
-            const result = await FolksAPI.createUser({
-                phone1: state.mobile,
-                fullName: name,
-                email: email
-            });
+        const result = await FolksAPI.createUser({
+            phone1: state.mobile,
+            fullName: name,
+            email: email
+        });
+
+        
+        if (result.success) {
             document.getElementById('successMessage').textContent =
-                    `You're all set to browse services, ${result.fullName.split(' ')[0]}.`;
+                `You're all set to browse services, ${result.result.fullName.split(' ')[0]}.`;
             setStepDots(0);
             goTo(screens.success, 'forward');
-            completeLogin(result);
+            completeLogin(result.result);
             setTimeout(closeModal, 1800);
         }
-        catch (err) {
+        else {
             goTo(screens.profile, 'back');
-            showError('profileError', err || 'Could not complete registration. Please try again.');
+            showError('profileError', 'Could not complete registration. Please try again.');
         }
     });
 }
@@ -772,8 +775,6 @@ function initLoginFlow() {
     // Event delegation so this keeps working even if #loginBtn is destroyed
     // and recreated later (e.g. after logout rebuilds nav-actions).
     document.addEventListener('click', (e) => {
-        alert(0);
-        alert(e.target);
         const trigger = e.target.closest('#loginBtn');
         if (trigger) {
             e.preventDefault();
@@ -844,8 +845,8 @@ function initLoginFlow() {
         state.mobile = mobile;
         goToWaiting('Sending your OTP…', 'forward');
 
-        const result = await FolksAPI.requestOtp(mobile);
-
+        const result = await FolksAPI.requestOtp('login', mobile);
+        
         if (! result.success) {
             goTo(screens.mobile, 'back');
             showError('loginMobileError', result.message || 'Could not send OTP. Please try again.');
@@ -949,31 +950,44 @@ function initLoginFlow() {
         clearInterval(state.resendTimer);
         goToWaiting('Verifying your code…', 'forward');
 
-        const result = await FolksAPI.verifyOtp(state.mobile, otp);
-
-        if (!result.success) {
-            goTo(screens.otp, 'back');
-            showError('loginOtpError', result.message || 'Incorrect OTP. Please try again.');
-            otpBoxes.forEach(b => {
-                b.value = '';
-                b.classList.remove('is-filled');
-            });
-            otpBoxes[0].focus();
-            startResendCountdown();
-            return;
+        // Verify the otp for login process.
+        const result = await FolksAPI.verifyOtp('login', state.mobile, otp);
+        
+        if (! result.success) {
+            if (result.code === 404) {
+                goTo(screens.notFound, 'forward');
+            }
+            else {
+                goTo(screens.otp, 'back');
+                showError('loginOtpError', result.message);
+                otpBoxes.forEach(b => {
+                    b.value = '';
+                    b.classList.remove('is-filled');
+                });
+                otpBoxes[0].focus();
+                startResendCountdown();
+            }
         }
-
-        // OTP is verified — a real phone, but is there an account behind it?
-        const existingUser = getCurrentUser();
-        if (existingUser && existingUser.mobile === state.mobile) {
+        else {  // success = true
             document.getElementById('loginSuccessMessage').textContent =
-                    `Good to see you again, ${existingUser.name.split(' ')[0]}.`;
+                    `Good to see you again, ${result.result.fullName.split(' ')[0]}.`;
             goTo(screens.success, 'forward');
-            completeLogin(existingUser);
+            completeLogin(result.result);
             setTimeout(closeModal, 1800);
-        } else {
-            goTo(screens.notFound, 'forward');
         }
+        
+        // Demo code
+        // OTP is verified — a real phone, but is there an account behind it?
+        // const existingUser = getCurrentUser();
+        // if (existingUser && existingUser.mobile === state.mobile) {
+        //     document.getElementById('loginSuccessMessage').textContent =
+        //             `Good to see you again, ${existingUser.name.split(' ')[0]}.`;
+        //     goTo(screens.success, 'forward');
+        //     completeLogin(existingUser);
+        //     setTimeout(closeModal, 1800);
+        // } else {
+        //     goTo(screens.notFound, 'forward');
+        // }
     });
 }
 
@@ -1104,15 +1118,19 @@ function getCurrentUser() {
         return null;
     }
 }
+function removeCurrentUser() {
+    safeStorageRemove(FOLKS_STORAGE_KEYS.user);
+}
 function saveCurrentUser(user) {
-    // (schanda): Not storing in local storage
-    // safeStorageSet(FOLKS_STORAGE_KEYS.user, JSON.stringify(user));
+    safeStorageSet(FOLKS_STORAGE_KEYS.user, JSON.stringify(user));
 }
 function setLoggedIn(flag) {
-    if (flag)
+    if (flag) {
         safeStorageSet(FOLKS_STORAGE_KEYS.session, 'true');
-    else
+    }
+    else {
         safeStorageRemove(FOLKS_STORAGE_KEYS.session);
+    }
 }
 /* ---- saved addresses (a person can have several: Home, Work, etc.) -----
  getStoredAddress()/saveStoredAddress() are kept as thin wrappers around
@@ -1459,10 +1477,15 @@ function renderUserChip(user) {
                 closeDropdown();
         });
 
-        logoutBtn.addEventListener('click', () => {
-            setLoggedIn(false);
-            closeDropdown();
-            restoreLoggedOutHeader(navActions);
+        logoutBtn.addEventListener('click', async () => {
+            const res = await FolksAPI.logout();
+        
+            if (res.success) {
+                setLoggedIn(false);
+                removeCurrentUser();
+                closeDropdown();
+                restoreLoggedOutHeader(navActions);
+            }
         });
     });
 }

@@ -5,23 +5,24 @@ const url = require('url');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 
-const { getLogger } = require('./src/util/logger');
 const keyStore = require('./src/auth/keystore');
-const redisClient = require('./src/util/redis_client');
+const { authenticate } = require('./src/auth/auth');
+const accessLog = require('./src/util/access_logger');
+const { getLogger } = require('./src/util/logger');
+const cache = require('./src/util/cache');
+
+const signupRoute = require('./src/routes/signup');
+const loginRoute = require('./src/routes/login');
+const logoutRoute = require('./src/routes/logout');
+const userRoute = require('./src/routes/user');
+const addressRoute = require('./src/routes/address');
 
 const { serveStatic } = require('./src/staticServer');
-const { authenticate } = require('./src/auth/auth');
-
-const signup = require('./src/routes/signup');
-const accessLog = require('./src/util/access_logger');
-
-const regRoute = require('./src/routes/registration');
-const loginRoute = require('./src/routes/login');
 
 const app = express();
 
 const port = process.env.PORT || 3000;
-const basePath = process.env.BASE_PATH || '/api/v1';
+const basePath = process.env.BASE_PATH || '/gateway/v1';
 
 const log = getLogger(__filename);
 
@@ -43,9 +44,11 @@ function setup() {
     // Everything below this requires authentication
     app.use(basePath, authenticate);
     
-    app.use(basePath + '/signup', signup);
-    app.use(basePath + '/registration', regRoute);
+    app.use(basePath + '/signup', signupRoute);
     app.use(basePath + '/login', loginRoute);
+    app.use(basePath + '/logout', logoutRoute);
+    app.use(basePath + '/users', userRoute);
+    app.use(basePath + '/addresses', addressRoute);
 
     // Middleware to serve static files from a directory
     app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
@@ -55,7 +58,7 @@ async function start() {
     setup();
     keyStore.init();
     
-    await redisClient.init();
+    await cache.init();
     
     const httpsOptions = {
         key: fs.readFileSync('./cert/node-ext.key'),

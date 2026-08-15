@@ -42,7 +42,7 @@ class HttpClient {
                 dump += 'Body (string): ' + config.data.toString() + '\n';
                 dump += 'Body (entries): ' + Object.fromEntries(config.data) + '\n';
             }
-            else {
+            else if (! (typeof config.data === 'undefined')) {
                 dump += (typeof config.data === 'string' ? config.data : JSON.stringify(config.data, null, 2)) + '\n';
             }
             dump += '=================================================================' + '\n';
@@ -77,20 +77,36 @@ class HttpClient {
         }
         return this.contextRoot + uri;
     }
+    
+    async rpc(uri, method, payload, config = {}) {
+        const url = this._buildUrl(uri);
+        
+        let param = {
+            ...config
+        };
+        param.method = method;
+        param.url = url;
+        if (payload !== null) {
+            param.data = payload;
+        }
+        
+        return await this.client.request(param);
+    }
 
     async post(uri, payload, config = {}) {
-        const url = this._buildUrl(uri);
-        return await this.client.post(
-                url
-                , payload
-                , config);
+        return this.rpc(uri, 'POST', payload, config);
     }
 
     async get(uri, config = {}) {
-        const url = this._buildUrl(uri);
-        return await this.client.get(
-                url
-                , config);
+        return this.rpc(uri, 'GET', null, config);
+    }
+
+    async put(uri, payload, config = {}) {
+        return this.rpc(uri, 'PUT', payload, config);
+    }
+
+    async delete(uri, config = {}) {
+        return this.rpc(uri, 'DELETE', null, config);
     }
 
     legacyPost(req, res, uri, payload, config, onSuccess) {

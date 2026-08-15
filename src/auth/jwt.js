@@ -21,28 +21,69 @@ class JwtUtil {
     
     static signOptions = {
         algorithm: 'RS256',
-        expiresIn: '300m',
-        issuer: 'folks',
-        audience: 'folks-ui'
+        expiresIn: (process.env.TOKEN_TTL_MIN || '600') + 'm',
+        issuer: process.env.TOKEN_ISSUER || 'folks',
+        audience: process.env.TOKEN_AUDIENCE || 'folks-ui'
     };
 
     static verifyOptions = {
         algorithms: ['RS256'],
-        issuer: 'folks',
-        audience: 'folks-ui'
+        issuer: process.env.TOKEN_ISSUER || 'folks',
+        audience: process.env.TOKEN_AUDIENCE || 'folks-ui'
     };
     
-    static sign(payload, ttl) {
+    static otpToken(input, jti) {
+        // If everything is successful, generate a jwt token with mobile number as id,
+        // and set it as a cookie.
+        // In subsequent verify call, this token will be sent back.
+        // If the token is not present, then verify call will be rejected.
+
+        // Generate the temporary sign-up token.
+        // jti is the JWT ID. It is one of the registered claims defined in RFC 7519.
+        // Its purpose is to provide a unique identifier for a JWT.
+        
+        const payload = {
+            sub: input,
+            jti: jti
+        };
+        let ttlMin = (process.env.OTP_EXP_MIN || 5) + 'm';
+        let token = JwtUtil.sign(payload, ttlMin);
+        
+        if (log.isDebugEnabled()) {
+            log.debug('Created otp token for %s. TTL: %s', input, ttlMin);
+        }
+        return {token, ttlMin};
+    }
+    
+    static loginToken(id, name) {
+        // Post user creation, generate the auth token.
+        // Node sends another cookie with the same name (i.e., _fks), same path, and same domain, 
+        // and as a result, the browser automatically replaces the old one.
+        const claims = {
+            sub: id,
+            name: name,
+            jti: crypto.randomUUID()
+        };
+        let ttlMin = (process.env.TOKEN_TTL_MIN || 600) + 'm';
+        let token = JwtUtil.sign(claims, ttlMin);
+        
+        if (log.isDebugEnabled()) {
+            log.debug('Created jwt auth token for user %s. TTL: %s', id, ttlMin);
+        }
+        return {token, ttlMin};
+    }
+    
+    static sign(claims, ttl) {
         try {
             const opts = {...JwtUtil.signOptions};
 
             if (ttl) {
                 opts.expiresIn = ttl;
             }
-            let token = jwt.sign(payload, keystore.getPrivateKey(), opts);
+            let token = jwt.sign(claims, keystore.getPrivateKey(), opts);
             
             if (log.isDebugEnabled()) {
-                log.debug(`Generate and signed jwt token: ${token}`);
+                log.debug(`Generated and signed jwt token from claims: ${claims}`);
             }
             return token;
         }

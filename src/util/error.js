@@ -18,7 +18,7 @@ class ErrorHandler {
         return status === 502 || status === 503 || status === 504;
     }
     
-    handleError(res, err, conclude = false) {
+    handleError(err, res, conclude = false) {
         let status = -1;
         let msg = null;
 
@@ -41,7 +41,7 @@ class ErrorHandler {
             status = 500;
             msg = err.message;
         }
-        if (conclude) {
+        if (res && conclude) {
             res.status(status)
                     .set('Accept', 'application/json')
                     .send(msg);

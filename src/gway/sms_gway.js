@@ -28,7 +28,8 @@ class SmsGateway extends Gateway {
         }
         return Promise.resolve({
             success: true,
-            message: 'Sms sent successfully'
+            message: 'Sms sent successfully',
+            messageId: ''
         });
         
         // Uncomment the code when you have access to sms gateway in future.

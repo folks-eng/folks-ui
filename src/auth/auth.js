@@ -1,4 +1,3 @@
-const crypto = require('crypto');
 const JwtUtil = require('./../auth/jwt');
 const {getLogger} = require('./../util/logger');
 
@@ -11,7 +10,7 @@ function authenticate(req, res, next) {
     }
     
     // Allow unauthenticated access to OTP dispatch
-    if (req.path === '/signup/otp/dispatch' || req.path === '/login/otp/dispatch') {
+    if (req.path === '/signup/otp/request' || req.path === '/login/otp/request') {
         return next();
     }
     let token = req.cookies._fks;
@@ -26,6 +25,9 @@ function authenticate(req, res, next) {
         return res.status(401)
                 .set('Content-Type', 'application/json')
                 .send({message: "Access to this resource is restricted"});
+    }
+    if (log.isTraceEnabled()) {
+        log.trace('Decrypted jwt token: %s', JSON.stringify(payload));
     }
 
     // Now assign it as bearer token.

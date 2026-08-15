@@ -1,189 +1,163 @@
 const express = require('express');
 
+const otpHandler = require('./otp');
+const tokenMgr = require('./../auth/token_mgr');
 const JwtUtil = require('./../auth/jwt');
-const GatewayFactory = require('./../gway/gway_factory');
 const httpClient = require('./../util/http_client');
-const {getLogger} = require('./../util/logger');
-const OtpGen = require('./../util/otp');
-const redisClient = require('./../util/redis_client');
+const { getLogger } = require('../util/logger');
 const Utility = require('./../util/utility');
 
-const route = express.Router();
-
+const router = express.Router();
 const log = getLogger(__filename);
 
-function login(req, res) {
-    // This method will be called when user provides the mobile number and request for otp.
-    let validity = 5;      // 5 min
+async function requestOtp(req, res) {
+    const input = req.body.input;
+    const op = req.body.op;
     
-    const input = String(req.body.input);
-    const type = Utility.getIdentityType(input);
-    const gway = GatewayFactory.get(type);
-    
-    if (log.isDebugEnabled()) {
-        log.debug(`Obtained gateway ${gway.constructor.name} for input ${input}`);
-    }
-    
-    const paramName = type === 'mobile' ? 'phone1' : 'email';
-    
-    // Query the backend server to see if the user as identified by the input (mobile number or email address) already exists.
-    let uri = '/users';
-    let config = {
-        headers: {
-            'Authorization': 'Bearer ' + req.token
-        },
-        params: {
-            paramName: input
+    try {
+        const ret = await otpHandler.request(op, input);
+        
+        if (ret.status === 0) {
+            // Otp has already been generated and sent
+            res.status(200)
+                .json({success: true, message: 'Otp has already been sent. Please wait for 5 minute before trying again'});
         }
-    };
-    httpClient.get(req
-        , res
-        , uri
-        , config
-        , response => {
+        else {
+            // Otp has just been generated. Therefore generate the token.
+            const {token, ttlMin} = JwtUtil.otpToken(ret.otp.input, ret.otp.jti);
             
-        let arr = JSON.stringify(response.data);
-        if (arr.length === 0) {
-            return res.status(404)
-                .send({success: false, message: 'No user found associated with the mobile/email'});
-        }
-        // User exists.
-        // First check if the otp has already been generated and stored in cache.
-        let promise = redisClient.getValue(input);
-
-        promise.then(data => {
-            if (data === null) {
-                let val = OtpGen.generate(input, 'signup', validity * 60);
-                let promise = redisClient.setValue(input, JSON.stringify(val), validity * 60);
-
-                promise.then(data => {
-                    if (log.isDebugEnabled()) {
-                        log.debug(`Cached otp for ${input} to redis cache. Response: ${data}`);
-                    }
-                    // Now, send the otp via sms/email.
-                    sendOtp(res, gway, val);
-
-                }).catch(err => {
-                    log.error(`Error caching otp for ${input} to redis cache.`, err);
-                    res.status(500)
-                            .set('Accept', 'application/json')
-                            .send({message: err.message});
-                });
-            }
-            else {
-                let val = JSON.parse(data);
-                if (val.purpose === 'signup') {
-                    log.error(`Otp ${val.otp} has already been sent to: ${input}`);
-
-                    res.status(200)
-                            .set('Accept', 'application/json')
-                            .send({message: `Otp has already been sent. Please wait for ${validity} minute before trying again`});
-                }
-                else {
-                    // Should never come here
-                    res.status(500)
-                            .set('Accept', 'application/json')
-                            .send({message: `Inconsistent state during sign-up. Found a cache entry for mobile ${input} with purpose as ${val.purpose}`});
-                }
-            }
-        }).catch (err => {
-            log.error(`Error fetching value from redis cache for ${input}.`, err);
-            res.status(500)
-                    .set('Accept', 'application/json')
-                    .send({message: err.message});
-        });
-    });
-}
-    
-function sendOtp(res, gway, val) {
-    let param = {
-        recipient: val.input,
-        otp: val.otp,
-        ttl: val.ttl / 60
-    };
-    
-    gway.send(param)
-        .then(result => {
-            if (log.isDebugEnabled()) {
-                log.debug(`Response from gateway: ${result.message}`);
-            }
-            let token = generateCookie(val);
-
             res.status(200)
                 .set('Accept', 'application/json')
                 .cookie('_fks', token, {
-                    maxAge: val.ttl * 1000,
-                    httpOnly: true,         // Protects against XSS attacks (not accessible via client JS)
-                    secure: true,           // Only sent over HTTPS
-                    sameSite: 'lax'         // Mitigates CSRF attacks
+                    maxAge: parseInt(ttlMin, 10) * 60 * 1000,
+                    httpOnly: true,                 // Protects against XSS attacks (not accessible via client JS)
+                    secure: true,                   // Only sent over HTTPS
+                    sameSite: 'lax',                // Mitigates CSRF attacks
+                    path: process.env.BASE_PATH || '/gateway/v1'
                 })
                 .send({success: true, message: 'Otp sent successfully'});
-
-        }).catch(err => {
-            log.error(`Error sending otp for ${val.input}`, err);
-            res.status(500)
-                    .set('Accept', 'application/json')
-                    .send({message: err.message});
-        });
-}
-
-function generateCookie(val) {
-    // If everything is successful, generate a jwt token with mobile number as id,
-    // and set it as a cookie.
-    // In subsequent verify call, this token will be sent back.
-    // If the token is not present, then verify call will be rejected.
-
-    // Generate the temporary sign-up token.
-    // jti is the JWT ID. It is one of the registered claims defined in RFC 7519.
-    // Its purpose is to provide a unique identifier for a JWT.
-    const payload = {
-        sub: val.input,
-        jti: val.jti
-    };
-    return JwtUtil.sign(payload, String(val.ttl / 60) + 'm');
-}
-
-function verify(req, res) {
-    let input = String(req.body.input);
-    let otp = Number(req.body.otp);
-    
-    // First check if the otp has already been generated and stored in cache.
-    let promise = redisClient.getValue(input);
-    
-    promise.then(data => {
-        if (data === null) {
-            log.warn(`No otp found in store against ${input}`);
-            res.status(401)
-                    .set('Accept', 'application/json')
-                    .send({message: 'UnAuthorized. Try generating the otp again'});
         }
-        else {
-            let val = JSON.parse(data);
-            if (otp === val.otp) {
-                if (log.isDebugEnabled()) {
-                    log.debug(`Successfully verified otp ${otp} against ${input}`);
-                }
-                res.status(200)
-                        .set('Accept', 'application/json')
-                        .send({success: true, message: 'Otp verified successfully'});
-            }
-            else {
-                log.error(`Supplied otp ${otp} does not match with stored otp ${val.otp}`);
-                res.status(401)
-                        .set('Accept', 'application/json')
-                        .send({message: 'UnAuthorized. Invalid otp'});
-            }
-        }
-    }).catch (err => {
-        log.error(`Error reconciling otp from redis cache for ${input}.`, err);
+    }
+    catch (err) {
         res.status(500)
-                .set('Accept', 'application/json')
-                .send({message: err.message});
-    });
+                .json({success: false, message: err.message});
+    }
 }
 
-route.post('/otp/dispatch', login);
-route.post('/otp/verify', verify);
+async function verifyOtp(req, res) {
+    const op = req.body.op;
+    const input = req.body.input;
+    const type = Utility.getIdentityType(input);
+    const otp = Number(req.body.otp);
+    
+    try {
+        const result = await otpHandler.verify(input, otp);
+        
+        switch (result.state) {
+            case 'VERIFIED':
+                // Otp has been successfully verified. Next steps:
+                // 1. Query the backend server to check if any user is associated with this phone/email
+                // 
+                // 1a. If found, generate the login token.
+                // 1b. If not, send appropriate message to UI so that it can forward the registration screen.
+                let response = await queryUser(input, type);
 
-module.exports = route;
+                if (response.status === 200) {
+                    if (response.data.total === 1) {
+                        const item = response.data.items[0];
+                        const {token, ttlMin} = JwtUtil.loginToken(item.externalId, item.fullName);
 
+                        if (log.isInfoEnabled()) {
+                            log.info(`Successfully retrieved user ${item.fullName} against ${input}. Generating login token ...`);
+                        }
+
+                        return res.status(response.status)
+                            .cookie('_fks', token, {
+                                maxAge: parseInt(ttlMin, 10) * 60 * 1000,        // Expires (in milliseconds)
+                                httpOnly: true,                 // Protects against XSS attacks (not accessible via client JS)
+                                secure: true,                   // Only sent over HTTPS
+                                sameSite: 'lax',                // Mitigates CSRF attacks
+                                path: process.env.BASE_PATH || '/gateway/v1'
+                            })
+                            .json({externalId: item.externalId, fullName: item.fullName});
+                    }
+                    else {
+                        // No associated user found.
+                        // Clear the previous cookie.
+                        log.warn(`No user details found against ${input}. Forwarding to sign-up screen ...`);
+                        
+                        res.clearCookie('_fks', {
+                            httpOnly: true,
+                            secure: true,
+                            sameSite: 'lax',
+                            path: process.env.BASE_PATH || '/gateway/v1'
+                        });
+                        return res.status(404)
+                                .json({success: false, message: 'No user details found'});
+                    }
+                }
+                else {
+                    throw new Error(`Error fetching user details for ${input}`);
+                }
+
+            case 'INVALID':
+                return res.status(400).json({
+                    success: false,
+                    message: 'Incorrect OTP. Please try again'
+                });
+
+            case 'EXPIRED':
+                return res.status(400).json({
+                    success: false,
+                    message: 'OTP is expired. Go back to previous screen and try generating the OTP again'
+                });
+
+            default:
+                log.error(`Unexpected OTP verification status: ${result.status}`);
+
+                return res.status(500).json({
+                    success: false,
+                    message: 'There was a problem verifying the otp. Please try later'
+                });
+        }
+    }
+    catch (err) {
+        log.error('Error in verifying otp for ' + input, err);
+        res.status(500)
+                .json({success: false, message: err.message});
+    }
+}
+
+async function queryUser(input, type) {
+    // Obtain the scope based short-lived token.
+    // This call will get it from cache. If not token is present in cache, make call to token service end point.
+    const mtls_jwt = await tokenMgr.getToken('user:create|user:query');
+    if (log.isDebugEnabled()) {
+        log.debug('Scope token is available. Proceed for query ...');
+    }
+
+    // Check if the mobile number or email address is already registered.
+    const params = {};
+    if (type === 'mobile') {
+        params.phone1 = input;
+    }
+    else {
+        params.email = input;
+    }
+
+    const response = await httpClient.get(
+        '/users',
+        {
+            headers: {
+                Authorization: `Bearer ${mtls_jwt}`
+            },
+            params: params
+        }
+    );
+    return response;
+}
+
+router.post('/otp/request', requestOtp);
+router.post('/otp/verify', verifyOtp);
+
+module.exports = router;
