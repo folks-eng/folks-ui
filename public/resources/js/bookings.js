@@ -55,17 +55,21 @@ async function loadBookings() {
   errorEl.hidden = true;
 
   const user = getCurrentUser();
-  const result = await FolksAPI.getBookings(user.id);
+  const result = await FolksAPI.getBookings(user.externalId);
 
   loading.hidden = true;
 
-  if (!result.success) {
+  if (! result.success) {
     errorEl.textContent = result.message || 'Could not load your bookings. Please try again.';
     errorEl.hidden = false;
     return;
   }
+  if (result.result.items.length === 0) {
+      empty.hidden = false;
+      return;
+  }
 
-  _allBookings = (result.bookings || []).map(b => ({ ...b, _tab: classifyBooking(b) }));
+  _allBookings = (result.result.items || []).map(b => ({ ...b, _tab: classifyBooking(b) }));
   updateTabCounts();
   renderBookings();
 }
@@ -114,7 +118,7 @@ function renderBookings() {
 }
 
 function renderBookingCard(booking) {
-  const bookedOn = formatFullDate(booking.createdOn);
+  const bookedOn = formatFullDate(booking.createdAt);
   const statusMeta = {
     upcoming: { label: 'Confirmed', cls: 'booking-status-upcoming' },
     past: { label: 'Completed', cls: 'booking-status-past' },

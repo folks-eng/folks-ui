@@ -125,7 +125,12 @@ const FolksAPI = (function () {
             );
             if (res.status === 204) {
                 return {success: true};
-            } else {
+            }
+            else if (res.status === 401) {
+                // Cookie not found.
+                return {success: true};
+            }
+            else {
                 return {success: false, message: res.message};
             }
         } catch (e) {
@@ -343,6 +348,29 @@ const FolksAPI = (function () {
         }
     }
 
+    async function viewCategories() {
+        try {
+            const res = await fetch(
+                BASE_URL + '/categories/hierarchy?id=101&id=102&id=103&id=104&id=105',
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch all categories:', e);
+            return {'success': false, 'message': e.message};
+        }
+    }
+
     /**
      * POST /api/v1/bookings
      * Payload: { services: [{ name, date, timeSlot, quantity, price, address }], paymentMethod, amount }
@@ -365,10 +393,13 @@ const FolksAPI = (function () {
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
+            let json = await res.json();
             if (res.status === 201) {
-                return await res.json();
+                return {success: true, result: json};
             }
-            throw new Error(`Booking creation request to url ${uri} has failed. Status: ${res.status}. Error Msg: ${res.message}`);
+            else {
+                return {success: false, message: json.message};
+            }
         } catch (e) {
             console.error(e.message, e);
             return {'success': false, 'message': e.message};
@@ -398,16 +429,20 @@ const FolksAPI = (function () {
         }
 
         try {
+            alert(userId);
             let uri = BASE_URL + '/bookings';
 
             const res = await fetch(uri, {
                 method: 'GET',
                 headers: {'Content-Type': 'application/json'}
             });
-            if (res.status === 201) {
-                return await res.json();
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
             }
-            throw new Error(`Booking view request to url ${uri} has failed. Status: ${res.status}. Error Msg: ${res.message}`);
+            else {
+                return {success: false, message: json.message};
+            }
         } catch (e) {
             console.error(e.message, e);
             return {'success': false, 'message': e.message};
@@ -607,9 +642,10 @@ const FolksAPI = (function () {
         updateAddress,
         viewAddresses,
         deleteAddress,
+        viewCategories,
         createBooking,
         getBookings,
         cancelBooking,
-        applyAsProfessional,
+        applyAsProfessional
     };
 })();

@@ -18,30 +18,29 @@
    be swapped for a real API response later with no changes to the shape
    consumers rely on.
 
-   SELECT a.category_id, a.name AS category_name, a.icon, a.image AS category_image, a.tag_line, b.category_id AS sub_category_id, b.name AS sub_category_name, b.image AS sub_category_image, c.service_id, c.name AS service_name, c.description, c.base_price, c.duration_minutes, c.rating_avg, c.reviews
+   SELECT a.parent_id, b.name, a.category_id, a.name, c.service_id, c.name, c.base_price, c.duration_minutes
      FROM fks_categories a
-    INNER JOIN fks_categories b ON (a.category_id = b.parent_id)
-    INNER JOIN fks_services c ON (b.category_id = c.category_id)
-    ORDER BY a.parent_id, b.category_id, c.service_id
-    WHERE a.category_id = 1
+    INNER JOIN fks_categories b ON (a.parent_id = b.category_id)
+    INNER JOIN fks_services c ON (a.category_id = c.category_id)
+    WHERE b.category_id = 1
 
    ========================================================================= */
 
 const CATEGORY_DATA = [
   {
-    "categoryId": "salon-makeup",
+    "id": "salon-makeup",
     "name": "Salon & Makeup",
     "icon": "scissors",
     "image": "https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=800&q=80&auto=format&fit=crop",
-    "tagLine": "Professional grooming and beauty services at home.",
+    "tagline": "Professional grooming and beauty services at home.",
     "subCategories": [
       {
-        "categoryId": "womens-salon",
+        "id": "womens-salon",
         "name": "Women's Salon",
         "image": "https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "facial-fruit-glow",
+            "id": "facial-fruit-glow",
             "name": "Fruit Facial Glow",
             "price": 799,
             "currency": "₹",
@@ -53,7 +52,7 @@ const CATEGORY_DATA = [
             "isPopular": true
           },
           {
-            "serviceId": "hair-spa-care",
+            "id": "hair-spa-care",
             "name": "Hair Spa & Care",
             "price": 899,
             "currency": "₹",
@@ -64,7 +63,7 @@ const CATEGORY_DATA = [
             "description": "A deep-conditioning hair spa that repairs damage and restores natural shine."
           },
           {
-            "serviceId": "arms-legs-waxing",
+            "id": "arms-legs-waxing",
             "name": "Full Arms & Legs Waxing",
             "price": 599,
             "currency": "₹",
@@ -75,7 +74,7 @@ const CATEGORY_DATA = [
             "description": "Smooth, salon-grade waxing for arms and legs using a gentle wax."
           },
           {
-            "serviceId": "threading-brows-lip",
+            "id": "threading-brows-lip",
             "name": "Threading (Eyebrows + Upper Lip)",
             "price": 149,
             "currency": "₹",
@@ -86,7 +85,7 @@ const CATEGORY_DATA = [
             "description": "Quick, precise threading for perfectly shaped brows and upper lip."
           },
           {
-            "serviceId": "manicure-pedicure",
+            "id": "manicure-pedicure",
             "name": "Manicure & Pedicure",
             "price": 649,
             "currency": "₹",
@@ -97,7 +96,7 @@ const CATEGORY_DATA = [
             "description": "A classic mani-pedi that leaves hands and feet soft, neat and polished."
           },
           {
-            "serviceId": "hair-colour-women",
+            "id": "hair-colour-women",
             "name": "Global Hair Colour",
             "price": 1299,
             "currency": "₹",
@@ -110,12 +109,12 @@ const CATEGORY_DATA = [
         ]
       },
       {
-        "categoryId": "mens-salon",
+        "id": "mens-salon",
         "name": "Men's Salon",
         "image": "https://images.unsplash.com/photo-1647140655214-e4a2d914971f?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "haircut-styling",
+            "id": "haircut-styling",
             "name": "Haircut & Styling",
             "price": 299,
             "currency": "₹",
@@ -127,7 +126,7 @@ const CATEGORY_DATA = [
             "isPopular": true
           },
           {
-            "serviceId": "beard-shape-trim",
+            "id": "beard-shape-trim",
             "name": "Beard Shape-up & Trim",
             "price": 199,
             "currency": "₹",
@@ -138,7 +137,7 @@ const CATEGORY_DATA = [
             "description": "Sharp beard shaping and trim to keep your look fresh."
           },
           {
-            "serviceId": "head-shoulder-massage",
+            "id": "head-shoulder-massage",
             "name": "Head & Shoulder Massage",
             "price": 399,
             "currency": "₹",
@@ -149,7 +148,7 @@ const CATEGORY_DATA = [
             "description": "A relaxing head and shoulder massage to relieve stress and tension."
           },
           {
-            "serviceId": "mens-facial",
+            "id": "mens-facial",
             "name": "De-Tan Facial for Men",
             "price": 549,
             "currency": "₹",
@@ -160,7 +159,7 @@ const CATEGORY_DATA = [
             "description": "A de-tan facial that clears dullness and refreshes sun-exposed skin."
           },
           {
-            "serviceId": "mens-hair-colour",
+            "id": "mens-hair-colour",
             "name": "Beard & Hair Colour",
             "price": 349,
             "currency": "₹",
@@ -173,12 +172,12 @@ const CATEGORY_DATA = [
         ]
       },
       {
-        "categoryId": "bridal-party-makeup",
+        "id": "bridal-party-makeup",
         "name": "Bridal & Party Makeup",
         "image": "https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "party-makeup",
+            "id": "party-makeup",
             "name": "Party Makeup",
             "price": 1499,
             "currency": "₹",
@@ -190,7 +189,7 @@ const CATEGORY_DATA = [
             "isPopular": true
           },
           {
-            "serviceId": "bridal-makeup-hd",
+            "id": "bridal-makeup-hd",
             "name": "Bridal Makeup (HD)",
             "price": 6999,
             "currency": "₹",
@@ -201,7 +200,7 @@ const CATEGORY_DATA = [
             "description": "Long-lasting HD bridal makeup with draping and hairstyling included."
           },
           {
-            "serviceId": "nail-art-manicure",
+            "id": "nail-art-manicure",
             "name": "Nail Art & Manicure",
             "price": 499,
             "currency": "₹",
@@ -212,7 +211,7 @@ const CATEGORY_DATA = [
             "description": "A gel manicure with custom nail art finished by a trained nail artist."
           },
           {
-            "serviceId": "engagement-makeup",
+            "id": "engagement-makeup",
             "name": "Engagement Makeup",
             "price": 2999,
             "currency": "₹",
@@ -227,19 +226,19 @@ const CATEGORY_DATA = [
     ]
   },
   {
-    "categoryId": "cleaning-pest-control",
+    "id": "cleaning-pest-control",
     "name": "Cleaning & Pest Control",
     "icon": "broom",
     "image": "https://images.unsplash.com/photo-1647381518264-97ff1835026f?w=800&q=80&auto=format&fit=crop",
-    "tagLine": "Deep cleaning and pest treatments that actually last.",
+    "tagline": "Deep cleaning and pest treatments that actually last.",
     "subCategories": [
       {
-        "categoryId": "home-cleaning",
+        "id": "home-cleaning",
         "name": "Home Cleaning",
         "image": "https://images.unsplash.com/photo-1647381518264-97ff1835026f?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "full-home-deep-cleaning",
+            "id": "full-home-deep-cleaning",
             "name": "Full Home Deep Cleaning",
             "price": 3499,
             "currency": "₹",
@@ -251,7 +250,7 @@ const CATEGORY_DATA = [
             "isPopular": true
           },
           {
-            "serviceId": "kitchen-deep-cleaning",
+            "id": "kitchen-deep-cleaning",
             "name": "Kitchen Deep Cleaning",
             "price": 899,
             "currency": "₹",
@@ -262,7 +261,7 @@ const CATEGORY_DATA = [
             "description": "Degreasing and sanitising of chimney, hob, cabinets and countertops."
           },
           {
-            "serviceId": "bathroom-deep-cleaning",
+            "id": "bathroom-deep-cleaning",
             "name": "Bathroom Deep Cleaning",
             "price": 499,
             "currency": "₹",
@@ -273,7 +272,7 @@ const CATEGORY_DATA = [
             "description": "Descaling and disinfecting tiles, fittings and fixtures until spotless."
           },
           {
-            "serviceId": "sofa-carpet-shampooing",
+            "id": "sofa-carpet-shampooing",
             "name": "Sofa & Carpet Shampooing",
             "price": 799,
             "currency": "₹",
@@ -284,7 +283,7 @@ const CATEGORY_DATA = [
             "description": "A machine shampoo wash to lift dirt and stains from sofas and carpets."
           },
           {
-            "serviceId": "balcony-cleaning",
+            "id": "balcony-cleaning",
             "name": "Balcony & Grille Cleaning",
             "price": 399,
             "currency": "₹",
@@ -295,7 +294,7 @@ const CATEGORY_DATA = [
             "description": "Scrubbing and de-staining of balcony floors, grilles and railings."
           },
           {
-            "serviceId": "move-in-cleaning",
+            "id": "move-in-cleaning",
             "name": "Move-in / Move-out Cleaning",
             "price": 2799,
             "currency": "₹",
@@ -308,12 +307,12 @@ const CATEGORY_DATA = [
         ]
       },
       {
-        "categoryId": "pest-control",
+        "id": "pest-control",
         "name": "Pest Control",
         "image": "https://images.unsplash.com/photo-1647381518264-97ff1835026f?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "general-pest-control",
+            "id": "general-pest-control",
             "name": "General Pest Control",
             "price": 999,
             "currency": "₹",
@@ -325,7 +324,7 @@ const CATEGORY_DATA = [
             "isPopular": true
           },
           {
-            "serviceId": "cockroach-control",
+            "id": "cockroach-control",
             "name": "Cockroach Control",
             "price": 699,
             "currency": "₹",
@@ -336,7 +335,7 @@ const CATEGORY_DATA = [
             "description": "A gel-based treatment that targets cockroaches at the source."
           },
           {
-            "serviceId": "termite-control",
+            "id": "termite-control",
             "name": "Termite Control",
             "price": 2499,
             "currency": "₹",
@@ -347,7 +346,7 @@ const CATEGORY_DATA = [
             "description": "An anti-termite treatment with long-lasting protection for wood and walls."
           },
           {
-            "serviceId": "mosquito-fogging",
+            "id": "mosquito-fogging",
             "name": "Mosquito Fogging",
             "price": 599,
             "currency": "₹",
@@ -358,7 +357,7 @@ const CATEGORY_DATA = [
             "description": "A fogging treatment that clears mosquito breeding spots indoors and out."
           },
           {
-            "serviceId": "bed-bug-treatment",
+            "id": "bed-bug-treatment",
             "name": "Bed Bug Treatment",
             "price": 1299,
             "currency": "₹",
@@ -369,7 +368,7 @@ const CATEGORY_DATA = [
             "description": "A targeted treatment that eliminates bed bugs from mattresses and furniture."
           },
           {
-            "serviceId": "rodent-control",
+            "id": "rodent-control",
             "name": "Rodent Control",
             "price": 899,
             "currency": "₹",
@@ -382,12 +381,12 @@ const CATEGORY_DATA = [
         ]
       },
       {
-        "categoryId": "office-cleaning",
+        "id": "office-cleaning",
         "name": "Office Cleaning",
         "image": "https://images.unsplash.com/photo-1647381518264-97ff1835026f?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "office-deep-cleaning",
+            "id": "office-deep-cleaning",
             "name": "Office Deep Cleaning",
             "price": 4999,
             "currency": "₹",
@@ -398,7 +397,7 @@ const CATEGORY_DATA = [
             "description": "A full deep clean for workstations, common areas and pantries."
           },
           {
-            "serviceId": "carpet-upholstery-office",
+            "id": "carpet-upholstery-office",
             "name": "Carpet & Upholstery Cleaning",
             "price": 1899,
             "currency": "₹",
@@ -409,7 +408,7 @@ const CATEGORY_DATA = [
             "description": "Machine cleaning for office carpets, chairs and fabric partitions."
           },
           {
-            "serviceId": "office-sanitization",
+            "id": "office-sanitization",
             "name": "Sanitization Service",
             "price": 2499,
             "currency": "₹",
@@ -424,19 +423,19 @@ const CATEGORY_DATA = [
     ]
   },
   {
-    "categoryId": "appliance-repair",
+    "id": "appliance-repair",
     "name": "Appliance Repair",
     "icon": "wrench",
     "image": "https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&q=80&auto=format&fit=crop",
-    "tagLine": "Fast, reliable repairs for the appliances you rely on daily.",
+    "tagline": "Fast, reliable repairs for the appliances you rely on daily.",
     "subCategories": [
       {
-        "categoryId": "ac-service-repair",
+        "id": "ac-service-repair",
         "name": "AC Service & Repair",
         "image": "https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "ac-general-service",
+            "id": "ac-general-service",
             "name": "AC General Service",
             "price": 549,
             "currency": "₹",
@@ -448,7 +447,7 @@ const CATEGORY_DATA = [
             "isPopular": true
           },
           {
-            "serviceId": "ac-repair-visit",
+            "id": "ac-repair-visit",
             "name": "AC Repair Visit",
             "price": 299,
             "currency": "₹",
@@ -459,7 +458,7 @@ const CATEGORY_DATA = [
             "description": "A diagnostic visit to identify and fix cooling or noise issues."
           },
           {
-            "serviceId": "ac-gas-refill",
+            "id": "ac-gas-refill",
             "name": "AC Gas Refill",
             "price": 2199,
             "currency": "₹",
@@ -470,7 +469,7 @@ const CATEGORY_DATA = [
             "description": "A refrigerant top-up for ACs that have lost cooling performance."
           },
           {
-            "serviceId": "split-ac-installation",
+            "id": "split-ac-installation",
             "name": "Split AC Installation",
             "price": 1499,
             "currency": "₹",
@@ -481,7 +480,7 @@ const CATEGORY_DATA = [
             "description": "Professional mounting and installation of a new split AC unit."
           },
           {
-            "serviceId": "window-ac-installation",
+            "id": "window-ac-installation",
             "name": "Window AC Installation",
             "price": 999,
             "currency": "₹",
@@ -494,12 +493,12 @@ const CATEGORY_DATA = [
         ]
       },
       {
-        "categoryId": "kitchen-appliances",
+        "id": "kitchen-appliances",
         "name": "Kitchen & Home Appliances",
         "image": "https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "refrigerator-repair",
+            "id": "refrigerator-repair",
             "name": "Refrigerator Repair",
             "price": 399,
             "currency": "₹",
@@ -510,7 +509,7 @@ const CATEGORY_DATA = [
             "description": "A diagnostic and repair visit for cooling, noise or leakage issues."
           },
           {
-            "serviceId": "washing-machine-repair",
+            "id": "washing-machine-repair",
             "name": "Washing Machine Repair",
             "price": 399,
             "currency": "₹",
@@ -522,7 +521,7 @@ const CATEGORY_DATA = [
             "isPopular": true
           },
           {
-            "serviceId": "microwave-repair",
+            "id": "microwave-repair",
             "name": "Microwave Repair",
             "price": 349,
             "currency": "₹",
@@ -533,7 +532,7 @@ const CATEGORY_DATA = [
             "description": "A repair visit for heating, sparking or control panel problems."
           },
           {
-            "serviceId": "water-purifier-service",
+            "id": "water-purifier-service",
             "name": "Water Purifier Service",
             "price": 449,
             "currency": "₹",
@@ -544,7 +543,7 @@ const CATEGORY_DATA = [
             "description": "A filter check and service to keep your RO purifier running safely."
           },
           {
-            "serviceId": "chimney-repair-cleaning",
+            "id": "chimney-repair-cleaning",
             "name": "Chimney Repair & Cleaning",
             "price": 599,
             "currency": "₹",
@@ -555,7 +554,7 @@ const CATEGORY_DATA = [
             "description": "Degreasing filters and checking suction for a smoke-free kitchen."
           },
           {
-            "serviceId": "geyser-repair",
+            "id": "geyser-repair",
             "name": "Geyser Repair & Service",
             "price": 449,
             "currency": "₹",
@@ -568,12 +567,12 @@ const CATEGORY_DATA = [
         ]
       },
       {
-        "categoryId": "electronics-repair",
+        "id": "electronics-repair",
         "name": "Electronics Repair",
         "image": "https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "tv-repair",
+            "id": "tv-repair",
             "name": "TV Repair",
             "price": 449,
             "currency": "₹",
@@ -584,7 +583,7 @@ const CATEGORY_DATA = [
             "description": "A diagnostic visit for display, sound or power issues on any TV."
           },
           {
-            "serviceId": "laptop-repair",
+            "id": "laptop-repair",
             "name": "Laptop Repair",
             "price": 599,
             "currency": "₹",
@@ -595,7 +594,7 @@ const CATEGORY_DATA = [
             "description": "Hardware and software troubleshooting for slow or malfunctioning laptops."
           },
           {
-            "serviceId": "inverter-battery-repair",
+            "id": "inverter-battery-repair",
             "name": "Inverter & Battery Repair",
             "price": 499,
             "currency": "₹",
@@ -610,19 +609,19 @@ const CATEGORY_DATA = [
     ]
   },
   {
-    "categoryId": "electrician-plumbing-carpentry",
+    "id": "electrician-plumbing-carpentry",
     "name": "Electrician, Plumbing & Carpentry",
     "icon": "bolt",
     "image": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80&auto=format&fit=crop",
-    "tagLine": "Trusted hands for wiring, leaks and everyday fixes.",
+    "tagline": "Trusted hands for wiring, leaks and everyday fixes.",
     "subCategories": [
       {
-        "categoryId": "electrician",
+        "id": "electrician",
         "name": "Electrician",
         "image": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "switch-socket-repair",
+            "id": "switch-socket-repair",
             "name": "Switch & Socket Repair",
             "price": 149,
             "currency": "₹",
@@ -634,7 +633,7 @@ const CATEGORY_DATA = [
             "isPopular": true
           },
           {
-            "serviceId": "ceiling-fan-installation",
+            "id": "ceiling-fan-installation",
             "name": "Ceiling Fan Installation",
             "price": 249,
             "currency": "₹",
@@ -645,7 +644,7 @@ const CATEGORY_DATA = [
             "description": "Secure mounting and wiring of a new ceiling fan."
           },
           {
-            "serviceId": "house-wiring-inspection",
+            "id": "house-wiring-inspection",
             "name": "House Wiring Inspection",
             "price": 499,
             "currency": "₹",
@@ -656,7 +655,7 @@ const CATEGORY_DATA = [
             "description": "A full electrical safety check to catch wiring issues early."
           },
           {
-            "serviceId": "mcb-fuse-repair",
+            "id": "mcb-fuse-repair",
             "name": "MCB & Fuse Repair",
             "price": 299,
             "currency": "₹",
@@ -667,7 +666,7 @@ const CATEGORY_DATA = [
             "description": "Diagnosis and repair of tripping MCBs or blown fuses."
           },
           {
-            "serviceId": "inverter-installation",
+            "id": "inverter-installation",
             "name": "Inverter Installation",
             "price": 799,
             "currency": "₹",
@@ -678,7 +677,7 @@ const CATEGORY_DATA = [
             "description": "Wiring and setup for a new home inverter and battery backup."
           },
           {
-            "serviceId": "cctv-doorbell-install",
+            "id": "cctv-doorbell-install",
             "name": "CCTV / Video Doorbell Install",
             "price": 649,
             "currency": "₹",
@@ -691,12 +690,12 @@ const CATEGORY_DATA = [
         ]
       },
       {
-        "categoryId": "plumbing",
+        "id": "plumbing",
         "name": "Plumbing",
         "image": "https://images.unsplash.com/photo-1676210134190-3f2c0d5cf58d?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "tap-mixer-repair",
+            "id": "tap-mixer-repair",
             "name": "Tap & Mixer Repair",
             "price": 149,
             "currency": "₹",
@@ -708,7 +707,7 @@ const CATEGORY_DATA = [
             "isPopular": true
           },
           {
-            "serviceId": "pipe-leakage-repair",
+            "id": "pipe-leakage-repair",
             "name": "Pipe Leakage Repair",
             "price": 349,
             "currency": "₹",
@@ -719,7 +718,7 @@ const CATEGORY_DATA = [
             "description": "Locate and seal pipe leaks before they cause water damage."
           },
           {
-            "serviceId": "toilet-flush-repair",
+            "id": "toilet-flush-repair",
             "name": "Toilet & Flush Repair",
             "price": 299,
             "currency": "₹",
@@ -730,7 +729,7 @@ const CATEGORY_DATA = [
             "description": "Repair of flush tanks, jets or toilet seat fittings."
           },
           {
-            "serviceId": "water-tank-cleaning",
+            "id": "water-tank-cleaning",
             "name": "Water Tank Cleaning",
             "price": 599,
             "currency": "₹",
@@ -741,7 +740,7 @@ const CATEGORY_DATA = [
             "description": "Deep cleaning and disinfection of overhead or underground tanks."
           },
           {
-            "serviceId": "water-heater-installation",
+            "id": "water-heater-installation",
             "name": "Water Heater Installation",
             "price": 549,
             "currency": "₹",
@@ -752,7 +751,7 @@ const CATEGORY_DATA = [
             "description": "Safe mounting and plumbing connection for a new geyser."
           },
           {
-            "serviceId": "drainage-cleaning",
+            "id": "drainage-cleaning",
             "name": "Drainage Cleaning",
             "price": 449,
             "currency": "₹",
@@ -765,12 +764,12 @@ const CATEGORY_DATA = [
         ]
       },
       {
-        "categoryId": "carpentry",
+        "id": "carpentry",
         "name": "Carpentry",
         "image": "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "furniture-assembly",
+            "id": "furniture-assembly",
             "name": "Furniture Assembly",
             "price": 349,
             "currency": "₹",
@@ -781,7 +780,7 @@ const CATEGORY_DATA = [
             "description": "Assembly of flat-pack furniture like beds, wardrobes and desks."
           },
           {
-            "serviceId": "door-lock-repair",
+            "id": "door-lock-repair",
             "name": "Door & Lock Repair",
             "price": 299,
             "currency": "₹",
@@ -792,7 +791,7 @@ const CATEGORY_DATA = [
             "description": "Fix sticking doors, loose hinges or faulty locks."
           },
           {
-            "serviceId": "furniture-repair",
+            "id": "furniture-repair",
             "name": "Furniture Repair",
             "price": 399,
             "currency": "₹",
@@ -803,7 +802,7 @@ const CATEGORY_DATA = [
             "description": "Repair of wobbly, broken or damaged wooden furniture."
           },
           {
-            "serviceId": "curtain-rod-installation",
+            "id": "curtain-rod-installation",
             "name": "Curtain Rod Installation",
             "price": 249,
             "currency": "₹",
@@ -814,7 +813,7 @@ const CATEGORY_DATA = [
             "description": "Levelled mounting of curtain rods and brackets on any wall."
           },
           {
-            "serviceId": "wall-shelf-installation",
+            "id": "wall-shelf-installation",
             "name": "Wall Shelf Installation",
             "price": 299,
             "currency": "₹",
@@ -829,19 +828,19 @@ const CATEGORY_DATA = [
     ]
   },
   {
-    "categoryId": "painting-decor",
+    "id": "painting-decor",
     "name": "Painting & Décor",
     "icon": "paint-roller",
     "image": "https://images.unsplash.com/photo-1693985120993-e9b203ce7631?w=800&q=80&auto=format&fit=crop",
-    "tagLine": "Fresh coats and finishing touches, handled end to end.",
+    "tagline": "Fresh coats and finishing touches, handled end to end.",
     "subCategories": [
       {
-        "categoryId": "interior-painting",
+        "id": "interior-painting",
         "name": "Interior Painting",
         "image": "https://images.unsplash.com/photo-1693985120993-e9b203ce7631?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "single-room-painting",
+            "id": "single-room-painting",
             "name": "Single Room Painting",
             "price": 3999,
             "currency": "₹",
@@ -853,7 +852,7 @@ const CATEGORY_DATA = [
             "isPopular": true
           },
           {
-            "serviceId": "full-home-painting",
+            "id": "full-home-painting",
             "name": "Full Home Painting",
             "price": 24999,
             "currency": "₹",
@@ -864,7 +863,7 @@ const CATEGORY_DATA = [
             "description": "A complete interior painting package sized for 2-3 BHK homes."
           },
           {
-            "serviceId": "accent-wall-texture",
+            "id": "accent-wall-texture",
             "name": "Accent Wall Texture Design",
             "price": 4999,
             "currency": "₹",
@@ -875,7 +874,7 @@ const CATEGORY_DATA = [
             "description": "A textured finish applied to a feature wall for a design accent."
           },
           {
-            "serviceId": "wood-polish",
+            "id": "wood-polish",
             "name": "Wood Polish & Varnish",
             "price": 2499,
             "currency": "₹",
@@ -886,7 +885,7 @@ const CATEGORY_DATA = [
             "description": "Refinishing for doors, furniture and wood trims to restore their shine."
           },
           {
-            "serviceId": "wall-stencil-art",
+            "id": "wall-stencil-art",
             "name": "Wall Stencil Art",
             "price": 1999,
             "currency": "₹",
@@ -899,12 +898,12 @@ const CATEGORY_DATA = [
         ]
       },
       {
-        "categoryId": "exterior-painting",
+        "id": "exterior-painting",
         "name": "Exterior Painting",
         "image": "https://images.unsplash.com/photo-1693985120993-e9b203ce7631?w=800&q=80&auto=format&fit=crop",
         "services": [
           {
-            "serviceId": "exterior-wall-painting",
+            "id": "exterior-wall-painting",
             "name": "Exterior Wall Painting",
             "price": 18999,
             "currency": "₹",
@@ -916,7 +915,7 @@ const CATEGORY_DATA = [
             "isPopular": true
           },
           {
-            "serviceId": "waterproofing-treatment",
+            "id": "waterproofing-treatment",
             "name": "Waterproofing Treatment",
             "price": 5999,
             "currency": "₹",
@@ -927,7 +926,7 @@ const CATEGORY_DATA = [
             "description": "Preventive waterproofing for terraces, walls and bathrooms."
           },
           {
-            "serviceId": "metal-grill-painting",
+            "id": "metal-grill-painting",
             "name": "Metal Grill & Gate Painting",
             "price": 2999,
             "currency": "₹",

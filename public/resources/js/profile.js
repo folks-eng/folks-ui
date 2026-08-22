@@ -164,7 +164,7 @@ async function initAddressSection() {
 
     let editingId = null; // id of the address card currently in edit mode, or 'new'
     
-    // Fetch the user details.
+    // Fetch the address details.
     let res = await FolksAPI.viewAddresses();
         
     if (! res.success) {

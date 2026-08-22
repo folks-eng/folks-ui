@@ -15,6 +15,7 @@ function authenticate(req, res, next) {
     }
     let token = req.cookies._fks;
     if (! token) {
+        log.error('No folks cookie found, or cookie is already expired');
         return res.status(401)
                 .set('Content-Type', 'application/json')
                 .send({message: "Access to this resource is restricted"});
@@ -22,6 +23,7 @@ function authenticate(req, res, next) {
     const payload = JwtUtil.validate(token);
 
     if (! payload) {
+        log.error('Invalid payload. Denied access');
         return res.status(401)
                 .set('Content-Type', 'application/json')
                 .send({message: "Access to this resource is restricted"});

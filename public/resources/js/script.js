@@ -1136,15 +1136,28 @@ function setLoggedIn(flag) {
  getStoredAddress()/saveStoredAddress() are kept as thin wrappers around
  "the first saved address" so existing callers (become-professional.js's
  quick-fill, for instance) keep working unchanged. -------------------- */
-function getAddresses() {
+async function getAddresses() {
     const raw = safeStorageGet(FOLKS_STORAGE_KEYS.addresses);
     if (raw) {
         try {
             const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed))
+            if (Array.isArray(parsed)) {
                 return parsed;
-        } catch (err) { /* fall through to migration */
+            }
         }
+        catch (err) { /* fall through to migration */
+        }
+    }
+    else {
+        // Query the backend to fetch address list.
+        let res = await FolksAPI.viewAddresses();
+        if (res.success) {
+            if (Array.isArray(res.result.items)) {
+                safeStorageSet(FOLKS_STORAGE_KEYS.addresses, JSON.stringify(res.result.items));
+                return res.result.items;
+            }
+        }
+        showError('loginMobileError', res.message || 'Could fetch addresses. Please try again.');
     }
 
     // Migrate a legacy single-address record into the new list, once.
@@ -1165,45 +1178,47 @@ function getAddresses() {
 function saveAddresses(list) {
     safeStorageSet(FOLKS_STORAGE_KEYS.addresses, JSON.stringify(list));
 }
-function getAddressById(id) {
-    return getAddresses().find(a => a.id === id) || null;
+async function getAddressById(id) {
+    let list = await getAddresses();
+    return list.find(a => a.addressId === id) || null;
 }
-function addAddress(address) {
-    const list = getAddresses();
+async function addAddress(address) {
+    const list = await getAddresses();
     const withId = {id: `addr-${Date.now()}`, label: address.label || 'Home', ...address};
     list.push(withId);
     saveAddresses(list);
     return withId;
 }
-function updateAddressById(id, updates) {
-    const list = getAddresses();
-    const idx = list.findIndex(a => a.id === id);
+async function updateAddressById(id, updates) {
+    const list = await getAddresses();
+    const idx = list.findIndex(a => a.addressIdd === id);
     if (idx === -1)
         return null;
     list[idx] = {...list[idx], ...updates, id};
     saveAddresses(list);
     return list[idx];
 }
-function deleteAddressById(id) {
-    saveAddresses(getAddresses().filter(a => a.id !== id));
+async function deleteAddressById(id) {
+    let list = await getAddresses();
+    saveAddresses(list.filter(a => a.addressIdd !== id));
 }
 function formatAddressSummary(address) {
     if (!address)
         return '';
-    return [address.line1, address.city].filter(Boolean).join(', ');
+    return [address.addressLine1, address.city].filter(Boolean).join(', ');
 }
 
 /** Back-compat wrappers: "the" saved address is just the first one. */
-function getStoredAddress() {
-    const list = getAddresses();
+async function getStoredAddress() {
+    const list = await getAddresses();
     return list.length ? list[0] : null;
 }
-function saveStoredAddress(address) {
-    const list = getAddresses();
-    if (list.length && list[0].id === address.id) {
+async function saveStoredAddress(address) {
+    const list = await getAddresses();
+    if (list.length && list[0].id === address.addressId) {
         list[0] = address;
     } else if (list.length === 0) {
-        list.push({id: address.id || `addr-${Date.now()}`, label: 'Home', ...address});
+        list.push({id: address.addressId || `addr-${Date.now()}`, label: 'Home', ...address});
     }
     saveAddresses(list);
 }
@@ -1215,11 +1230,14 @@ function saveStoredAddress(address) {
  qty, date, timeSlotId, timeSlotLabel }
  ------------------------------------------------------------------------ */
 function getCart() {
+    // alert('getCart');
     const raw = safeStorageGet(FOLKS_STORAGE_KEYS.cart);
+    
     if (!raw)
         return [];
     try {
         const parsed = JSON.parse(raw);
+        // alert(raw);
         return Array.isArray(parsed) ? parsed : [];
     } catch (err) {
         return [];

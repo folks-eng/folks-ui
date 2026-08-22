@@ -30,13 +30,20 @@ class HttpClient {
             httpsAgent,
             headers: {
                 'Content-Type': 'application/json'
+            },
+            paramsSerializer: {
+                indexes: null
             }
         });
 
         this.client.interceptors.request.use(config => {
             let dump = '\n============================ REQUEST ============================' + '\n';
             dump += config.method.toUpperCase() + ' ' + (config.baseURL + config.url) + '\n';
+            dump += 'URI: ' + axios.getUri(config) + '\n';
             dump += config.headers + '\n';
+            if (! (typeof config.params === 'undefined')) {
+                dump += JSON.stringify(config.params) + '\n';
+            }
             
             if (config.data instanceof URLSearchParams) {
                 dump += 'Body (string): ' + config.data.toString() + '\n';
