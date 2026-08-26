@@ -241,8 +241,6 @@ const FolksAPI = (function () {
         }
 
         try {
-            alert(JSON.stringify(payload));
-
             const res = await fetch(
                 BASE_URL + '/addresses',
                 {
@@ -371,6 +369,29 @@ const FolksAPI = (function () {
         }
     }
 
+    async function viewSlots(dateKey, serviceId) {
+        try {
+            const res = await fetch(
+                BASE_URL + '/availabilities/slots?date=' + dateKey + '&serviceId=' + serviceId,
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch all categories:', e);
+            return {'success': false, 'message': e.message};
+        }
+    }
+
     /**
      * POST /api/v1/bookings
      * Payload: { services: [{ name, date, timeSlot, quantity, price, address }], paymentMethod, amount }
@@ -423,13 +444,12 @@ const FolksAPI = (function () {
      * the demo-mode fallback (which has no server-side session) working.
      * @returns {Promise<{success: boolean, message?: string, bookings?: object[]}>}
      */
-    async function getBookings(userId) {
-        if (DEMO_MODE) {
-            return simulateGetBookings(userId);
-        }
+    async function getBookings() {
+        // if (DEMO_MODE) {
+        //     return simulateGetBookings(userId);
+        // }
 
         try {
-            alert(userId);
             let uri = BASE_URL + '/bookings';
 
             const res = await fetch(uri, {
@@ -465,12 +485,12 @@ const FolksAPI = (function () {
             let uri = BASE_URL + '/bookings/' + encodeURIComponent(bookingId);
 
             const res = await fetch(uri, {
-                method: 'PUT',
+                method: 'PATCH',
                 headers: {'Content-Type': 'application/json'},
                 credentials: 'include',
                 body: JSON.stringify({status: 'CANCELLED'})
             });
-            if (res.status === 201) {
+            if (res.status === 200) {
                 return await res.json();
             }
             throw new Error(`Booking cancellation request to url ${uri} has failed. Status: ${res.status}. Error Msg: ${res.message}`);
@@ -643,6 +663,7 @@ const FolksAPI = (function () {
         viewAddresses,
         deleteAddress,
         viewCategories,
+        viewSlots,
         createBooking,
         getBookings,
         cancelBooking,

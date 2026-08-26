@@ -18,8 +18,10 @@ const SCHEDULE_SLOT_TEMPLATE = [
     {id: 'slot-12-14', label: '12:00 – 2:00 PM', startHour: 12},
     {id: 'slot-14-16', label: '2:00 – 4:00 PM', startHour: 14},
     {id: 'slot-16-18', label: '4:00 – 6:00 PM', startHour: 16},
-    {id: 'slot-18-20', label: '6:00 – 8:00 PM', startHour: 18},
+    {id: 'slot-18-20', label: '6:00 – 8:00 PM', startHour: 18}
 ];
+
+const slot_mapping = new Map();
 
 /** Returns YYYY-MM-DD for a Date, in local time (not UTC). */
 function formatDateKey(date) {
@@ -57,22 +59,42 @@ function getScheduleDays() {
     return days;
 }
 
-function getSlotsForDate(dateKey) {
+async function getSlotsForDate(dateKey, serviceId) {
+    if (slot_mapping.has(dateKey + '~' + serviceId)) {
+        return slot_mapping.get(dateKey + '~' + serviceId);
+    }
+    
     const now = new Date();
     const isToday = dateKey === formatDateKey(now);
-
-    return SCHEDULE_SLOT_TEMPLATE.map(slot => {
+    
+    let res = await FolksAPI.viewSlots(dateKey, serviceId);
+        
+    if (! res.success) {
+        alert('Failed');
+        // showError('categoryError', res.message || 'Could fetch categories. Please try again.');
+        return;
+    }
+    schedule_slots = res.result.items;
+    
+    // return SCHEDULE_SLOT_TEMPLATE.map(slot => {
+    timeslots = schedule_slots.map(slot => {
         let disabled = false;
         let reason = '';
         if (isToday && slot.startHour <= now.getHours() + 1) {
             disabled = true;
             reason = 'Past';
-        } else if (pseudoRandomBooked(dateKey, slot.id)) {
+        } else if (slot.message === 'Booked') {
             disabled = true;
             reason = 'Booked';
         }
+        else {
+            reason = slot.slot + ' slots Available';
+        }
         return {...slot, disabled, reason};
     });
+    slot_mapping.set(dateKey + '~' + serviceId, timeslots);
+    
+    return timeslots;
 }
 
 let _scheduleConfirmCallback = null;
@@ -179,6 +201,7 @@ function injectSchedulePickerMarkup() {
     };
 
     const state = {
+        selectedServiceId: null,
         selectedDate: null,
         selectedSlot: null,
         selectedAddressId: null,
@@ -247,12 +270,12 @@ function injectSchedulePickerMarkup() {
         });
     }
 
-    function renderSlots() {
+    async function renderSlots() {
         if (!state.selectedDate) {
             slotGrid.innerHTML = '';
             return;
         }
-        const slots = getSlotsForDate(state.selectedDate);
+        const slots = await getSlotsForDate(state.selectedDate, state.selectedServiceId);
         slotGrid.innerHTML = slots.map(slot => `
       <button type="button"
               class="schedule-slot${slot.id === state.selectedSlot ? ' is-active' : ''}${slot.disabled ? ' is-disabled' : ''}"
@@ -376,8 +399,8 @@ function injectSchedulePickerMarkup() {
         addressFormErrorEl.hidden = false;
     }
 
-    function finishScheduling(address) {
-        const slots = getSlotsForDate(state.selectedDate);
+    async function finishScheduling(address) {
+        const slots = await getSlotsForDate(state.selectedDate, state.selectedServiceId);
         const chosenSlot = slots.find(s => s.id === state.selectedSlot);
         const result = {
             date: state.selectedDate,
@@ -387,14 +410,14 @@ function injectSchedulePickerMarkup() {
             addressSummary: formatAddressSummary(address)
         };
         if (_scheduleConfirmCallback) {
-            alert('Here');
             _scheduleConfirmCallback(result);
         }
         closeModal();
     }
 
     // Expose an internal opener the public function below can call.
-    window.__openSchedulePickerInternal = function (serviceName, preset, onConfirm) {
+    window.__openSchedulePickerInternal = function (serviceId, serviceName, preset, onConfirm) {
+        state.selectedServiceId = (preset && preset.serviceId) || serviceId;
         state.selectedDate = (preset && preset.date) || null;
         state.selectedSlot = (preset && preset.timeSlotId) || null;
         state.selectedAddressId = (preset && preset.addressId) || null;
@@ -439,8 +462,8 @@ function escapeHtmlSched(str) {
  * @param {{date?: string, timeSlotId?: string, addressId?: string}} preset - pre-selected values (for "change slot")
  * @param {(result: {date: string, timeSlotId: string, timeSlotLabel: string, addressId: string, addressSummary: string}) => void} onConfirm
  */
-function openSchedulePicker(serviceName, preset, onConfirm) {
+function openSchedulePicker(serviceId, serviceName, preset, onConfirm) {
     injectSchedulePickerMarkup();
     initRipple();
-    window.__openSchedulePickerInternal(serviceName, preset, onConfirm);
+    window.__openSchedulePickerInternal(serviceId, serviceName, preset, onConfirm);
 }

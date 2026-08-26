@@ -17,6 +17,7 @@ const logoutRoute = require('./src/routes/logout');
 const userRoute = require('./src/routes/user');
 const addressRoute = require('./src/routes/address');
 const categoryRoute = require('./src/routes/categories');
+const availabilityRoute = require('./src/routes/availabilities');
 const bookingRoute = require('./src/routes/booking');
 
 const { serveStatic } = require('./src/staticServer');
@@ -53,6 +54,7 @@ function setup() {
     app.use(basePath + '/addresses', addressRoute);
     app.use(basePath + '/categories', categoryRoute);
     app.use(basePath + '/bookings', bookingRoute);
+    app.use(basePath + '/availabilities', availabilityRoute);
 
     // Middleware to serve static files from a directory
     app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));

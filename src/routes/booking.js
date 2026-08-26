@@ -20,7 +20,7 @@ async function create(req, res) {
     
     try {
         const response = await httpClient.post(
-            '/bookings'
+            '/bookings/$batch'
             , payload
             , {
                 headers: {
@@ -63,6 +63,47 @@ async function modify(req, res) {
     try {
         let bookingId = req.params.id;
         const response = await httpClient.put(
+            '/bookings/' + bookingId
+            , payload
+            , {
+                headers: {
+                    Authorization: `Bearer ${req.token}`
+                }
+            }
+        );
+        if (response.status === 200) {
+            let result = response.data;
+            if (log.isDebugEnabled()) {
+                log.debug('Successfully modified booking details. Response:\n%s', JSON.stringify(result, null, 2));
+            }
+            return res.status(response.status)
+                    .json(result);
+        }
+        else {
+            let result = response.data;
+            log.error('Unable to modify booking details. Status code: %d. Error Msg: %s', response.status, result);
+            
+            return res.status(response.status)
+                    .json(result);
+        }
+    }
+    catch (err) {
+        handleError(req, res, err, 'Error in modifying booking details');
+    }
+}
+
+async function patch(req, res) {
+    let payload = req.body;
+
+    if (! payload || Object.keys(payload).length === 0) {
+        return res.status(400)
+                .set('Content-Type', 'application/json')
+                .json({message: 'Missing or empty json payload'});
+    }
+    
+    try {
+        let bookingId = req.params.id;
+        const response = await httpClient.patch(
             '/bookings/' + bookingId
             , payload
             , {
@@ -199,6 +240,7 @@ async function handleError(req, res, err, msg) {
 
 route.post('/', create);
 route.put('/:id', modify);
+route.patch('/:id', patch);
 route.get('/:id', view);
 route.get('/', viewAll);
 route.delete('/:id', remove);

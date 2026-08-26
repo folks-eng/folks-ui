@@ -338,8 +338,7 @@ function initCategoriesPage() {
             }
 
             addBtn.addEventListener('click', () => {
-                openSchedulePicker(sku.name, null, (schedule) => {
-                    alert('There');
+                openSchedulePicker(sku.serviceId, sku.name, null, (schedule) => {
                     addToCart(sku, category, subCategory, schedule);
                     renderGrid();
                 });
@@ -373,7 +372,6 @@ function initCategoriesPage() {
     function addToCart(sku, category, subCategory, schedule) {
         const cart = getCart();
         let item = cart.find(i => i.skuId === sku.serviceId);
-        alert(schedule.addressId);
         if (!item) {
             item = {
                 skuId: sku.serviceId,
@@ -398,7 +396,7 @@ function initCategoriesPage() {
             item.addressId = schedule.addressId;
             item.addressSummary = schedule.addressSummary;
         }
-        alert('Adding to cart:\n' + JSON.stringify(cart));
+        // alert('Adding to cart:\n' + JSON.stringify(cart));
         item.qty += 1;
         saveCart(cart);
         updateCartBar();

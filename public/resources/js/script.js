@@ -1230,16 +1230,15 @@ async function saveStoredAddress(address) {
  qty, date, timeSlotId, timeSlotLabel }
  ------------------------------------------------------------------------ */
 function getCart() {
-    // alert('getCart');
     const raw = safeStorageGet(FOLKS_STORAGE_KEYS.cart);
     
     if (!raw)
         return [];
     try {
         const parsed = JSON.parse(raw);
-        // alert(raw);
         return Array.isArray(parsed) ? parsed : [];
-    } catch (err) {
+    }
+    catch (err) {
         return [];
     }
 }

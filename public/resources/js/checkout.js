@@ -8,19 +8,19 @@
 
 const PAYMENT_METHODS = [
     {
-        id: 'cash',
+        id: 'COD',
         label: 'Cash on Service',
         description: 'Pay the professional directly once the job is done.',
         icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>',
     },
     {
-        id: 'upi',
+        id: 'UPI',
         label: 'UPI',
         description: 'Pay instantly using any UPI app at checkout.',
         icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
     },
     {
-        id: 'card',
+        id: 'CARD',
         label: 'Credit / Debit Card',
         description: 'Pay securely online with your card.',
         icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2"/><path d="M2 10h20" stroke="currentColor" stroke-width="2"/></svg>',
@@ -220,10 +220,10 @@ function wireCompleteBooking() {
     btn.addEventListener('click', async () => {
         errorEl.hidden = true;
         const cart = getCart();
-        alert('wireCompleteBooking');
         
-        if (cart.length === 0)
+        if (cart.length === 0) {
             return;
+        }
         if (!selectedPaymentMethod) {
             errorEl.textContent = 'Please select a payment method.';
             errorEl.hidden = false;
@@ -239,9 +239,9 @@ function wireCompleteBooking() {
         const payload = cart.map(item => ({
             serviceId: item.skuId,
             addressId: item.addressId,
-            scheduledAt: item.date,
+            scheduledAt: item.date + 'T' + item.timeSlotLabel.split(" - ")[0] + ':00',
             timeSlot: item.timeSlotLabel,
-            quantity: item.qty,
+            // quantity: item.qty,
             totalAmount: item.price,
             paymentMethod: selectedPaymentMethod
         }));
@@ -258,13 +258,13 @@ function wireCompleteBooking() {
         //     paymentMethod: selectedPaymentMethod,
         //     amount
         // };
-        alert(JSON.stringify(payload));
+        // alert(JSON.stringify(payload[0]));
 
         btn.disabled = true;
         btn.textContent = 'Confirming your booking…';
 
-        const result = await FolksAPI.createBooking(payload);
-
+        const result = await FolksAPI.createBooking(payload[0]);
+        
         btn.disabled = false;
         btn.textContent = 'Complete Booking';
 
@@ -275,11 +275,12 @@ function wireCompleteBooking() {
         }
 
         clearCart();
-        showBookingSuccess(result.booking, amount);
+        showBookingSuccess(result.result, amount);
     });
 }
 
 function showBookingSuccess(booking, amount) {
+    alert(JSON.stringify(booking));
     hide(document.getElementById('checkoutContent'));
     const success = document.getElementById('checkoutSuccess');
     const msg = document.getElementById('bookingConfirmMessage');
@@ -287,7 +288,7 @@ function showBookingSuccess(booking, amount) {
     if (msg)
         msg.textContent = `Your booking is confirmed. A total of ₹${amount.toLocaleString('en-IN')} will be collected as agreed.`;
     if (idEl)
-        idEl.textContent = booking && booking.id ? booking.id : '—';
+        idEl.textContent = booking && booking.bookingId ? booking.bookingId : 'N/A';
     show(success);
     success.scrollIntoView({behavior: 'smooth', block: 'start'});
 }

@@ -112,6 +112,10 @@ class HttpClient {
         return this.rpc(uri, 'PUT', payload, config);
     }
 
+    async patch(uri, payload, config = {}) {
+        return this.rpc(uri, 'PATCH', payload, config);
+    }
+
     async delete(uri, config = {}) {
         return this.rpc(uri, 'DELETE', null, config);
     }
