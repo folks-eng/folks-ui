@@ -280,7 +280,6 @@ function wireCompleteBooking() {
 }
 
 function showBookingSuccess(booking, amount) {
-    alert(JSON.stringify(booking));
     hide(document.getElementById('checkoutContent'));
     const success = document.getElementById('checkoutSuccess');
     const msg = document.getElementById('bookingConfirmMessage');

@@ -349,7 +349,7 @@ const FolksAPI = (function () {
     async function viewCategories() {
         try {
             const res = await fetch(
-                BASE_URL + '/categories/hierarchy?id=101&id=102&id=103&id=104&id=105',
+                BASE_URL + '/categories/hierarchy',
                 {
                     method: 'GET',
                     credentials: 'include'
@@ -450,7 +450,7 @@ const FolksAPI = (function () {
         // }
 
         try {
-            let uri = BASE_URL + '/bookings';
+            let uri = BASE_URL + '/bookings?fetchDependency=true';
 
             const res = await fetch(uri, {
                 method: 'GET',
@@ -485,13 +485,13 @@ const FolksAPI = (function () {
             let uri = BASE_URL + '/bookings/' + encodeURIComponent(bookingId);
 
             const res = await fetch(uri, {
-                method: 'PATCH',
+                method: 'DELETE',
                 headers: {'Content-Type': 'application/json'},
-                credentials: 'include',
-                body: JSON.stringify({status: 'CANCELLED'})
+                credentials: 'include'
+                // body: JSON.stringify({status: 'CANCELLED'})
             });
-            if (res.status === 200) {
-                return await res.json();
+            if (res.status === 204) {
+                return {'success': true, 'message': 'Booking cancelled successfully'};
             }
             throw new Error(`Booking cancellation request to url ${uri} has failed. Status: ${res.status}. Error Msg: ${res.message}`);
         } catch (e) {

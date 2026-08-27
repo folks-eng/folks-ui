@@ -83,7 +83,7 @@ class JwtUtil {
             let token = jwt.sign(claims, keystore.getPrivateKey(), opts);
             
             if (log.isDebugEnabled()) {
-                log.debug(`Generated and signed jwt token from claims: ${claims}`);
+                log.debug('Generated and signed jwt token from claims: ' + JSON.stringify(claims));
             }
             return token;
         }

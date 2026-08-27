@@ -162,9 +162,13 @@ function renderBookingCard(booking) {
     
       ${booking.professionalId !== -1 ? `
         <div class="booking-card-footer">
-          <span>Professional - ${escapeBk(booking.professionalId)} </span>
+          <span>Professional - ${escapeBk(booking.professionalName)}. Contact - ${escapeBk(booking.professionalContact)} </span>
         </div>
-      ` : ''
+      ` : `
+        <div class="booking-card-footer">
+          <span>Professional not assigned </span>
+        </div>
+        `
       }
 
       ${booking._tab === 'upcoming' ? `

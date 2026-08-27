@@ -58,7 +58,8 @@ async function register(req, res) {
                     maxAge: parseInt(ttlMin, 10) * 60 * 1000,        // Expires (in milliseconds)
                     httpOnly: true,                 // Protects against XSS attacks (not accessible via client JS)
                     secure: true,                   // Only sent over HTTPS
-                    sameSite: 'lax'                 // Mitigates CSRF attacks
+                    sameSite: 'lax',                // Mitigates CSRF attacks
+                    path: process.env.BASE_PATH || '/gateway/v1'
                 })
                 .json(result);
         }

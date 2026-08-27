@@ -172,7 +172,8 @@ async function viewAll(req, res) {
             , {
                 headers: {
                     Authorization: `Bearer ${req.token}`
-                }
+                },
+                params: req.query
             }
         );
         if (response.status === 200) {
