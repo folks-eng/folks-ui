@@ -1,7 +1,4 @@
-const crypto = require('crypto');
 const express = require('express');
-const JwtUtil = require('./../auth/jwt');
-const tokenMgr = require('./../auth/token_mgr');
 const httpClient = require('./../util/http_client');
 const {getLogger} = require('./../util/logger');
 
@@ -20,7 +17,7 @@ async function create(req, res) {
     
     try {
         const response = await httpClient.post(
-            '/bookings/$batch'
+            '/bookings'
             , payload
             , {
                 headers: {

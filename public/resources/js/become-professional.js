@@ -126,7 +126,7 @@ async function renderExpertiseGroups() {
       <div class="pro-expertise-chips">
         ${cat.subCategories.map(sub => `
           <label class="pro-expertise-chip">
-            <input type="checkbox" value="${escapeAttrPro(sub.name)}" data-expertise-checkbox>
+            <input type="checkbox" value="${escapeAttrPro(sub.categoryId)}" data-expertise-checkbox>
             <span>${escapeHtmlPro(sub.name)}</span>
           </label>
         `).join('')}
@@ -151,11 +151,13 @@ function wireSubmit(user) {
         const aadhaar = document.getElementById('proAadhaar').value.replace(/\s/g, '');
         const nameOnId = document.getElementById('proNameOnId').value.trim();
         const pan = document.getElementById('proPan').value.trim();
-        const experience = document.getElementById('proExperience').value;
         const addressLine = document.getElementById('proAddressLine').value.trim();
         const locality = document.getElementById('proLocality').value.trim();
         const city = document.getElementById('proCity').value.trim();
         const pincode = document.getElementById('proPincode').value.trim();
+        const state = document.getElementById('proState').value.trim();
+        const experience = document.getElementById('proExperience').value;
+        const servingCities = document.getElementById('proServingCities').value;
         const expertise = getSelectedExpertise();
         const declared = document.getElementById('proDeclaration').checked;
 
@@ -184,6 +186,9 @@ function wireSubmit(user) {
         } else if (!/^\d{6}$/.test(pincode)) {
             showErrorPro('proAddressError', 'Enter a valid 6-digit pincode.');
             hasError = true;
+        } else if (!state) {
+            showErrorPro('proAddressError', 'Enter your current state.');
+            hasError = true;
         }
 
         if (expertise.length === 0) {
@@ -195,23 +200,31 @@ function wireSubmit(user) {
             showErrorPro('proDeclarationError', 'Please confirm the declaration to continue.');
             hasError = true;
         }
-
-        if (hasError)
+        if (hasError) {
             return;
-
+        }
         submitBtn.disabled = true;
         submitBtn.textContent = 'Submitting your application…';
 
         const payload = {
-            userId: user.id,
-            aadhaarNumber: aadhaar,
-            nameOnId,
-            panNumber: pan || null,
-            yearsOfExperience: experience ? Number(experience) : 0,
-            expertiseAreas: expertise,
-            currentAddress: {addressLine, locality, city, pincode},
+            bio: '',
+            documents: [ {
+                nameOnDocument: nameOnId,
+                documentType: 'AADHAAR',
+                documentNumber: aadhaar
+            } ],
+            // panNumber: pan || null,
+            address: {
+                addressLine1: addressLine,
+                addressLine2: locality,
+                city: city,
+                pincode: pincode,
+                state: state
+            },
+            experienceYears: experience ? Number(experience) : 0,
+            servingCities: servingCities,
+            expertise: expertise
         };
-
         const result = await FolksAPI.applyAsProfessional(payload);
 
         submitBtn.disabled = false;
@@ -225,22 +238,23 @@ function wireSubmit(user) {
         // Reflect the application everywhere the profile shows up, without
         // persisting the full Aadhaar number client-side — only the last 4
         // digits, the way a real product would mask it back to the user.
-        const updatedUser = {
-            ...user,
-            role: 'Professional',
-            professionalStatus: result.application.status,
-            aadhaarLast4: aadhaar.slice(-4),
-            expertiseAreas: expertise,
-            // Kept separate from the account's main saved address (folks_address)
-            // on purpose — this is where they currently work from, which may
-            // differ from their permanent/home address.
-            professionalCurrentAddress: {addressLine, locality, city, pincode},
-        };
-        saveCurrentUser(updatedUser);
-        renderUserChip(updatedUser);
+        // const updatedUser = {
+        //     ...user,
+        //     role: 'Professional',
+        //     professionalStatus: result.application.status,
+        //     aadhaarLast4: aadhaar.slice(-4),
+        //     expertiseAreas: expertise,
+        //     // Kept separate from the account's main saved address (folks_address)
+        //     // on purpose — this is where they currently work from, which may
+        //     // differ from their permanent/home address.
+        //     professionalCurrentAddress: {addressLine, locality, city, pincode},
+        // };
+        // saveCurrentUser(updatedUser);
+        let user = result.result;
+        renderUserChip(user);
 
         document.getElementById('proFormContent').hidden = true;
-        document.getElementById('proApplicationId').textContent = result.application.id;
+        document.getElementById('proApplicationId').textContent = user.applicationId;
         document.getElementById('proSuccess').hidden = false;
         document.getElementById('proSuccess').scrollIntoView({behavior: 'smooth', block: 'start'});
     });

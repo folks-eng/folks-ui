@@ -488,7 +488,6 @@ const FolksAPI = (function () {
                 method: 'DELETE',
                 headers: {'Content-Type': 'application/json'},
                 credentials: 'include'
-                // body: JSON.stringify({status: 'CANCELLED'})
             });
             if (res.status === 204) {
                 return {'success': true, 'message': 'Booking cancelled successfully'};
@@ -515,18 +514,26 @@ const FolksAPI = (function () {
         }
 
         try {
-            const res = await fetch('/api/v1/professionals', {
+            let uri = BASE_URL + '/professionals';
+
+            const res = await fetch(uri, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload),
+                body: JSON.stringify(payload)
             });
-            if (!res.ok)
-                throw new Error(`Professional application failed with status ${res.status}`);
-            return await res.json();
-        } catch (err) {
-            console.warn('[Folks] /api/v1/professionals unreachable, falling back to demo mode.', err);
-            return simulateApplyAsProfessional(payload);
+            let json = await res.json();
+            
+            if (res.status === 201) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error(e.message, e);
+            return {'success': false, 'message': e.message};
         }
     }
 

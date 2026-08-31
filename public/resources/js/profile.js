@@ -52,9 +52,16 @@ async function initProfileDetailsSection() {
     
     // Fetch the user details.
     let res = await FolksAPI.viewUser(st_user.externalId);
-        
     if (! res.success) {
-        showError('loginMobileError', res.message || 'Could fetch user details. Please try again.');
+        if (res.message === 'Cookie expired') {
+            showError(errorEl, 'Your session is expired. Forwarding you to the home screen ...');
+            // alert(1);
+            postLogout();
+            window.location.href = "/";
+        }
+        else {
+            showError(errorEl, res.message || 'Could fetch user details. Please try again.');
+        }
         return;
     }
     let user = res.result;

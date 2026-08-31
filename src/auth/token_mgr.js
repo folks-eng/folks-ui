@@ -104,7 +104,7 @@ class TokenManager {
                 }
 
                 if (log.isDebugEnabled()) {
-                    log.debug('Obtained a new token from the token server. Validity (hr): %d ', (expiresIn / 3600));
+                    log.debug('Obtained a new mTLS token from the token server. Validity (hr): %d ', (expiresIn / 3600));
                 }
 
                 // Store it back in the cache.
@@ -117,7 +117,7 @@ class TokenManager {
             catch (err) {
                 if (errorHandler.shouldRetry(err)) {
                     log.warn('Token refresh request failed for scope %s, retrying attempt %d/%d...', scope, attempt + 1, maxRetry);
-                    await sleep(retryDelayMs * (attempt + 1));
+                    await this.sleep(retryDelayMs * (attempt + 1));
                     
                     continue;
                 }

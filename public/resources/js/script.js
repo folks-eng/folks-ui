@@ -281,8 +281,9 @@ function initProfessionalLinkGate() {
         }
         safeStorageSet(FOLKS_STORAGE_KEYS.postSignupRedirect, 'become-professional.html');
         const signupBtn = document.getElementById('signupBtn');
-        if (signupBtn)
+        if (signupBtn) {
             signupBtn.click();
+        }
     });
 }
 
@@ -642,14 +643,19 @@ function initSignupFlow() {
         }
 
         goToWaiting('Setting up your profile…', 'forward');
+        const redirectTo = safeStorageGet(FOLKS_STORAGE_KEYS.postSignupRedirect);
+        let role = 'CUSTOMER';
+        if (redirectTo && redirectTo === 'become-professional.html') {
+            role = 'PROFESSIONAL';
+        }
 
         const result = await FolksAPI.createUser({
             phone1: state.mobile,
             fullName: name,
-            email: email
+            email: email,
+            role: role
         });
 
-        
         if (result.success) {
             document.getElementById('successMessage').textContent =
                 `You're all set to browse services, ${result.result.fullName.split(' ')[0]}.`;
@@ -1120,6 +1126,8 @@ function getCurrentUser() {
 }
 function removeCurrentUser() {
     safeStorageRemove(FOLKS_STORAGE_KEYS.user);
+    safeStorageRemove(FOLKS_STORAGE_KEYS.addresses);
+    safeStorageRemove(FOLKS_STORAGE_KEYS.cart);
 }
 function saveCurrentUser(user) {
     safeStorageSet(FOLKS_STORAGE_KEYS.user, JSON.stringify(user));
@@ -1502,9 +1510,18 @@ function renderUserChip(user) {
                 removeCurrentUser();
                 closeDropdown();
                 restoreLoggedOutHeader(navActions);
+                
+                // Go to home screen
+                window.location.replace("/"); 
             }
         });
     });
+}
+
+function postLogout() {
+    setLoggedIn(false);
+    removeCurrentUser();
+    // closeDropdown();
 }
 
 /** Rebuilds the default Log In / Sign Up buttons after logout. */

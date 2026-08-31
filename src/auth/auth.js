@@ -18,7 +18,7 @@ function authenticate(req, res, next) {
         log.error('No folks cookie found, or cookie is already expired');
         return res.status(401)
                 .set('Content-Type', 'application/json')
-                .send({message: "Access to this resource is restricted"});
+                .send({message: 'Cookie expired'});
     }
     const payload = JwtUtil.validate(token);
 
