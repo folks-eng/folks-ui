@@ -975,10 +975,28 @@ function initLoginFlow() {
             }
         }
         else {  // success = true
+            const loggedInUser = result.result;
             document.getElementById('loginSuccessMessage').textContent =
-                    `Good to see you again, ${result.result.fullName.split(' ')[0]}.`;
+                    `Good to see you again, ${loggedInUser.fullName.split(' ')[0]}.`;
             goTo(screens.success, 'forward');
-            completeLogin(result.result);
+            completeLogin(loggedInUser);
+
+            // The OTP-verify response only carries {externalId, fullName} —
+            // not role — so a professional returning to the site needs a
+            // quick lookup here before we know to send them to their
+            // dashboard instead of wherever "Become a Professional" (or
+            // nothing in particular) wanted them to land.
+            FolksAPI.viewUser(loggedInUser.externalId).then((res) => {
+                if (res.success && res.result && String(res.result.role || '').toUpperCase() === 'PROFESSIONAL') {
+                    saveCurrentUser(res.result);
+                    renderUserChip(res.result);
+                    safeStorageRemove(FOLKS_STORAGE_KEYS.postSignupRedirect);
+                    setTimeout(() => {
+                        window.location.href = 'professional-dashboard.html';
+                    }, 1800);
+                }
+            });
+
             setTimeout(closeModal, 1800);
         }
         
@@ -1448,6 +1466,29 @@ function renderUserChip(user) {
         const fullName = (user.fullName || 'Friend').trim();
         const firstInitial = fullName.charAt(0).toUpperCase() || 'F';
         const firstName = fullName.split(' ')[0];
+        const isProfessional = String(user.role || '').toUpperCase() === 'PROFESSIONAL';
+
+        // A professional account doesn't browse/book services, so its menu
+        // points at the professional dashboard instead of "My Bookings".
+        const accountMenuLinks = isProfessional ? `
+          <a href="profile.html" role="menuitem" class="user-dropdown-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            View Profile
+          </a>
+          <a href="professional-dashboard.html" role="menuitem" class="user-dropdown-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Professional Dashboard
+          </a>
+        ` : `
+          <a href="profile.html" role="menuitem" class="user-dropdown-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            View Profile
+          </a>
+          <a href="bookings.html" role="menuitem" class="user-dropdown-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            My Bookings
+          </a>
+        `;
 
         navActions.innerHTML = `
       <div class="user-menu">
@@ -1457,14 +1498,7 @@ function renderUserChip(user) {
           <svg class="user-chip-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="user-dropdown" id="userDropdown" role="menu" aria-label="Account menu" hidden>
-          <a href="profile.html" role="menuitem" class="user-dropdown-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            View Profile
-          </a>
-          <a href="bookings.html" role="menuitem" class="user-dropdown-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            My Bookings
-          </a>
+          ${accountMenuLinks}
           <button type="button" role="menuitem" class="user-dropdown-item user-dropdown-item-danger" id="logoutBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Log out

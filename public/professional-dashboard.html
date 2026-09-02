@@ -3,12 +3,12 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Become a Professional — Folks</title>
-        <meta name="description" content="Apply to become a verified Folks professional: confirm your identity, tell us your areas of expertise, and start earning.">
+        <title>Professional Dashboard — Folks</title>
+        <meta name="description" content="Your Folks professional dashboard: application status, areas of expertise, and booking activity.">
         <meta name="theme-color" content="#cb7651">
 
-        <meta property="og:title" content="Become a Professional — Folks">
-        <meta property="og:description" content="Apply to become a verified Folks professional: confirm your identity, tell us your areas of expertise, and start earning.">
+        <meta property="og:title" content="Professional Dashboard — Folks">
+        <meta property="og:description" content="Your Folks professional dashboard: application status, areas of expertise, and booking activity.">
         <meta property="og:type" content="website">
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -59,144 +59,113 @@
             <!-- ============ PAGE HERO ============ -->
             <section class="page-hero">
                 <div class="section-inner">
-                    <p class="breadcrumb"><a href="index.html">Home</a><span aria-hidden="true">/</span><span>Become a Professional</span></p>
-                    <p class="eyebrow">Join Folks</p>
-                    <h1>Become a Folks Professional</h1>
-                    <p class="page-lede">Earn a steady, respected income doing work you're good at. Verify your identity, tell us where you specialize, and our team will review your application within 2–3 business days.</p>
+                    <p class="breadcrumb"><a href="index.html">Home</a><span aria-hidden="true">/</span><span>Professional Dashboard</span></p>
+                    <p class="eyebrow">Your professional account</p>
+                    <h1 id="proDashGreeting">Welcome back</h1>
+                    <p class="page-lede">Your application status, areas of expertise, and booking activity — all in one place. This account works differently to a customer account, so browsing and booking services aren't available here.</p>
                 </div>
             </section>
 
             <!-- ============ LOGGED-OUT GATE ============ -->
-            <section class="section" id="proGate" hidden>
+            <section class="section" id="proDashGate" hidden>
                 <div class="section-inner section-inner-narrow">
                     <div class="address-empty-state" style="background: var(--color-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-lg);">
                         <span class="address-empty-icon" aria-hidden="true">
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                         </span>
-                        <p>You'll need a Folks account before applying as a professional.</p>
-                        <button type="button" class="btn btn-primary btn-ripple" id="proGateSignupBtn">Sign Up / Log In</button>
+                        <p>Log in with the mobile number you applied with to see your professional dashboard.</p>
+                        <button type="button" class="btn btn-primary btn-ripple" id="proDashGateLoginBtn">Log In</button>
                     </div>
                 </div>
             </section>
 
-            <!-- ============ ALREADY APPLIED ============ -->
-            <section class="section" id="proAlreadyApplied" hidden>
+            <!-- ============ NOT A PROFESSIONAL YET ============ -->
+            <section class="section" id="proDashNotPro" hidden>
                 <div class="section-inner section-inner-narrow">
-                    <div class="profile-card" style="text-align:center;">
-                        <span class="address-empty-icon" style="margin: 0 auto var(--space-sm);" aria-hidden="true">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>
+                    <div class="address-empty-state" style="background: var(--color-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-lg);">
+                        <span class="address-empty-icon" aria-hidden="true">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                         </span>
-                        <h2>Application already submitted</h2>
-                        <p style="color: var(--color-espresso); margin-bottom: var(--space-md);" id="proAlreadyAppliedMessage">Your professional application is being reviewed.</p>
-                        <a href="professional-dashboard.html" class="btn btn-primary btn-ripple">Go to My Dashboard</a>
+                        <p>This dashboard is for Folks professionals. You don't have a professional application on this account yet.</p>
+                        <a href="become-professional.html" class="btn btn-primary btn-ripple">Become a Professional</a>
                     </div>
                 </div>
             </section>
 
-            <!-- ============ APPLICATION FORM ============ -->
-            <div id="proFormContent" hidden>
+            <!-- ============ DASHBOARD CONTENT ============ -->
+            <div id="proDashContent" hidden>
+
+                <!-- ---- Application status ---- -->
                 <section class="section" style="padding-bottom: var(--space-md);">
-                    <div class="section-inner section-inner-narrow">
+                    <div class="section-inner">
 
                         <div class="profile-card">
-                            <div class="profile-card-header"><h2>Identity Verification</h2></div>
-                            <p class="modal-hint" style="margin-bottom: var(--space-sm);">Used only to verify your identity before approval — never shown publicly.</p>
-
-                            <div class="profile-field" style="margin-bottom: var(--space-sm);">
-                                <label class="profile-field-label" for="proAadhaar">Aadhaar number</label>
-                                <input type="text" id="proAadhaar" inputmode="numeric" placeholder="XXXX XXXX XXXX" maxlength="14" autocomplete="off">
-                                <p class="modal-error" id="proIdentityError" hidden></p>
-                            </div>
-
-                            <div class="profile-fields-grid">
-                                <div class="profile-field">
-                                    <label class="profile-field-label" for="proNameOnId">Full name (as per Aadhaar)</label>
-                                    <input type="text" id="proNameOnId" placeholder="As printed on your ID" autocomplete="off">
-                                </div>
-                                <div class="profile-field">
-                                    <label class="profile-field-label" for="proPan">PAN number <span style="text-transform:none; letter-spacing:0;">(optional)</span></label>
-                                    <input type="text" id="proPan" placeholder="ABCDE1234F" maxlength="10" autocomplete="off" style="text-transform:uppercase;">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="profile-card" style="margin-top: var(--space-md);">
                             <div class="profile-card-header">
-                                <h2>Current Address</h2>
-                                <div class="profile-card-actions">
-                                    <button type="button" class="link-btn" id="proUseSavedAddressBtn" hidden>Use my saved address</button>
-                                </div>
+                                <h2>Application Status</h2>
+                                <span id="proDashStatusBadge" class="booking-status-badge">—</span>
                             </div>
-                            <p class="modal-hint" style="margin-bottom: var(--space-sm);">Where you're currently based for work — this can be different from the address on your Aadhaar card, e.g. if you've relocated for work.</p>
-                            <div class="profile-fields-grid">
-                                <div class="profile-field" style="grid-column: 1 / -1;">
-                                    <label class="profile-field-label" for="proAddressLine">Current address line</label>
-                                    <input type="text" id="proAddressLine" placeholder="House / flat no., street, building">
-                                </div>
-                                <div class="profile-field">
-                                    <label class="profile-field-label" for="proLocality">Locality / area</label>
-                                    <input type="text" id="proLocality" placeholder="e.g. Indiranagar">
-                                </div>
-                                <div class="profile-field">
-                                    <label class="profile-field-label" for="proCity">City</label>
-                                    <input type="text" id="proCity" placeholder="e.g. Bengaluru">
-                                </div>
-                                <div class="profile-field">
-                                    <label class="profile-field-label" for="proPincode">Pincode</label>
-                                    <input type="text" id="proPincode" inputmode="numeric" maxlength="6" placeholder="e.g. 560038">
-                                </div>
-                                <div class="profile-field">
-                                    <label class="profile-field-label" for="proState">State</label>
-                                    <input type="text" id="proState" inputmode="numeric" placeholder="e.g. Karanataka">
-                                </div>
-                            </div>
-                            <p class="modal-error" id="proAddressError" hidden></p>
-                        </div>
-
-                        <div class="profile-card" style="margin-top: var(--space-md);">
-                            <div class="profile-card-header"><h2>Professional Details</h2></div>
                             <div class="profile-fields-grid">
                                 <div class="profile-field">
-                                    <label class="profile-field-label" for="proExperience">Years of experience</label>
-                                    <input type="number" id="proExperience" min="0" max="50" placeholder="e.g. 3" style="max-width: 220px;">
+                                    <span class="profile-field-label">Application ID</span>
+                                    <span class="profile-field-value" id="proDashApplicationId">—</span>
                                 </div>
                                 <div class="profile-field">
-                                    <label class="profile-field-label" for="proServingCities">Cities you are willing to work on</label>
-                                    <input type="text" id="proServingCities" placeholder="e.g. Bengaluru, Tumkur" style="max-width: 220px;">
+                                    <span class="profile-field-label">Applied on</span>
+                                    <span class="profile-field-value" id="proDashAppliedOn">—</span>
+                                </div>
+                                <div class="profile-field">
+                                    <span class="profile-field-label">Years of experience</span>
+                                    <span class="profile-field-value" id="proDashExperience">—</span>
+                                </div>
+                                <div class="profile-field">
+                                    <span class="profile-field-label">Serving cities</span>
+                                    <span class="profile-field-value" id="proDashServingCities">—</span>
+                                </div>
+                            </div>
+                            <p class="modal-hint" id="proDashStatusHint" style="margin-top: var(--space-sm);" hidden></p>
+                        </div>
+
+                        <!-- ---- Booking stats ---- -->
+                        <div class="profile-card" style="margin-top: var(--space-md);">
+                            <div class="profile-card-header"><h2>Bookings</h2></div>
+                            <div class="pro-stats-grid" style="display:grid; grid-template-columns:repeat(2,1fr); gap: var(--space-sm);" id="proDashStatsGrid">
+                                <div class="stat" style="background: var(--color-cream); border-radius: var(--radius-md); padding: var(--space-sm);">
+                                    <span class="stat-number" id="proDashStatTotal">0</span>
+                                    <span class="stat-label">Total bookings</span>
+                                </div>
+                                <div class="stat" style="background: var(--color-sage-20); border-radius: var(--radius-md); padding: var(--space-sm);">
+                                    <span class="stat-number" id="proDashStatCompleted">0</span>
+                                    <span class="stat-label">Completed</span>
+                                </div>
+                                <div class="stat" style="background: var(--color-gold-20); border-radius: var(--radius-md); padding: var(--space-sm);">
+                                    <span class="stat-number" id="proDashStatUpcoming">0</span>
+                                    <span class="stat-label">Upcoming</span>
+                                </div>
+                                <div class="stat" style="background: var(--color-error-10); border-radius: var(--radius-md); padding: var(--space-sm);">
+                                    <span class="stat-number" id="proDashStatCancelled">0</span>
+                                    <span class="stat-label">Cancelled</span>
                                 </div>
                             </div>
 
-                            <p class="profile-field-label" style="margin-top: var(--space-md); margin-bottom: 0.5rem;">Areas of expertise</p>
-                            <p class="modal-hint" style="margin-bottom: var(--space-sm);">Select every service you're able to take bookings for.</p>
-                            <div id="proExpertiseGroups"></div>
-                            <p class="modal-error" id="proExpertiseError" hidden></p>
+                            <p class="modal-hint" id="proDashBookingsLoading" style="margin-top: var(--space-sm);">Loading your bookings…</p>
+                            <p class="modal-error" id="proDashBookingsError" hidden></p>
+
+                            <div id="proDashRecentBookings" style="margin-top: var(--space-sm);"></div>
+                            <p class="modal-hint" id="proDashBookingsEmpty" hidden>You don't have any bookings yet.</p>
                         </div>
 
+                        <!-- ---- Expertise ---- -->
                         <div class="profile-card" style="margin-top: var(--space-md);">
-                            <label class="pro-declaration">
-                                <input type="checkbox" id="proDeclaration">
-                                <span>I confirm the information provided is accurate and I consent to Folks verifying my identity and background before approval.</span>
-                            </label>
-                            <p class="modal-error" id="proDeclarationError" hidden></p>
-                            <button type="button" class="btn btn-primary btn-ripple modal-submit" id="proSubmitBtn" style="margin-top: var(--space-sm);">Submit Application</button>
+                            <div class="profile-card-header"><h2>Areas of Expertise</h2></div>
+                            <p class="modal-hint" style="margin-bottom: var(--space-sm);">Services you're set up to take bookings for, once your application is approved.</p>
+                            <div id="proDashExpertise" class="pro-expertise-chips"></div>
+                            <p class="modal-hint" id="proDashExpertiseEmpty" hidden>No areas of expertise on file yet.</p>
                         </div>
 
                     </div>
                 </section>
-            </div>
 
-            <!-- ============ SUCCESS ============ -->
-            <section class="section" id="proSuccess" hidden>
-                <div class="section-inner section-inner-narrow">
-                    <div class="profile-card" style="text-align:center;">
-                        <div class="modal-success-icon" style="margin: 0 auto var(--space-md);" aria-hidden="true">&check;</div>
-                        <h2>Application submitted!</h2>
-                        <p style="color: var(--color-espresso); margin-bottom: 0.5rem;">We're reviewing your details and will notify you within 2–3 business days.</p>
-                        <p class="form-note" style="margin-bottom: var(--space-md);">Application ID: <strong id="proApplicationId">—</strong></p>
-                        <a href="professional-dashboard.html" class="btn btn-primary btn-ripple">Go to My Dashboard</a>
-                    </div>
-                </div>
-            </section>
+            </div>
 
         </main>
 
@@ -222,8 +191,8 @@
                     <h4>Company</h4>
                     <ul>
                         <li><a href="about.html">About Us</a></li>
-                        <li><a href="#">Careers</a></li>
-                        <li><a href="#">Press</a></li>
+                        <li><a href="careers.html">Careers</a></li>
+                        <li><a href="press.html">Press</a></li>
                         <li><a href="contact.html">Contact Us</a></li>
                     </ul>
                 </nav>
@@ -272,7 +241,6 @@
 
         <script src="../resources/js/api.js"></script>
         <script src="../resources/js/script.js"></script>
-        <!--script src="../resources/js/categories-data.js"></script-->
-        <script src="../resources/js/become-professional.js"></script>
+        <script src="../resources/js/professional-dashboard.js"></script>
     </body>
 </html>
