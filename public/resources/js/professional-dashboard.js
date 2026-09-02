@@ -48,17 +48,16 @@ function initProfessionalDashboardPage() {
 }
 
 async function loadProfessional(notPro, content, showEl, hideEl) {
-    const cached = getCurrentUser();
-
-    let user = cached;
-    const res = await FolksAPI.viewUser(cached.externalId || cached.id);
+    let user = getCurrentUser();
+    const res = await FolksAPI.viewProfessional(user.externalId);
+    
     if (res.success && res.result) {
-        user = res.result;
-        saveCurrentUser(user); // keep the cached copy (and header chip) fresh
+        user = res.result.user;
+        // saveCurrentUser(user); // keep the cached copy (and header chip) fresh
         renderUserChip(user);
     }
 
-    if (!isProfessionalUser(user)) {
+    if (! isProfessionalUser(user)) {
         hideEl(content);
         showEl(notPro);
         return;
@@ -68,8 +67,8 @@ async function loadProfessional(notPro, content, showEl, hideEl) {
     showEl(content);
 
     renderGreeting(user);
-    renderApplicationStatus(user);
-    renderExpertise(user);
+    renderApplicationStatus(res.result);
+    renderExpertise(res.result);
     loadBookingActivity();
 }
 
@@ -87,12 +86,18 @@ function renderGreeting(user) {
 }
 
 /* ---- application status card -------------------------------------------- */
-function renderApplicationStatus(user) {
-    const status = user.professionalStatus || user.applicationStatus || 'Pending Review';
-    const applicationId = user.applicationId || user.professionalApplicationId || user.applicationNumber;
-    const appliedOn = user.professionalAppliedOn || user.appliedOn || user.professionalSubmittedOn || user.createdAt;
-    const experienceYears = user.experienceYears ?? user.yearsOfExperience;
-    const servingCities = user.servingCities || user.servingCity;
+async function renderApplicationStatus(professional) {
+    const res = await FolksAPI.viewDocuments();
+    if (! res.success) {
+        alert('Unable to fetch document. Msg: ' + res.message);
+    }
+    const doc = res.result.items[0];
+    
+    const status = doc.verificationStatus === 'PENDING' ? 'Pending Review' : doc.verificationStatus;
+    const applicationId = doc.applicationId;
+    const appliedOn = doc.createdAt;
+    const experienceYears = professional.experienceYears;
+    const servingCities = professional.servingCities;
 
     const badge = document.getElementById('proDashStatusBadge');
     const meta = statusMetaPro(status);
@@ -132,35 +137,29 @@ function statusMetaPro(status) {
 }
 
 /* ---- expertise chips (read-only, sourced from CATEGORY hierarchy) ------- */
-async function renderExpertise(user) {
+async function renderExpertise(professional) {
     const container = document.getElementById('proDashExpertise');
     const emptyEl = document.getElementById('proDashExpertiseEmpty');
     if (!container)
         return;
 
-    const selectedIds = (user.expertise || user.expertiseAreas || user.expertiseIds || []).map(String);
+    const res = await FolksAPI.viewProfessionalServices();
+    if (! res.success) {
+        alert('Unable to fetch expertise. Msg: ' + res.message);
+    }
+    const services = res.result.items;
 
-    if (selectedIds.length === 0) {
+    if (services.length === 0) {
         container.innerHTML = '';
         emptyEl.hidden = false;
         return;
     }
 
-    let idToName = {};
-    const res = await FolksAPI.viewCategories();
-    if (res.success && res.result && Array.isArray(res.result.items)) {
-        res.result.items.forEach(cat => {
-            (cat.subCategories || []).forEach(sub => {
-                idToName[String(sub.categoryId)] = sub.name;
-            });
-        });
-    }
-
     emptyEl.hidden = true;
-    container.innerHTML = selectedIds.map(id => `
+    container.innerHTML = services.map(services => `
     <span class="pro-expertise-chip">
       <span style="background: var(--color-clay); border-color: var(--color-clay); color: var(--color-cream);">
-        ${escapeHtmlProDash(idToName[id] || id)}
+        ${escapeHtmlProDash(services.serviceName)}
       </span>
     </span>
   `).join('');

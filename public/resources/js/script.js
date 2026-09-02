@@ -665,8 +665,14 @@ function initSignupFlow() {
             setTimeout(closeModal, 1800);
         }
         else {
-            goTo(screens.profile, 'back');
-            showError('profileError', 'Could not complete registration. Please try again.');
+            if (result.message.startsWith('Your mobile/email is already registered')) {
+                goTo(screens.profile, 'back');
+                showError('profileError', result.message + ' Please close this window and click on Log In to continue.');
+            }
+            else {
+                goTo(screens.profile, 'back');
+                showError('profileError', 'Could not complete registration. Please try again.');
+            }
         }
     });
 }

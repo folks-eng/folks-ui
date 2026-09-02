@@ -48,6 +48,38 @@ async function create(req, res) {
     }
 }
 
+async function view(req, res) {
+    try {
+        let userId = req.params.id;
+        const response = await httpClient.get(
+            '/professionals/' + userId
+            , {
+                headers: {
+                    Authorization: `Bearer ${req.token}`
+                }
+            }
+        );
+        if (response.status === 200) {
+            let result = response.data;
+            if (log.isDebugEnabled()) {
+                log.debug('Successfully fetched professional details. Response:\n%s', JSON.stringify(result, null, 2));
+            }
+            return res.status(response.status)
+                    .json(result);
+        }
+        else {
+            let result = response.data;
+            log.error('Unable to fetch professional details. Status code: %d. Error Msg: %s', response.status, result);
+            
+            return res.status(response.status)
+                    .json(result);
+        }
+    }
+    catch (err) {
+        handleError(req, res, err, 'Error in fetching professional details');
+    }
+}
+
 async function handleError(req, res, err, msg) {
     log.error(msg, err);
     
@@ -61,5 +93,6 @@ async function handleError(req, res, err, msg) {
 }
 
 route.post('/', create);
+route.get('/:id', view);
 
 module.exports = route;

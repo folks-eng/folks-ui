@@ -162,6 +162,9 @@ const FolksAPI = (function () {
             if (res.status === 201) {
                 return {success: true, result: json};
             }
+            else if (res.status === 409) {
+                return {success: false, message: 'Your mobile/email is already registered ' + payload.fullName + '!'};
+            }
             else {
                 return {success: false, message: json.message};
             }
@@ -537,6 +540,75 @@ const FolksAPI = (function () {
         }
     }
 
+    async function viewProfessional(id) {
+        try {
+            const res = await fetch(
+                BASE_URL + '/professionals/' + id,
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch profile:', e);
+            return {'success': false, 'message': e.message};
+        }
+    }
+
+    async function viewDocuments() {
+        try {
+            const res = await fetch(
+                BASE_URL + '/documents',
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch document:', e);
+            return {'success': false, 'message': e.message};
+        }
+    }
+
+    async function viewProfessionalServices() {
+        try {
+            const res = await fetch(
+                BASE_URL + '/professionalServices',
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch professional service:', e);
+            return {'success': false, 'message': e.message};
+        }
+    }
+
     /* ---- demo-mode simulators (safe to delete once real endpoints are live) ---- */
     const _demoOtpByMobile = {};
 
@@ -674,6 +746,9 @@ const FolksAPI = (function () {
         createBooking,
         getBookings,
         cancelBooking,
-        applyAsProfessional
+        applyAsProfessional,
+        viewProfessional,
+        viewProfessionalServices,
+        viewDocuments
     };
 })();
