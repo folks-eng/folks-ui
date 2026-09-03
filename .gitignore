@@ -1,4 +1,10 @@
 node_modules/
+.env
 *.log
+*.log.swp
 .DS_Store
 nbproject/
+*.rdb
+*.iml
+.idea
+package-lock.json
