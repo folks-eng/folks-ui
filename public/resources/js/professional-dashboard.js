@@ -146,6 +146,7 @@ async function renderExpertise(professional) {
     const res = await FolksAPI.viewProfessionalServices();
     if (! res.success) {
         alert('Unable to fetch expertise. Msg: ' + res.message);
+        return;
     }
     const services = res.result.items;
 

@@ -609,6 +609,29 @@ const FolksAPI = (function () {
         }
     }
 
+    async function viewVouchers() {
+        try {
+            const res = await fetch(
+                BASE_URL + '/coupons',
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch voucher:', e);
+            return {'success': false, 'message': e.message};
+        }
+    }
+
     /* ---- demo-mode simulators (safe to delete once real endpoints are live) ---- */
     const _demoOtpByMobile = {};
 
@@ -749,6 +772,7 @@ const FolksAPI = (function () {
         applyAsProfessional,
         viewProfessional,
         viewProfessionalServices,
-        viewDocuments
+        viewDocuments,
+        viewVouchers
     };
 })();
