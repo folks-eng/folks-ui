@@ -3374,6 +3374,38 @@ input:focus-visible {
     outline: 2.5px solid var(--color-clay-dark);
     outline-offset: 2px;
 }
+.pro-expertise-chip input:disabled + span {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* "All Localities" option in the "Localities you serve" list — visually set
+   apart from the individual locality chips (gold instead of clay, bolder
+   border) and separated from them with a divider, since picking it has a
+   different effect (clears/disables the rest) rather than just adding one
+   more locality. */
+.pro-expertise-chip-all {
+    margin-right: 0.6rem;
+    padding-right: 0.75rem;
+    border-right: 1px dashed var(--color-line);
+}
+.pro-expertise-chip-all span {
+    border-width: 2px;
+    border-style: dashed;
+    border-color: var(--color-gold);
+    background: var(--color-gold-20);
+    color: var(--color-espresso);
+    font-weight: 700;
+}
+.pro-expertise-chip-all input:hover + span {
+    border-color: var(--color-gold);
+}
+.pro-expertise-chip-all input:checked + span {
+    border-style: solid;
+    background: var(--color-gold);
+    border-color: var(--color-gold);
+    color: var(--color-ink);
+}
 
 .pro-declaration {
     display: flex;

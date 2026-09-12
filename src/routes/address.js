@@ -29,9 +29,8 @@ async function create(req, res) {
             let result = response.data;
             
             if (log.isDebugEnabled()) {
-                log.debug('Successfully added new address. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully added new address. Id: %d', result.addressId);
             }
-
             res.status(response.status)
                 .json(result);
         }
@@ -71,7 +70,7 @@ async function modify(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully modified address details. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully modified address: %d', result.addressId);
             }
             return res.status(response.status)
                     .json(result);
@@ -103,7 +102,7 @@ async function view(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully fetched address details. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully fetched address for id: %d', addressId);
             }
             return res.status(response.status)
                     .json(result);
@@ -134,7 +133,7 @@ async function viewAll(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully fetched all addresses. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully fetched %d addresses.', result.total);
             }
             return res.status(response.status)
                     .json(result);

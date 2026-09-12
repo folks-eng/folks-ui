@@ -19,7 +19,7 @@ async function viewAll(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully fetched professional service details. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully fetched %d professional service details', result.total);
             }
             return res.status(response.status)
                     .json(result);

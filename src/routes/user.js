@@ -49,7 +49,7 @@ async function register(req, res) {
             let result = response.data;
             
             if (log.isDebugEnabled()) {
-                log.debug('Successfully registered new user. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully registered new user: %s', result.fullName);
             }
             const {token, ttlMin} = JwtUtil.loginToken(result.externalId, result.fullName);
 
@@ -100,7 +100,7 @@ async function modify(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully modified user details. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully modified user %s', userId);
             }
             return res.status(response.status)
                     .json(result);
@@ -132,7 +132,7 @@ async function view(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully fetched user details. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully fetched user details for %s', userId);
             }
             return res.status(response.status)
                     .json(result);

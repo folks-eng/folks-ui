@@ -133,7 +133,7 @@ class TokenManager {
         }
     }
     
-    async slee(ms) {
+    async sleep(ms) {
         return new Promise(resolve => {
             setTimeout(resolve, ms);
         });

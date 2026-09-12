@@ -29,9 +29,8 @@ async function create(req, res) {
             let result = response.data;
             
             if (log.isDebugEnabled()) {
-                log.debug('Successfully made new booking. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully made a new booking. Id: %s', result.bookingId);
             }
-
             res.status(response.status)
                 .json(result);
         }
@@ -71,7 +70,7 @@ async function modify(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully modified booking details. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully modified booking details for id: %s', bookingId);
             }
             return res.status(response.status)
                     .json(result);
@@ -112,7 +111,7 @@ async function patch(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully modified booking details. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully patched booking details for id: %s', bookingId);
             }
             return res.status(response.status)
                     .json(result);
@@ -144,7 +143,7 @@ async function view(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully fetched booking details. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully fetched booking details for id: %s', bookingId);
             }
             return res.status(response.status)
                     .json(result);
@@ -175,8 +174,9 @@ async function viewAll(req, res) {
         );
         if (response.status === 200) {
             let result = response.data;
+            
             if (log.isDebugEnabled()) {
-                log.debug('Successfully fetched all bookings. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully fetched %d bookings.', result.total);
             }
             return res.status(response.status)
                     .json(result);

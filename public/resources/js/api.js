@@ -349,6 +349,126 @@ const FolksAPI = (function () {
         }
     }
 
+    /**
+     * GET /api/v1/provinces
+     * Returns every state/province Folks recognises, for the state → city →
+     * locality picker shown before a customer can add an address.
+     * @returns {Promise<{success: boolean, message?: string, result?: object}>}
+     */
+    async function viewProvinces() {
+        try {
+            const res = await fetch(
+                BASE_URL + '/provinces',
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch provinces:', e);
+            return {'success': false, 'message': e.message};
+        }
+    }
+
+    /**
+     * GET /api/v1/cities?provinceId={provinceId}
+     * Returns the cities within the given state that Folks operates in.
+     * @returns {Promise<{success: boolean, message?: string, result?: object}>}
+     */
+    async function viewCities(provinceId) {
+        try {
+            const res = await fetch(
+                BASE_URL + '/cities?provinceId=' + encodeURIComponent(provinceId),
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch cities:', e);
+            return {'success': false, 'message': e.message};
+        }
+    }
+
+    /**
+     * GET /api/v1/neighbourhoods?cityId={cityId}
+     * Returns the localities/neighbourhoods within the given city. Each item
+     * is expected to carry a `serviceable` flag so the UI can tell the
+     * customer whether Folks has actually launched there yet.
+     * @returns {Promise<{success: boolean, message?: string, result?: object}>}
+     */
+    async function viewNeighbourhoods(cityId) {
+        try {
+            const res = await fetch(
+                BASE_URL + '/neighbourhoods?cityId=' + encodeURIComponent(cityId),
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch neighbourhoods:', e);
+            return {'success': false, 'message': e.message};
+        }
+    }
+
+    /**
+     * GET /api/v1/neighbourhoods?pincode={pincode}
+     * Quick serviceability check by pincode — the fast path shown before the
+     * state → city → locality picker. Returns every neighbourhood matching
+     * that pincode (usually one, but a pincode can span more than one
+     * locality); each item is expected to carry its parent cityId/cityName
+     * and provinceId/provinceName so the picker can be filled in without a
+     * further lookup, plus the same `serviceable` flag as viewNeighbourhoods.
+     * @returns {Promise<{success: boolean, message?: string, result?: object}>}
+     */
+    async function checkPincode(pincode) {
+        try {
+            const res = await fetch(
+                BASE_URL + '/neighbourhoods?pincode=' + encodeURIComponent(pincode),
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to check pincode:', e);
+            return {'success': false, 'message': e.message};
+        }
+    }
+
     async function viewCategories() {
         try {
             const res = await fetch(
@@ -506,9 +626,19 @@ const FolksAPI = (function () {
 
     /**
      * POST /api/v1/professionals
-     * Payload: { userId, aadhaarNumber, nameOnId, panNumber, yearsOfExperience,
-     *            expertiseAreas: string[],
-     *            currentAddress: { addressLine, locality, city, pincode } }
+     * Payload: { bio, documents: [{nameOnDocument, documentType, documentNumber}],
+     *            address: { addressLine1, provinceId, province, cityId, city,
+     *                       neighbourhoodId, locality, pincode },
+     *            experienceYears, servingCities, expertise: string[],
+     *            neighbourhoodIds: (string|number)[] }
+     * `address` is the professional's current/working address, picked via the
+     * state -> city -> locality cascade (same confirmed field names as the
+     * customer address picker in profile.js). `neighbourhoodIds` is the
+     * separate multi-select of localities, within that same city, the
+     * professional wants to take bookings in — always an array, even for a
+     * single locality. A professional willing to serve every locality in
+     * the city sends the sentinel value -1 instead of listing each
+     * neighbourhoodId individually: neighbourhoodIds: ["-1"].
      * @returns {Promise<{success: boolean, message?: string, application?: object}>}
      */
     async function applyAsProfessional(payload) {
@@ -764,6 +894,10 @@ const FolksAPI = (function () {
         updateAddress,
         viewAddresses,
         deleteAddress,
+        viewProvinces,
+        viewCities,
+        viewNeighbourhoods,
+        checkPincode,
         viewCategories,
         viewSlots,
         createBooking,

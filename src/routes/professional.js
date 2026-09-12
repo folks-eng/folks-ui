@@ -32,7 +32,7 @@ async function create(req, res) {
             let result = response.data;
             
             if (log.isDebugEnabled()) {
-                log.debug('Successfully registered new Professional. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully registered new Professional. Application id: %s', result.applicationId);
             }
 
             res.status(response.status)
@@ -65,7 +65,7 @@ async function view(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully fetched professional details. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully fetched professional details.');
             }
             return res.status(response.status)
                 .json(result);
@@ -106,7 +106,7 @@ async function modify(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully modified professional details. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully modified professional: %s', extId);
             }
             return res.status(response.status)
                     .json(result);
@@ -147,7 +147,7 @@ async function patch(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully modified professional details. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully patched professional: %s', extId);
             }
             return res.status(response.status)
                     .json(result);
@@ -179,7 +179,7 @@ async function viewAll(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully fetched all professionals. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully fetched %d professionals.', result.count);
             }
             return res.status(response.status)
                     .json(result);

@@ -20,14 +20,14 @@ async function viewAll(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully fetched all categories. Response:\n%s', JSON.stringify(result, null, 2));
+                log.debug('Successfully fetched categoriey hierarchies.');
             }
             return res.status(response.status)
                     .json(result);
         }
         else {
             let result = response.data;
-            log.error('Unable to fetch all categories. Status code: %d. Error Msg: %s', response.status, result);
+            log.error('Unable to fetch category hierarchies. Status code: %d. Error Msg: %s', response.status, result);
             
             return res.status(response.status)
                     .json(result);

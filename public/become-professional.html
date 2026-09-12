@@ -134,20 +134,26 @@
                                     <input type="text" id="proAddressLine" placeholder="House / flat no., street, building">
                                 </div>
                                 <div class="profile-field">
-                                    <label class="profile-field-label" for="proLocality">Locality / area</label>
-                                    <input type="text" id="proLocality" placeholder="e.g. Indiranagar">
+                                    <label class="profile-field-label" for="proState">State</label>
+                                    <select id="proState">
+                                        <option value="">Select a state…</option>
+                                    </select>
                                 </div>
                                 <div class="profile-field">
                                     <label class="profile-field-label" for="proCity">City</label>
-                                    <input type="text" id="proCity" placeholder="e.g. Bengaluru">
+                                    <select id="proCity" disabled>
+                                        <option value="">Select a state first…</option>
+                                    </select>
+                                </div>
+                                <div class="profile-field">
+                                    <label class="profile-field-label" for="proLocality">Locality / area</label>
+                                    <select id="proLocality" disabled>
+                                        <option value="">Select a city first…</option>
+                                    </select>
                                 </div>
                                 <div class="profile-field">
                                     <label class="profile-field-label" for="proPincode">Pincode</label>
-                                    <input type="text" id="proPincode" inputmode="numeric" maxlength="6" placeholder="e.g. 560038">
-                                </div>
-                                <div class="profile-field">
-                                    <label class="profile-field-label" for="proState">State</label>
-                                    <input type="text" id="proState" inputmode="numeric" placeholder="e.g. Karanataka">
+                                    <input type="text" id="proPincode" disabled placeholder="Auto-filled from locality">
                                 </div>
                             </div>
                             <p class="modal-error" id="proAddressError" hidden></p>
@@ -170,6 +176,11 @@
                             <p class="modal-hint" style="margin-bottom: var(--space-sm);">Select every service you're able to take bookings for.</p>
                             <div id="proExpertiseGroups"></div>
                             <p class="modal-error" id="proExpertiseError" hidden></p>
+
+                            <p class="profile-field-label" style="margin-top: var(--space-md); margin-bottom: 0.5rem;">Localities you serve</p>
+                            <p class="modal-hint" id="proServingLocalitiesHint" style="margin-bottom: var(--space-sm);">Select your state and city above to see localities you can serve.</p>
+                            <div id="proServingLocalities" class="pro-expertise-chips"></div>
+                            <p class="modal-error" id="proServingLocalitiesError" hidden></p>
                         </div>
 
                         <div class="profile-card" style="margin-top: var(--space-md);">
