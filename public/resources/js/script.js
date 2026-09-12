@@ -1184,7 +1184,10 @@ async function getAddresses() {
         // Query the backend to fetch address list.
         let res = await FolksAPI.viewAddresses();
         if (res.success) {
-            if (Array.isArray(res.result.items)) {
+            if (res.result.items.length === 0) {
+                return res.result.items;
+            }
+            else if (Array.isArray(res.result.items)) {
                 safeStorageSet(FOLKS_STORAGE_KEYS.addresses, JSON.stringify(res.result.items));
                 return res.result.items;
             }

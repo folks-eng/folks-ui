@@ -157,19 +157,31 @@ function injectSchedulePickerMarkup() {
           <label class="profile-field-label" for="scheduleAddrLine2">Secondary address line <span style="text-transform:none;letter-spacing:0;">(optional)</span></label>
           <input type="text" id="scheduleAddrLine2" placeholder="Landmark, area">
         </div>
-        <div class="profile-fields-grid" style="margin-bottom: var(--space-sm);">
-          <div class="profile-field">
-            <label class="profile-field-label" for="scheduleAddrCity">City</label>
-            <input type="text" id="scheduleAddrCity">
-          </div>
-          <div class="profile-field">
-            <label class="profile-field-label" for="scheduleAddrState">State</label>
-            <input type="text" id="scheduleAddrState">
-          </div>
+        <div class="profile-field" style="margin-bottom: var(--space-sm);">
+          <label class="profile-field-label" for="scheduleAddrState">State</label>
+          <select id="scheduleAddrState">
+            <option value="">Loading states…</option>
+          </select>
+        </div>
+        <div class="profile-field" style="margin-bottom: var(--space-sm);">
+          <label class="profile-field-label" for="scheduleAddrCity">City</label>
+          <select id="scheduleAddrCity" disabled>
+            <option value="">Select a state first…</option>
+          </select>
+        </div>
+        <div class="profile-field" style="margin-bottom: var(--space-sm);">
+          <label class="profile-field-label" for="scheduleAddrLocality">Locality</label>
+          <select id="scheduleAddrLocality" disabled>
+            <option value="">Select a city first…</option>
+          </select>
+        </div>
+        <div class="profile-field" style="margin-bottom: var(--space-sm);">
+          <label class="profile-field-label" for="scheduleAddrNeighbourhood">Neighbourhood</label>
+          <input type="text" id="scheduleAddrNeighbourhood" disabled>
         </div>
         <div class="profile-field" style="margin-bottom: var(--space-sm);">
           <label class="profile-field-label" for="scheduleAddrPostal">Postal code</label>
-          <input type="text" id="scheduleAddrPostal" inputmode="numeric" maxlength="6">
+          <input type="text" id="scheduleAddrPostal" inputmode="numeric" maxlength="6" disabled>
         </div>
 
         <p class="modal-error" id="scheduleAddressFormError" hidden></p>
@@ -193,6 +205,140 @@ function injectSchedulePickerMarkup() {
     const addressConfirmBtn = document.getElementById('scheduleAddressConfirmBtn');
     const addressErrorEl = document.getElementById('scheduleAddressError');
     const addressFormErrorEl = document.getElementById('scheduleAddressFormError');
+
+    /* ---- inline "add address" form: State -> City -> Locality cascade,
+     modeled on profile.js's renderCascadePicker/wireLocationPicker. This
+     markup is injected once, so (unlike profile.js) we wire these selects
+     a single time here rather than re-rendering them on every change. ---- */
+    const addrProvinceSel = document.getElementById('scheduleAddrState');
+    const addrCitySel = document.getElementById('scheduleAddrCity');
+    const addrLocalitySel = document.getElementById('scheduleAddrLocality');
+    const addrNeighbourhoodInput = document.getElementById('scheduleAddrNeighbourhood');
+    const addrPostalInput = document.getElementById('scheduleAddrPostal');
+
+    const addressFormLoc = {
+        provinceId: '', province: '',
+        cityId: '', city: '',
+        neighbourhoodId: '', locality: '', pincode: '',
+        provinces: [], cities: [], neighbourhoods: []
+    };
+
+    function resetAddressFormLocation() {
+        addressFormLoc.provinceId = '';
+        addressFormLoc.province = '';
+        addressFormLoc.cityId = '';
+        addressFormLoc.city = '';
+        addressFormLoc.neighbourhoodId = '';
+        addressFormLoc.locality = '';
+        addressFormLoc.pincode = '';
+        addressFormLoc.cities = [];
+        addressFormLoc.neighbourhoods = [];
+
+        addrProvinceSel.innerHTML = `<option value="">${addressFormLoc.provinces.length ? 'Select a state…' : 'Loading states…'}</option>` +
+                addressFormLoc.provinces.map(p => `<option value="${p.provinceId}">${escapeHtmlSched(p.provinceName)}</option>`).join('');
+
+        addrCitySel.innerHTML = '<option value="">Select a state first…</option>';
+        addrCitySel.disabled = true;
+
+        addrLocalitySel.innerHTML = '<option value="">Select a city first…</option>';
+        addrLocalitySel.disabled = true;
+
+        addrNeighbourhoodInput.value = '';
+        addrPostalInput.value = '';
+    }
+
+    async function ensureAddressFormProvincesLoaded() {
+        if (addressFormLoc.provinces.length)
+            return;
+        const res = await FolksAPI.viewProvinces();
+        if (res.success) {
+            addressFormLoc.provinces = res.result.items || res.result || [];
+        } else {
+            showAddressFormError(res.message || 'Could not load states. Please try again.');
+        }
+        addrProvinceSel.innerHTML = '<option value="">Select a state…</option>' +
+                addressFormLoc.provinces.map(p => `<option value="${p.provinceId}">${escapeHtmlSched(p.provinceName)}</option>`).join('');
+    }
+
+    async function showAddressForm(direction) {
+        goTo(screens.addressForm, direction);
+        resetAddressFormLocation();
+        await ensureAddressFormProvincesLoaded();
+    }
+
+    addrProvinceSel.addEventListener('change', async () => {
+        addressFormLoc.provinceId = addrProvinceSel.value;
+        addressFormLoc.province = addrProvinceSel.selectedOptions[0] ? addrProvinceSel.selectedOptions[0].textContent : '';
+        addressFormLoc.cityId = '';
+        addressFormLoc.city = '';
+        addressFormLoc.neighbourhoodId = '';
+        addressFormLoc.locality = '';
+        addressFormLoc.pincode = '';
+        addressFormLoc.cities = [];
+        addressFormLoc.neighbourhoods = [];
+        addrNeighbourhoodInput.value = '';
+        addrPostalInput.value = '';
+        addrLocalitySel.innerHTML = '<option value="">Select a city first…</option>';
+        addrLocalitySel.disabled = true;
+
+        if (!addressFormLoc.provinceId) {
+            addrCitySel.innerHTML = '<option value="">Select a state first…</option>';
+            addrCitySel.disabled = true;
+            return;
+        }
+
+        addrCitySel.innerHTML = '<option value="">Loading cities…</option>';
+        addrCitySel.disabled = true;
+        const citiesRes = await FolksAPI.viewCities(addressFormLoc.provinceId);
+        if (citiesRes.success) {
+            addressFormLoc.cities = citiesRes.result.items || citiesRes.result || [];
+        } else {
+            addressFormLoc.cities = [];
+            showAddressFormError(citiesRes.message || 'Could not load cities for the selected state.');
+        }
+        addrCitySel.innerHTML = '<option value="">Select a city…</option>' +
+                addressFormLoc.cities.map(c => `<option value="${c.cityId}">${escapeHtmlSched(c.cityName)}</option>`).join('');
+        addrCitySel.disabled = false;
+    });
+
+    addrCitySel.addEventListener('change', async () => {
+        addressFormLoc.cityId = addrCitySel.value;
+        addressFormLoc.city = addrCitySel.selectedOptions[0] ? addrCitySel.selectedOptions[0].textContent : '';
+        addressFormLoc.neighbourhoodId = '';
+        addressFormLoc.locality = '';
+        addressFormLoc.pincode = '';
+        addressFormLoc.neighbourhoods = [];
+        addrNeighbourhoodInput.value = '';
+        addrPostalInput.value = '';
+
+        if (!addressFormLoc.cityId) {
+            addrLocalitySel.innerHTML = '<option value="">Select a city first…</option>';
+            addrLocalitySel.disabled = true;
+            return;
+        }
+
+        addrLocalitySel.innerHTML = '<option value="">Loading localities…</option>';
+        addrLocalitySel.disabled = true;
+        const neighbourhoodsRes = await FolksAPI.viewNeighbourhoods(addressFormLoc.cityId);
+        if (neighbourhoodsRes.success) {
+            addressFormLoc.neighbourhoods = neighbourhoodsRes.result.items || neighbourhoodsRes.result || [];
+        } else {
+            addressFormLoc.neighbourhoods = [];
+            showAddressFormError(neighbourhoodsRes.message || 'Could not load localities for the selected city.');
+        }
+        addrLocalitySel.innerHTML = '<option value="">Select a locality…</option>' +
+                addressFormLoc.neighbourhoods.map(n => `<option value="${n.neighbourhoodId}">${escapeHtmlSched(n.locality)}${n.pincode ? ' - ' + escapeHtmlSched(n.pincode) : ''}</option>`).join('');
+        addrLocalitySel.disabled = false;
+    });
+
+    addrLocalitySel.addEventListener('change', () => {
+        addressFormLoc.neighbourhoodId = addrLocalitySel.value;
+        const chosen = addressFormLoc.neighbourhoods.find(n => String(n.neighbourhoodId) === String(addressFormLoc.neighbourhoodId));
+        addressFormLoc.locality = chosen ? chosen.locality : '';
+        addressFormLoc.pincode = chosen ? (chosen.pincode || '') : '';
+        addrNeighbourhoodInput.value = addressFormLoc.locality;
+        addrPostalInput.value = addressFormLoc.pincode;
+    });
 
     const screens = {
         pick: modal.querySelector('[data-screen="schedule-pick"]'),
@@ -301,6 +447,7 @@ function injectSchedulePickerMarkup() {
     }
 
     confirmBtn.addEventListener('click', () => {
+        alert(1);
         if (!state.selectedDate || !state.selectedSlot) {
             errorEl.textContent = 'Pick a date and an available time slot to continue.';
             errorEl.hidden = false;
@@ -311,9 +458,10 @@ function injectSchedulePickerMarkup() {
 
     /* ---- screen 2: choose a saved address (or jump to the add form) ---- */
     async function goToAddressStep(direction) {
+        alert(2);
         const addresses = await getAddresses();
         if (addresses.length === 0) {
-            goTo(screens.addressForm, direction);
+            await showAddressForm(direction);
             return;
         }
         if (!addresses.some(a => a.addressId === state.selectedAddressId)) {
@@ -352,7 +500,7 @@ function injectSchedulePickerMarkup() {
     });
 
     document.getElementById('scheduleAddNewAddressBtn').addEventListener('click', () => {
-        goTo(screens.addressForm, 'forward');
+        showAddressForm('forward');
     });
 
     addressConfirmBtn.addEventListener('click', async () => {
@@ -371,27 +519,49 @@ function injectSchedulePickerMarkup() {
         goTo(hasAddresses ? screens.address : screens.pick, 'back');
     });
 
-    document.getElementById('scheduleAddressFormSaveBtn').addEventListener('click', () => {
+    document.getElementById('scheduleAddressFormSaveBtn').addEventListener('click', async () => {
         const label = document.getElementById('scheduleAddrLabel').value;
         const line1 = document.getElementById('scheduleAddrLine1').value.trim();
         const line2 = document.getElementById('scheduleAddrLine2').value.trim();
-        const city = document.getElementById('scheduleAddrCity').value.trim();
-        const stateVal = document.getElementById('scheduleAddrState').value.trim();
-        const postalCode = document.getElementById('scheduleAddrPostal').value.trim();
 
         if (!line1)
             return showAddressFormError('Please enter the primary address line.');
-        if (!city)
-            return showAddressFormError('Please enter a city.');
-        if (!stateVal)
-            return showAddressFormError('Please enter a state.');
-        if (!/^[0-9A-Za-z\- ]{3,10}$/.test(postalCode))
-            return showAddressFormError('Please enter a valid postal code.');
+        if (!addressFormLoc.provinceId)
+            return showAddressFormError('Please select a state.');
+        if (!addressFormLoc.cityId)
+            return showAddressFormError('Please select a city.');
+        if (!addressFormLoc.neighbourhoodId)
+            return showAddressFormError('Please select a locality.');
+        if (!addressFormLoc.pincode)
+            return showAddressFormError('The selected locality has no postal code on file. Please choose a different locality.');
 
         addressFormErrorEl.hidden = true;
-        const saved = addAddress({label, line1, line2, city, state: stateVal, postalCode});
-        state.selectedAddressId = saved.id;
-        finishScheduling(saved);
+        const payload = {
+            label,
+            addressLine1: line1,
+            addressLine2: line2,
+            neighbourhoodId: addressFormLoc.neighbourhoodId
+        };
+        
+        const res = await FolksAPI.createAddress(payload);
+        if (! res.success) {
+            showAddressFormError(res.message || 'Could not save the address. Please try again.');
+            return;
+        }
+        // addAddress(res.result);
+        
+        // const saved = addAddress({
+        //     label, line1, line2,
+        //     city: addressFormLoc.city,
+        //     cityId: addressFormLoc.cityId,
+        //     state: addressFormLoc.province,
+        //     provinceId: addressFormLoc.provinceId,
+        //     locality: addressFormLoc.locality,
+        //     neighbourhoodId: addressFormLoc.neighbourhoodId,
+        //     postalCode: addressFormLoc.pincode
+        // });
+        state.selectedAddressId = res.result.addressId;
+        finishScheduling(res.result);
     });
 
     function showAddressFormError(msg) {
