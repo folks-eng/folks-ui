@@ -11,6 +11,7 @@
 
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const {getLogger} = require('./../util/logger');
 const keystore = require('./keystore');
@@ -55,18 +56,27 @@ class JwtUtil {
         return {token, ttlMin};
     }
     
-    static loginToken(id, name) {
+    static loginToken(id, name, priv) {
         // Post user creation, generate the auth token.
-        // Node sends another cookie with the same name (i.e., _fks), same path, and same domain, 
+        // Node sends another cookie with the same name (i.e., _fks), same path, and same domain,
         // and as a result, the browser automatically replaces the old one.
+        //
+        // `priv` is only set for admin logins today (value: "admin") — it rides in the same
+        // token that's forwarded to the backend as a bearer token, so the backend can make its
+        // own admin-only authorization decisions from this claim too. Omitted entirely for
+        // ordinary customer/professional logins so the claim's mere presence, not its absence,
+        // is what an admin-only check should look for.
         const claims = {
             sub: id,
             name: name,
             jti: crypto.randomUUID()
         };
+        if (priv) {
+            claims.priv = priv;
+        }
         let ttlMin = (process.env.TOKEN_TTL_MIN || 600) + 'm';
         let token = JwtUtil.sign(claims, ttlMin);
-        
+
         if (log.isDebugEnabled()) {
             log.debug('Created jwt auth token for user %s. TTL: %s', id, ttlMin);
         }

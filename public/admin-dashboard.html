@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Admin Dashboard — Folks</title>
+        <meta name="robots" content="noindex, nofollow">
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+        <link rel="stylesheet" href="../resources/css/styles.css">
+    </head>
+    <body>
+
+        <!-- ============ LOGGED-OUT GATE (shown if there's no cached admin session) ============ -->
+        <div class="admin-login-page" id="adminGate" hidden>
+            <div class="admin-login-card" style="text-align:center;">
+                <p class="modal-hint" style="margin-bottom: var(--space-sm);">You need to log in as an admin to view this page.</p>
+                <a href="admin-login.html" class="btn btn-primary btn-ripple">Go to Admin Login</a>
+            </div>
+        </div>
+
+        <!-- ============ DASHBOARD SHELL ============ -->
+        <div class="admin-shell" id="adminShell" hidden>
+
+            <aside class="admin-sidebar">
+                <div class="admin-sidebar-brand">
+                    <span class="admin-sidebar-brand-mark" aria-hidden="true">F</span>
+                    <span>Folks Admin</span>
+                </div>
+
+                <!-- Each button's data-tab must match a panel's id below (adminPanel-<tab>) and
+                     an entry in ADMIN_TABS (admin-dashboard.js) that knows how to load it. Adding
+                     a new tab is: one button here, one panel below, one ADMIN_TABS entry. -->
+                <nav class="admin-nav" id="adminNav" aria-label="Admin sections">
+                    <button type="button" class="admin-nav-item is-active" data-tab="overview">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="5" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="12" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="16" width="7" height="5" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>
+                        <span>Overview</span>
+                    </button>
+                    <button type="button" class="admin-nav-item" data-tab="professionals">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <span>Professional Applications</span>
+                    </button>
+                    <button type="button" class="admin-nav-item" data-tab="bookings">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        <span>Bookings</span>
+                    </button>
+                    <button type="button" class="admin-nav-item" data-tab="customers">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="2"/><path d="M2.5 19c1.2-3.3 4-5 6.5-5s5.3 1.7 6.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="17" cy="8" r="2.6" stroke="currentColor" stroke-width="1.6"/><path d="M15.2 14.2c2 .2 3.9 1.7 4.8 4.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                        <span>Customers</span>
+                    </button>
+                </nav>
+
+                <div class="admin-sidebar-footer">
+                    <button type="button" class="admin-sidebar-logout" id="adminLogoutBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span>Log out</span>
+                    </button>
+                </div>
+            </aside>
+
+            <div class="admin-main">
+                <header class="admin-topbar">
+                    <h1 id="adminTopbarTitle">Overview</h1>
+                    <div class="admin-topbar-admin">
+                        <span class="admin-topbar-avatar" id="adminTopbarAvatar" aria-hidden="true">A</span>
+                        <span id="adminTopbarName">Admin</span>
+                    </div>
+                </header>
+
+                <main class="admin-content">
+
+                    <!-- ---- Overview ---- -->
+                    <section class="admin-panel" id="adminPanel-overview">
+                        <div class="admin-stat-grid" id="adminOverviewStats">
+                            <div class="admin-stat-card">
+                                <span class="stat-number" id="statTotalProfessionals">—</span>
+                                <span class="stat-label">Professionals applied</span>
+                            </div>
+                            <div class="admin-stat-card is-accent-gold">
+                                <span class="stat-number" id="statPendingProfessionals">—</span>
+                                <span class="stat-label">Applications pending review</span>
+                            </div>
+                            <div class="admin-stat-card is-accent-sage">
+                                <span class="stat-number" id="statApprovedProfessionals">—</span>
+                                <span class="stat-label">Approved professionals</span>
+                            </div>
+                            <div class="admin-stat-card">
+                                <span class="stat-number" id="statTotalCustomers">—</span>
+                                <span class="stat-label">Total customers</span>
+                            </div>
+                        </div>
+
+                        <h2 class="admin-section-title">Bookings</h2>
+                        <div class="admin-stat-grid">
+                            <div class="admin-stat-card">
+                                <span class="stat-number" id="statTotalBookings">—</span>
+                                <span class="stat-label">Total bookings</span>
+                            </div>
+                            <div class="admin-stat-card is-accent-gold">
+                                <span class="stat-number" id="statPendingBookings">—</span>
+                                <span class="stat-label">Pending</span>
+                            </div>
+                            <div class="admin-stat-card is-accent-sage">
+                                <span class="stat-number" id="statCompletedBookings">—</span>
+                                <span class="stat-label">Completed</span>
+                            </div>
+                            <div class="admin-stat-card is-accent-error">
+                                <span class="stat-number" id="statCancelledBookings">—</span>
+                                <span class="stat-label">Cancelled</span>
+                            </div>
+                        </div>
+
+                        <p class="admin-loading-state" id="overviewLoading">Loading dashboard summary…</p>
+                        <p class="admin-error-state" id="overviewError" hidden></p>
+                    </section>
+
+                    <!-- ---- Professional Applications ---- -->
+                    <section class="admin-panel" id="adminPanel-professionals" hidden>
+                        <div class="admin-filter-bar" id="professionalsFilterBar">
+                            <button type="button" class="admin-filter-pill is-active" data-status="">All</button>
+                            <button type="button" class="admin-filter-pill" data-status="PENDING">Pending</button>
+                            <button type="button" class="admin-filter-pill" data-status="APPROVED">Approved</button>
+                            <button type="button" class="admin-filter-pill" data-status="REJECTED">Rejected</button>
+                        </div>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Applied on</th>
+                                        <th>Experience</th>
+                                        <th>Serving cities</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="professionalsTableBody"></tbody>
+                            </table>
+                        </div>
+                        <p class="admin-loading-state" id="professionalsLoading" hidden>Loading applications…</p>
+                        <p class="admin-error-state" id="professionalsError" hidden></p>
+                        <p class="admin-empty-state" id="professionalsEmpty" hidden>No professional applications found.</p>
+                    </section>
+
+                    <!-- ---- Bookings ---- -->
+                    <section class="admin-panel" id="adminPanel-bookings" hidden>
+                        <div class="admin-filter-bar" id="bookingsFilterBar">
+                            <button type="button" class="admin-filter-pill is-active" data-status="">All</button>
+                            <button type="button" class="admin-filter-pill" data-status="PENDING">Pending</button>
+                            <button type="button" class="admin-filter-pill" data-status="COMPLETED">Completed</button>
+                            <button type="button" class="admin-filter-pill" data-status="CANCELLED">Cancelled</button>
+                        </div>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Booking ID</th>
+                                        <th>Customer</th>
+                                        <th>Professional</th>
+                                        <th>Service</th>
+                                        <th>Scheduled</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bookingsTableBody"></tbody>
+                            </table>
+                        </div>
+                        <p class="admin-loading-state" id="bookingsLoading" hidden>Loading bookings…</p>
+                        <p class="admin-error-state" id="bookingsError" hidden></p>
+                        <p class="admin-empty-state" id="bookingsEmpty" hidden>No bookings found.</p>
+                    </section>
+
+                    <!-- ---- Customers ---- -->
+                    <section class="admin-panel" id="adminPanel-customers" hidden>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Mobile</th>
+                                        <th>Email</th>
+                                        <th>Joined</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customersTableBody"></tbody>
+                            </table>
+                        </div>
+                        <p class="admin-loading-state" id="customersLoading" hidden>Loading customers…</p>
+                        <p class="admin-error-state" id="customersError" hidden></p>
+                        <p class="admin-empty-state" id="customersEmpty" hidden>No customers found.</p>
+                    </section>
+
+                </main>
+            </div>
+        </div>
+
+        <script src="../resources/js/api.js"></script>
+        <script src="../resources/js/admin-session.js"></script>
+        <script src="../resources/js/admin-dashboard.js"></script>
+    </body>
+</html>

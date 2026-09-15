@@ -4,6 +4,7 @@ const JwtUtil = require('./../auth/jwt');
 const tokenMgr = require('./../auth/token_mgr');
 const httpClient = require('./../util/http_client');
 const {getLogger} = require('./../util/logger');
+const {requireAdmin} = require('./../auth/auth');
 
 const route = express.Router();
 
@@ -150,6 +151,46 @@ async function view(req, res) {
     }
 }
 
+/**
+ * GET /users — admin-only. Lists every customer, for the admin dashboard's
+ * Customers tab (total count, and the underlying records). Mirrors
+ * viewAll() in professional.js and booking.js: pass req.query straight
+ * through so the backend's own pagination/filtering (page, pageSize,
+ * status, etc. — whatever it actually supports) works without Node needing
+ * to know the param names in advance.
+ */
+async function viewAll(req, res) {
+    try {
+        const response = await httpClient.get(
+            '/users'
+            , {
+                headers: {
+                    Authorization: `Bearer ${req.token}`
+                },
+                params: req.query
+            }
+        );
+        if (response.status === 200) {
+            let result = response.data;
+            if (log.isDebugEnabled()) {
+                log.debug('Successfully fetched %d users.', result.total);
+            }
+            return res.status(response.status)
+                    .json(result);
+        }
+        else {
+            let result = response.data;
+            log.error('Unable to fetch all users. Status code: %d. Error Msg: %s', response.status, result);
+
+            return res.status(response.status)
+                    .json(result);
+        }
+    }
+    catch (err) {
+        handleError(req, res, err, 'Error in fetching all users');
+    }
+}
+
 async function remove(req, res) {
     try {
         let userId = req.params.id;
@@ -197,5 +238,6 @@ route.post('/', register);
 route.put('/:id', modify);
 route.get('/:id', view);
 route.delete('/:id', remove);
+route.get('/', requireAdmin, viewAll);
 
 module.exports = route;

@@ -4,6 +4,7 @@ const JwtUtil = require('./../auth/jwt');
 const tokenMgr = require('./../auth/token_mgr');
 const httpClient = require('./../util/http_client');
 const {getLogger} = require('./../util/logger');
+const {requireAdmin} = require('./../auth/auth');
 
 const route = express.Router();
 
@@ -179,7 +180,7 @@ async function viewAll(req, res) {
         if (response.status === 200) {
             let result = response.data;
             if (log.isDebugEnabled()) {
-                log.debug('Successfully fetched %d professionals.', result.count);
+                log.debug('Successfully fetched %d professionals.', result.total);
             }
             return res.status(response.status)
                     .json(result);
@@ -244,7 +245,13 @@ route.get('/:id', view);
 route.put('/:id', modify);
 route.patch('/:id', patch);
 
-//route.get('/', viewAll);
+// Listing every professional application is admin-dashboard functionality
+// (it exposes every applicant's PII), so it's gated behind requireAdmin —
+// unlike the by-id routes above, which any logged-in professional can hit
+// for their own record. This was previously wired but commented out; the
+// admin dashboard's Professional Applications tab is the first real caller.
+route.get('/', requireAdmin, viewAll);
+
 //route.delete('/:id', remove);
 
 module.exports = route

@@ -157,7 +157,103 @@ async function queryUser(input, type) {
     return response;
 }
 
+/**
+ * POST /login/admin
+ * Body (JSON, from the browser): { userid, password }
+ *
+ * Admin login is username/password, not OTP — there's no mobile number to
+ * verify. The credential check itself happens on the Vert.x side
+ * (POST /api/v1/login, application/x-www-form-urlencoded), same as every
+ * other piece of identity data this server relies on the backend for. Node
+ * never checks the password itself and never sees it again after this call.
+ *
+ * Once Vert.x confirms the credentials, this still mints its *own* _fks
+ * JWT locally (JwtUtil.loginToken), exactly like the OTP flow does after
+ * queryUser() succeeds — a token signed by Vert.x couldn't be verified by
+ * this server's authenticate() middleware anyway, since that only trusts
+ * this server's own keypair (see keystore.js). The admin's identity is
+ * carried forward as this local token's `priv: "admin"` claim, and that
+ * same token is what gets forwarded as the bearer token on every later
+ * admin API call, so the backend can also honor `priv` for its own
+ * authorization if it chooses to.
+ *
+ * ASSUMPTION TO CONFIRM: the exact shape of Vert.x's 200 response from
+ * POST /api/v1/login isn't nailed down yet. This reads a handful of likely
+ * field names (externalId/userId/id, fullName/name/userid) defensively —
+ * once the real response is known, trim this down to the actual field
+ * names instead of guessing across several.
+ */
+async function adminLogin(req, res) {
+    const userid = req.body && req.body.userid;
+    const password = req.body && req.body.password;
+
+    if (! userid || ! password) {
+        return res.status(400)
+                .set('Content-Type', 'application/json')
+                .json({success: false, message: 'Username and password are required'});
+    }
+
+    try {
+        const form = new URLSearchParams({userid, password});
+        const grant = new URLSearchParams({
+            grant_type: 'client_credentials'
+            // scope: scope
+        });
+
+        const response = await httpClient.post(
+            '/mgmt/login'
+            , grant
+            , {
+                headers: {
+                    'Authorization': 'Basic ' + Utility.encode(req.body.userid, req.body.password),
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            }
+        );
+
+        if (response.status === 200) {
+            const data = response.data || {};
+            const adminId = data.externalId || data.userId || data.id || userid;
+            const adminName = data.fullName || data.name || userid;
+
+            const {token, ttlMin} = JwtUtil.loginToken(adminId, adminName, 'admin');
+
+            if (log.isInfoEnabled()) {
+                log.info(`Admin ${adminId} logged in successfully. Generating admin login token ...`);
+            }
+
+            return res.status(200)
+                .cookie('_fks', token, {
+                    maxAge: parseInt(ttlMin, 10) * 60 * 1000,
+                    httpOnly: true,                 // Protects against XSS attacks (not accessible via client JS)
+                    secure: true,                   // Only sent over HTTPS
+                    sameSite: 'lax',                // Mitigates CSRF attacks
+                    path: process.env.BASE_PATH || '/gateway/v1'
+                })
+                .json({success: true, externalId: adminId, fullName: adminName, role: 'ADMIN'});
+        }
+        else {
+            log.error('Admin login rejected. Status code: %d', response.status);
+            return res.status(response.status)
+                    .json({success: false, message: (response.data && response.data.message) || 'Invalid username or password'});
+        }
+    }
+    catch (err) {
+        log.error('Error in admin login for user ' + userid, err);
+
+        if (err.response) {
+            // Vert.x rejected the credentials outright (401/403) — don't leak backend
+            // error detail to the login screen beyond a generic message.
+            return res.status(err.response.status)
+                    .json({success: false, message: 'Invalid username or password'});
+        }
+        return res.status(503)
+                .json({success: false, message: 'Service temporarily unavailable'});
+    }
+}
+
 router.post('/otp/request', requestOtp);
 router.post('/otp/verify', verifyOtp);
+router.post('/admin', adminLogin);
 
 module.exports = router;

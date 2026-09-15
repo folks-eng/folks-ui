@@ -762,6 +762,131 @@ const FolksAPI = (function () {
         }
     }
 
+    /* =====================================================================
+     ADMIN
+     Everything below is used only by admin-login.html / admin-dashboard.html.
+     Kept in the same FolksAPI namespace (same fetch conventions, same
+     BASE_URL) rather than a separate file, since it's the same backend
+     contract style as the rest of this file — just a different caller.
+     ===================================================================== */
+
+    /**
+     * POST /login/admin
+     * Payload: { userid, password }
+     * Username/password admin login — no OTP step, unlike the customer/
+     * professional flow above. On success the server sets the same _fks
+     * session cookie it always does, just with an extra `priv: "admin"`
+     * claim baked in server-side; the browser never sees or stores that
+     * claim directly.
+     * @returns {Promise<{success: boolean, message?: string, result?: {externalId, fullName, role}}>}
+     */
+    async function adminLogin(userid, password) {
+        try {
+            const res = await fetch(
+                BASE_URL + '/login/admin',
+                {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({userid, password})
+                }
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message || 'Invalid username or password'};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Admin login failed:', e);
+            return {success: false, message: e.message};
+        }
+    }
+
+    /**
+     * GET /professionals — admin-only. `params` (optional) is forwarded as a
+     * query string as-is, e.g. { status: 'PENDING', page: 2 } — whatever the
+     * backend actually supports.
+     * @returns {Promise<{success: boolean, message?: string, result?: {count, items}}>}
+     */
+    async function viewAllProfessionals(params) {
+        try {
+            const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+            const res = await fetch(
+                BASE_URL + '/professionals' + qs,
+                {method: 'GET', credentials: 'include'}
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch all professionals:', e);
+            return {success: false, message: e.message};
+        }
+    }
+
+    /**
+     * GET /users — admin-only. Same params-passthrough convention as
+     * viewAllProfessionals.
+     * @returns {Promise<{success: boolean, message?: string, result?: {total, items}}>}
+     */
+    async function viewAllUsers(params) {
+        try {
+            const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+            const res = await fetch(
+                BASE_URL + '/users' + qs,
+                {method: 'GET', credentials: 'include'}
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch all users:', e);
+            return {success: false, message: e.message};
+        }
+    }
+
+    /**
+     * GET /bookings — admin view. Same endpoint the customer "My Bookings"
+     * screen uses (getBookings() above); the backend is expected to widen
+     * the result set for an admin-privileged token instead of scoping to
+     * one customer. `params` lets the dashboard ask for a status slice
+     * (e.g. { status: 'PENDING' }) without Node needing to know every
+     * status value up front.
+     * @returns {Promise<{success: boolean, message?: string, result?: {total, items}}>}
+     */
+    async function viewAllBookings(params) {
+        try {
+            const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+            const res = await fetch(
+                BASE_URL + '/bookings' + qs,
+                {method: 'GET', credentials: 'include'}
+            );
+            let json = await res.json();
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to fetch all bookings:', e);
+            return {success: false, message: e.message};
+        }
+    }
+
     /* ---- demo-mode simulators (safe to delete once real endpoints are live) ---- */
     const _demoOtpByMobile = {};
 
@@ -907,6 +1032,10 @@ const FolksAPI = (function () {
         viewProfessional,
         viewProfessionalServices,
         viewDocuments,
-        viewVouchers
+        viewVouchers,
+        adminLogin,
+        viewAllProfessionals,
+        viewAllUsers,
+        viewAllBookings
     };
 })();

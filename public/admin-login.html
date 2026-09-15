@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Admin Login — Folks</title>
+        <meta name="robots" content="noindex, nofollow">
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+        <link rel="stylesheet" href="../resources/css/styles.css">
+    </head>
+    <body>
+
+        <div class="admin-login-page">
+            <div class="admin-login-card">
+                <div class="admin-login-brand">
+                    <span class="admin-login-brand-mark" aria-hidden="true">F</span>
+                    <div class="admin-login-brand-text">
+                        <h1>Folks Admin</h1>
+                        <p>Internal access only</p>
+                    </div>
+                </div>
+
+                <p class="admin-login-error" id="adminLoginError" hidden></p>
+
+                <form id="adminLoginForm" novalidate>
+                    <div class="admin-login-field">
+                        <label for="adminLoginUserid">Username</label>
+                        <input type="text" id="adminLoginUserid" name="userid" autocomplete="username" required>
+                    </div>
+                    <div class="admin-login-field">
+                        <label for="adminLoginPassword">Password</label>
+                        <input type="password" id="adminLoginPassword" name="password" autocomplete="current-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-ripple admin-login-submit" id="adminLoginSubmit">Log In</button>
+                </form>
+            </div>
+        </div>
+
+        <script src="../resources/js/api.js"></script>
+        <script src="../resources/js/admin-session.js"></script>
+        <script src="../resources/js/admin-login.js"></script>
+    </body>
+</html>
