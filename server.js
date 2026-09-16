@@ -27,6 +27,8 @@ const professionalRoute = require('./src/routes/professional');
 const professionalSrvcRoute = require('./src/routes/professionalService');
 const documentRoute = require('./src/routes/document');
 const voucherRoute = require('./src/routes/voucher');
+const queryRoute = require('./src/routes/query');
+const profMgmtRoute = require('./src/routes/professionalMgmt');
 
 const { serveStatic } = require('./src/staticServer');
 
@@ -71,6 +73,9 @@ function setup() {
     app.use(basePath + '/professionalServices', professionalSrvcRoute);
     app.use(basePath + '/documents', documentRoute);
     app.use(basePath + '/coupons', voucherRoute);
+    
+    app.use(basePath + '/admin/query', queryRoute);
+    app.use(basePath + '/admin/professionals', profMgmtRoute);
 
     // Middleware to serve static files from a directory
     app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));

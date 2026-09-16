@@ -238,6 +238,6 @@ route.post('/', register);
 route.put('/:id', modify);
 route.get('/:id', view);
 route.delete('/:id', remove);
-route.get('/', requireAdmin, viewAll);
+route.get('/', viewAll);
 
 module.exports = route;

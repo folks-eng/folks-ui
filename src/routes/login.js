@@ -213,24 +213,16 @@ async function adminLogin(req, res) {
 
         if (response.status === 200) {
             const data = response.data || {};
-            const adminId = data.externalId || data.userId || data.id || userid;
-            const adminName = data.fullName || data.name || userid;
-
-            const {token, ttlMin} = JwtUtil.loginToken(adminId, adminName, 'admin');
-
-            if (log.isInfoEnabled()) {
-                log.info(`Admin ${adminId} logged in successfully. Generating admin login token ...`);
-            }
-
+            
             return res.status(200)
-                .cookie('_fks', token, {
-                    maxAge: parseInt(ttlMin, 10) * 60 * 1000,
+                .cookie('_fks', data.access_token, {
+                    maxAge: parseInt(data.expires_in) * 1000,
                     httpOnly: true,                 // Protects against XSS attacks (not accessible via client JS)
                     secure: true,                   // Only sent over HTTPS
                     sameSite: 'lax',                // Mitigates CSRF attacks
                     path: process.env.BASE_PATH || '/gateway/v1'
                 })
-                .json({success: true, externalId: adminId, fullName: adminName, role: 'ADMIN'});
+                .json({success: true});
         }
         else {
             log.error('Admin login rejected. Status code: %d', response.status);

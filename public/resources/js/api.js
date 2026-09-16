@@ -810,14 +810,39 @@ const FolksAPI = (function () {
      * backend actually supports.
      * @returns {Promise<{success: boolean, message?: string, result?: {count, items}}>}
      */
-    async function viewAllProfessionals(params) {
+    async function query(payload) {
         try {
-            const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-            const res = await fetch(
-                BASE_URL + '/professionals' + qs,
-                {method: 'GET', credentials: 'include'}
-            );
+            const res = await fetch(BASE_URL + '/admin/query', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
             let json = await res.json();
+            
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to execute query:', e);
+            return {success: false, message: e.message};
+        }
+    }
+    
+    async function queryApplication(status) {
+        try {
+            const param = '?' + status;
+            const res = await fetch(BASE_URL + '/documents' + param, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'}
+            });
+            let json = await res.json();
+            
             if (res.status === 200) {
                 return {success: true, result: json};
             }
@@ -830,20 +855,16 @@ const FolksAPI = (function () {
             return {success: false, message: e.message};
         }
     }
-
-    /**
-     * GET /users — admin-only. Same params-passthrough convention as
-     * viewAllProfessionals.
-     * @returns {Promise<{success: boolean, message?: string, result?: {total, items}}>}
-     */
-    async function viewAllUsers(params) {
+    
+    async function queryCustomer() {
         try {
-            const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-            const res = await fetch(
-                BASE_URL + '/users' + qs,
-                {method: 'GET', credentials: 'include'}
-            );
+            const res = await fetch(BASE_URL + '/users?role=CUSTOMER', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'}
+            });
             let json = await res.json();
+            
             if (res.status === 200) {
                 return {success: true, result: json};
             }
@@ -852,28 +873,21 @@ const FolksAPI = (function () {
             }
         }
         catch (e) {
-            console.error('[Folks] Failed to fetch all users:', e);
+            console.error('[Folks] Failed to fetch all professionals:', e);
             return {success: false, message: e.message};
         }
     }
-
-    /**
-     * GET /bookings — admin view. Same endpoint the customer "My Bookings"
-     * screen uses (getBookings() above); the backend is expected to widen
-     * the result set for an admin-privileged token instead of scoping to
-     * one customer. `params` lets the dashboard ask for a status slice
-     * (e.g. { status: 'PENDING' }) without Node needing to know every
-     * status value up front.
-     * @returns {Promise<{success: boolean, message?: string, result?: {total, items}}>}
-     */
-    async function viewAllBookings(params) {
+    
+    async function queryBooking(status) {
         try {
-            const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-            const res = await fetch(
-                BASE_URL + '/bookings' + qs,
-                {method: 'GET', credentials: 'include'}
-            );
+            const param = '?' + status;
+            const res = await fetch(BASE_URL + '/bookings' + param, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'}
+            });
             let json = await res.json();
+            
             if (res.status === 200) {
                 return {success: true, result: json};
             }
@@ -882,7 +896,7 @@ const FolksAPI = (function () {
             }
         }
         catch (e) {
-            console.error('[Folks] Failed to fetch all bookings:', e);
+            console.error('[Folks] Failed to fetch all professionals:', e);
             return {success: false, message: e.message};
         }
     }
@@ -1034,8 +1048,9 @@ const FolksAPI = (function () {
         viewDocuments,
         viewVouchers,
         adminLogin,
-        viewAllProfessionals,
-        viewAllUsers,
-        viewAllBookings
+        query,
+        queryApplication,
+        queryBooking,
+        queryCustomer
     };
 })();

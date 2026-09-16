@@ -115,45 +115,109 @@ async function loadOverview() {
     const errorEl = document.getElementById('overviewError');
     loading.hidden = false;
     errorEl.hidden = true;
+    
+    const profPayload = {
+        dataset: "Professional",
+        dimension: "is_verified",
+        metric: "COUNT"
+    };
+    
+    const userPayload = {
+        dataset: "User",
+        metric: "COUNT",
+        filters: [
+            {
+                col: "role",
+                val: "CUSTOMER"
+            }
+        ]
+    };
+    
+    const bookPayload = {
+        dataset: "Booking",
+        dimension: "status",
+        metric: "COUNT"
+    };
 
-    const [proRes, userRes, bookingRes] = await Promise.all([
-        FolksAPI.viewAllProfessionals(),
-        FolksAPI.viewAllUsers(),
-        FolksAPI.viewAllBookings()
+    const [proResult, userResult, bookingResult] = await Promise.all([
+        FolksAPI.query(profPayload),
+        FolksAPI.query(userPayload),
+        FolksAPI.query(bookPayload)
     ]);
 
     loading.hidden = true;
 
-    if (!proRes.success || !userRes.success || !bookingRes.success) {
-        errorEl.textContent = [proRes, userRes, bookingRes].find(r => !r.success)?.message
+    if (!proResult.success || !userResult.success || !bookingResult.success) {
+        errorEl.textContent = [proResult, userResult, bookingResult].find(r => !r.success)?.message
             || 'Could not load the dashboard summary. Please try again.';
         errorEl.hidden = false;
         return;
     }
-
-    const professionals = itemsOf(proRes.result);
-    const users = itemsOf(userRes.result);
-    const bookings = itemsOf(bookingRes.result);
-
+    const proRes = proResult.result;
+    const userRes = userResult.result;
+    const bookingRes = bookingResult.result;
+    
+    // By Sudip
+    // const professionals = itemsOf(proRes.result);
+    // const bookings = itemsOf(bookingRes.result);
+    // const users = itemsOf(userRes.result);
+    
     // ASSUMPTION: prefer an aggregate count field (count/total) over
     // items.length, since items.length only reflects one page if the
     // backend paginates by default.
-    const totalProfessionals = countOf(proRes.result, professionals);
-    const totalCustomers = countOf(userRes.result, users);
-    const totalBookings = countOf(bookingRes.result, bookings);
+    // 
+    // By Sudip
+    // const totalProfessionals = countOf(proRes.result, professionals);
+    // const totalCustomers = countOf(userRes.result, users);
+    
+    
+    // By Sudip
+    // const totalBookings = countOf(bookingRes.result, bookings);
+    // const bookingStatusCounts = tallyByField(bookings, ['status']);
+    // const proStatusCounts = tallyByField(professionals, ['status', 'verificationStatus', 'applicationStatus']);
+    
+    let profTotal = 0;
+    for (let j = 0; j < proRes.rows.length; j ++) {
+        profTotal += proRes.rows[j].count;
+        if (proRes.rows[j].is_verified === 0) {
+            setText('statPendingProfessionals', proRes.rows[j].count);
+        }
+        else if (proRes.rows[j].is_verified === 1) {
+            setText('statApprovedProfessionals', proRes.rows[j].count);
+        }
+    }
+    setText('statTotalProfessionals', profTotal);
+    
+    // By Sudip
+    // setText('statTotalProfessionals', totalProfessionals);
+    // setText('statPendingProfessionals', proStatusCounts.PENDING || 0);
+    // setText('statApprovedProfessionals', proStatusCounts.APPROVED || proStatusCounts.ACTIVE || 0);
+    
+    
+    setText('statTotalCustomers', userRes.rows[0].count);
 
-    const proStatusCounts = tallyByField(professionals, ['status', 'verificationStatus', 'applicationStatus']);
-    const bookingStatusCounts = tallyByField(bookings, ['status']);
-
-    setText('statTotalProfessionals', totalProfessionals);
-    setText('statPendingProfessionals', proStatusCounts.PENDING || 0);
-    setText('statApprovedProfessionals', proStatusCounts.APPROVED || proStatusCounts.ACTIVE || 0);
-    setText('statTotalCustomers', totalCustomers);
-
-    setText('statTotalBookings', totalBookings);
-    setText('statPendingBookings', bookingStatusCounts.PENDING || 0);
-    setText('statCompletedBookings', bookingStatusCounts.COMPLETED || 0);
-    setText('statCancelledBookings', bookingStatusCounts.CANCELLED || 0);
+    let bookingTotal = 0;
+    for (let j = 0; j < bookingRes.rows.length; j ++) {
+        bookingTotal += bookingRes.rows[j].count;
+        if (bookingRes.rows[j].status === 'PENDING') {
+            setText('statPendingBookings', bookingRes.rows[j].count);
+        }
+        else if (bookingRes.rows[j].status === 'CONFIRMED') {
+            // setText('statPendingBookings', bookingRes.rows[j].count);
+        }
+        else if (bookingRes.rows[j].status === 'COMPLETED') {
+            setText('statCompletedBookings', bookingRes.rows[j].count);
+        }
+        else if (bookingRes.rows[j].status === 'CANCELLED') {
+            setText('statCancelledBookings', bookingRes.rows[j].count);
+        }
+    }
+    setText('statTotalBookings', bookingTotal);
+    
+    // By Sudip
+    // setText('statPendingBookings', bookingStatusCounts.PENDING || 0);
+    // setText('statCompletedBookings', bookingStatusCounts.COMPLETED || 0);
+    // setText('statCancelledBookings', bookingStatusCounts.CANCELLED || 0);
 }
 
 /* =========================================================================
@@ -170,7 +234,7 @@ async function loadProfessionals(status) {
     emptyEl.hidden = true;
     body.innerHTML = '';
 
-    const res = await FolksAPI.viewAllProfessionals(status ? {status} : undefined);
+    const res = await FolksAPI.queryApplication(status ? 'verificationStatus=' + status : 'verificationStatus=PENDING&verificationStatus=APPROVED&verificationStatus=REJECTED');
     loading.hidden = true;
 
     if (!res.success) {
@@ -190,12 +254,11 @@ async function loadProfessionals(status) {
         // likely candidates based on professional-dashboard.js's usage of
         // the single-record GET /professionals/:id and GET /documents
         // responses — confirm against the real admin list response.
-        const name = p.fullName || p.name || '—';
-        const appliedOn = formatAdminDate(p.appliedOn || p.createdAt || p.applicationDate);
-        const experience = (p.experienceYears !== undefined && p.experienceYears !== null && p.experienceYears !== '')
-            ? `${p.experienceYears} yr${Number(p.experienceYears) === 1 ? '' : 's'}` : '—';
+        const name = p.nameOnDocument;
+        const appliedOn = formatAdminDate(p.createdAt);
+        const experience = p.experienceYears;
         const cities = p.servingCities || '—';
-        const status = p.status || p.verificationStatus || p.applicationStatus || 'PENDING';
+        const status = p.verificationStatus;
 
         return `
       <tr>
@@ -223,7 +286,7 @@ async function loadBookings(status) {
     emptyEl.hidden = true;
     body.innerHTML = '';
 
-    const res = await FolksAPI.viewAllBookings(status ? {status} : undefined);
+    const res = await FolksAPI.queryBooking(status ? 'status=' + status : 'status=PENDING&status=CONFIRMED&status=IN_PROGRESS&status=COMPLETED&status=CANCELLED');
     loading.hidden = true;
 
     if (!res.success) {
@@ -240,11 +303,11 @@ async function loadBookings(status) {
 
     body.innerHTML = items.map(b => {
         const id = b.bookingId || b.id || '—';
-        const customer = b.customerName || (b.customer && b.customer.name) || '—';
-        const professional = b.professionalName || (b.professional && b.professional.name) || '—';
+        const customer = b.customerId || '—';
+        const professional = b.professionalId === -1 ? 'Not Assigned' : b.professionalId;
         const service = b.serviceName || '—';
         const scheduled = formatAdminDate(b.scheduledAt);
-        const status = b.status || 'PENDING';
+        const status = b.status;
 
         return `
       <tr>
@@ -273,7 +336,7 @@ async function loadCustomers() {
     emptyEl.hidden = true;
     body.innerHTML = '';
 
-    const res = await FolksAPI.viewAllUsers();
+    const res = await FolksAPI.queryCustomer();
     loading.hidden = true;
 
     if (!res.success) {
@@ -289,10 +352,11 @@ async function loadCustomers() {
     }
 
     body.innerHTML = items.map(u => {
-        const name = u.fullName || u.name || '—';
-        const mobile = u.phone1 || u.mobile || '—';
-        const email = u.email || '—';
-        const joined = formatAdminDate(u.createdAt || u.joinedOn);
+        const name = u.fullName;
+        const mobile = u.phone1;
+        const email = u.email;
+        const joined = formatAdminDate(u.createdAt);
+        const status = u.status;
 
         return `
       <tr>
@@ -300,6 +364,7 @@ async function loadCustomers() {
         <td>${escapeAdminHtml(String(mobile))}</td>
         <td>${escapeAdminHtml(email)}</td>
         <td>${joined}</td>
+        <td>${escapeAdminHtml(status)}</td>
       </tr>
     `;
     }).join('');
