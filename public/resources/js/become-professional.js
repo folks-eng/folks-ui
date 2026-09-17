@@ -518,7 +518,7 @@ function wireSubmit(user) {
             // elsewhere in the app (see location-serviceability-picker.md).
             neighbourhoodIds: servingNeighbourhoodIds
         };
-        alert(JSON.stringify(payload));
+        // alert(JSON.stringify(payload));
         // const result = {success:false};
         const result = await FolksAPI.applyAsProfessional(payload);
 

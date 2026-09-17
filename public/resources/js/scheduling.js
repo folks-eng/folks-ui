@@ -447,7 +447,6 @@ function injectSchedulePickerMarkup() {
     }
 
     confirmBtn.addEventListener('click', () => {
-        alert(1);
         if (!state.selectedDate || !state.selectedSlot) {
             errorEl.textContent = 'Pick a date and an available time slot to continue.';
             errorEl.hidden = false;
@@ -458,7 +457,6 @@ function injectSchedulePickerMarkup() {
 
     /* ---- screen 2: choose a saved address (or jump to the add form) ---- */
     async function goToAddressStep(direction) {
-        alert(2);
         const addresses = await getAddresses();
         if (addresses.length === 0) {
             await showAddressForm(direction);

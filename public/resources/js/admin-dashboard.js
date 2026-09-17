@@ -254,6 +254,7 @@ async function loadProfessionals(status) {
         // likely candidates based on professional-dashboard.js's usage of
         // the single-record GET /professionals/:id and GET /documents
         // responses — confirm against the real admin list response.
+        const applicationId = p.applicationId;
         const name = p.nameOnDocument;
         const appliedOn = formatAdminDate(p.createdAt);
         const experience = p.experienceYears;
@@ -262,6 +263,7 @@ async function loadProfessionals(status) {
 
         return `
       <tr>
+        <td>${escapeAdminHtml(applicationId)}</td>
         <td>${escapeAdminHtml(name)}</td>
         <td>${appliedOn}</td>
         <td>${escapeAdminHtml(String(experience))}</td>
