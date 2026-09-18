@@ -887,7 +887,7 @@ const FolksAPI = (function () {
                 headers: {'Content-Type': 'application/json'}
             });
             let json = await res.json();
-            
+
             if (res.status === 200) {
                 return {success: true, result: json};
             }
@@ -897,6 +897,36 @@ const FolksAPI = (function () {
         }
         catch (e) {
             console.error('[Folks] Failed to fetch all professionals:', e);
+            return {success: false, message: e.message};
+        }
+    }
+
+    /**
+     * POST /admin/professionals
+     * Payload: { applicationId, status: 'APPROVED' | 'REJECTED' }
+     * Approves or rejects a pending professional application from the
+     * Professional Applications tab.
+     * @returns {Promise<{success: boolean, message?: string, result?: object}>}
+     */
+    async function setApplicationStatus(applicationId, status) {
+        try {
+            const res = await fetch(BASE_URL + '/admin/professionals', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({applicationId, status})
+            });
+            let json = await res.json();
+
+            if (res.status === 200) {
+                return {success: true, result: json};
+            }
+            else {
+                return {success: false, message: json.message};
+            }
+        }
+        catch (e) {
+            console.error('[Folks] Failed to update application status:', e);
             return {success: false, message: e.message};
         }
     }
@@ -1051,6 +1081,7 @@ const FolksAPI = (function () {
         query,
         queryApplication,
         queryBooking,
-        queryCustomer
+        queryCustomer,
+        setApplicationStatus
     };
 })();

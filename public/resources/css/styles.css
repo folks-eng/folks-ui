@@ -4248,6 +4248,38 @@ input:focus-visible {
     color: var(--color-espresso);
 }
 
+/* ---- row-level actions (Approve/Reject on a pending application) ---- */
+.admin-row-actions {
+    display: flex;
+    gap: 0.9rem;
+}
+.admin-action-link {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.2rem 0;
+    white-space: nowrap;
+}
+.admin-action-approve {
+    color: var(--color-sage);
+}
+.admin-action-approve:hover {
+    color: #5c6b50;
+    text-decoration: underline;
+}
+.admin-action-reject {
+    color: var(--color-error);
+}
+.admin-action-reject:hover {
+    color: #8f322c;
+    text-decoration: underline;
+}
+.admin-action-link:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
 .admin-empty-state, .admin-loading-state, .admin-error-state {
     padding: var(--space-lg) var(--space-md);
     text-align: center;

@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAdminNav();
     initFilterBar('professionalsFilterBar', (status) => loadProfessionals(status));
     initFilterBar('bookingsFilterBar', (status) => loadBookings(status));
+    initProfessionalsActions();
     initAdminLogout();
 
     // Overview is the default open tab.
@@ -269,9 +270,167 @@ async function loadProfessionals(status) {
         <td>${escapeAdminHtml(String(experience))}</td>
         <td>${escapeAdminHtml(String(cities))}</td>
         <td>${adminBadge(status)}</td>
+        <td>${renderApplicationActions(applicationId, status)}</td>
       </tr>
     `;
     }).join('');
+}
+
+/**
+ * Approve/Reject links, shown only for a PENDING application and only when
+ * it actually carries an applicationId — if that field ever comes back
+ * missing, showing an action that would silently PATCH the wrong record
+ * (or none) is worse than showing nothing, so it's left blank instead of
+ * guessing another field.
+ */
+function renderApplicationActions(applicationId, status) {
+    const isPending = String(status || '').toUpperCase() === 'PENDING';
+    if (!isPending) return '—';
+    if (!applicationId) {
+        console.warn('[Folks Admin] PENDING application with no applicationId — cannot offer approve/reject.');
+        return '—';
+    }
+    const id = escapeAdminHtml(applicationId);
+    return `
+    <div class="admin-row-actions">
+      <button type="button" class="admin-action-link admin-action-approve" data-app-id="${id}" data-action="APPROVED">Approve</button>
+      <button type="button" class="admin-action-link admin-action-reject" data-app-id="${id}" data-action="REJECTED">Reject</button>
+    </div>
+  `;
+}
+
+/* ---- Approve/Reject wiring ---------------------------------------------
+ Delegated once on the tbody (rows are fully replaced on every load/filter
+ change, so a per-row listener would leak); resolves which button was
+ clicked from its data-app-id/data-action, confirms, then calls the API and
+ refreshes just the professionals table with whatever filter is active. --- */
+function initProfessionalsActions() {
+    const body = document.getElementById('professionalsTableBody');
+    if (!body) return;
+
+    body.addEventListener('click', (e) => {
+        const btn = e.target.closest('.admin-action-link');
+        if (!btn || btn.disabled) return;
+
+        const applicationId = btn.dataset.appId;
+        const action = btn.dataset.action; // 'APPROVED' | 'REJECTED'
+        if (!applicationId || !action) return;
+
+        confirmApplicationStatusChange(applicationId, action);
+    });
+}
+
+function confirmApplicationStatusChange(applicationId, status) {
+    const approving = status === 'APPROVED';
+    showAdminConfirmDialog({
+        title: approving ? 'Approve this application?' : 'Reject this application?',
+        message: approving
+            ? "This professional will be marked approved and able to take bookings."
+            : "This application will be marked rejected. The applicant is not notified automatically by this screen.",
+        confirmLabel: approving ? 'Approve' : 'Reject',
+        danger: !approving,
+        onConfirm: () => applyApplicationStatusChange(applicationId, status)
+    });
+}
+
+async function applyApplicationStatusChange(applicationId, status) {
+    const errorEl = document.getElementById('professionalsError');
+    errorEl.hidden = true;
+
+    // Disable both buttons on this row while the request is in flight, so a
+    // second click can't fire a duplicate approve/reject before the table
+    // re-renders.
+    const rowButtons = document.querySelectorAll(`.admin-action-link[data-app-id="${cssEscapeAdmin(applicationId)}"]`);
+    rowButtons.forEach(b => b.disabled = true);
+
+    const res = await FolksAPI.setApplicationStatus(applicationId, status);
+
+    if (!res.success) {
+        rowButtons.forEach(b => b.disabled = false);
+        errorEl.textContent = res.message || 'Could not update this application. Please try again.';
+        errorEl.hidden = false;
+        return;
+    }
+
+    // The Overview tab's pending/approved counts are now stale — refetch
+    // next time it's opened rather than trying to patch them in place here.
+    ADMIN_TABS.overview.loaded = false;
+
+    // Re-render whichever filter slice is currently active so the row
+    // reflects its new status (or drops out, if a status filter is active).
+    const activePill = document.querySelector('#professionalsFilterBar .admin-filter-pill.is-active');
+    loadProfessionals(activePill ? (activePill.dataset.status || '') : '');
+}
+
+/* ---- lightweight confirm dialog -----------------------------------------
+ admin-dashboard.html doesn't load script.js (see admin-session.js's header
+ comment on why the admin area stays decoupled from the customer site), so
+ script.js's showConfirmDialog() isn't available here. This is the same
+ markup/CSS classes (styles.css's "CONFIRMATION DIALOG" section), just a
+ second, self-contained instance for the admin pages. -------------------- */
+let _adminConfirmCallback = null;
+
+function injectAdminConfirmMarkup() {
+    if (document.getElementById('adminConfirmOverlay')) return;
+
+    const markup = `
+<div class="confirm-dialog-overlay" id="adminConfirmOverlay" aria-hidden="true">
+  <div class="confirm-dialog-box" role="alertdialog" aria-modal="true" aria-labelledby="adminConfirmTitle" aria-describedby="adminConfirmMessage">
+    <h3 class="confirm-dialog-title" id="adminConfirmTitle">Are you sure?</h3>
+    <p class="confirm-dialog-message" id="adminConfirmMessage"></p>
+    <div class="confirm-dialog-actions">
+      <button type="button" class="btn btn-ghost btn-sm" id="adminConfirmCancelBtn">Cancel</button>
+      <button type="button" class="btn btn-sm" id="adminConfirmConfirmBtn">Confirm</button>
+    </div>
+  </div>
+</div>`;
+    document.body.insertAdjacentHTML('beforeend', markup);
+
+    const overlay = document.getElementById('adminConfirmOverlay');
+    const cancelBtn = document.getElementById('adminConfirmCancelBtn');
+    const confirmBtn = document.getElementById('adminConfirmConfirmBtn');
+
+    function close() {
+        overlay.classList.remove('is-open');
+        overlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        _adminConfirmCallback = null;
+    }
+
+    cancelBtn.addEventListener('click', close);
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) close();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlay.classList.contains('is-open')) close();
+    });
+    confirmBtn.addEventListener('click', () => {
+        const cb = _adminConfirmCallback;
+        close();
+        if (cb) cb();
+    });
+
+    window.__openAdminConfirmInternal = function (options) {
+        document.getElementById('adminConfirmTitle').textContent = options.title || 'Are you sure?';
+        document.getElementById('adminConfirmMessage').textContent = options.message || '';
+        confirmBtn.textContent = options.confirmLabel || 'Confirm';
+        cancelBtn.textContent = options.cancelLabel || 'Cancel';
+        // Red "confirm" for a destructive action (danger !== false, matching
+        // script.js's own default), clay/primary for a non-destructive one.
+        confirmBtn.classList.toggle('confirm-dialog-danger-btn', options.danger !== false);
+        confirmBtn.classList.toggle('btn-primary', options.danger === false);
+        _adminConfirmCallback = options.onConfirm;
+
+        overlay.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    };
+}
+
+/** @param {{title?: string, message?: string, confirmLabel?: string, cancelLabel?: string, danger?: boolean, onConfirm: () => void}} options */
+function showAdminConfirmDialog(options) {
+    injectAdminConfirmMarkup();
+    window.__openAdminConfirmInternal(options);
 }
 
 /* =========================================================================
@@ -431,4 +590,13 @@ function escapeAdminHtml(str) {
     const div = document.createElement('div');
     div.textContent = String(str);
     return div.innerHTML;
+}
+
+/** Safe for building an attribute-value selector out of a backend-supplied
+ * id (applicationId is expected to be a plain UUID, but this doesn't rely
+ * on that). Falls back to a literal-safe manual escape if the CSS.escape
+ * global isn't available. */
+function cssEscapeAdmin(str) {
+    if (typeof CSS !== 'undefined' && CSS.escape) return CSS.escape(str);
+    return String(str).replace(/["\\]/g, '\\$&');
 }
