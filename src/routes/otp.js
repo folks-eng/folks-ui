@@ -35,7 +35,7 @@ class OtpHandler {
                     JSON.stringify(val),
                     ttlMin
                 );
-
+                log.info("Otp generated %d for %s ", val.otp, input)
                 if (log.isDebugEnabled()) {
                     log.debug(`Cached otp for ${input} in the cache. Result: ${ret}`);
                 }
@@ -50,11 +50,11 @@ class OtpHandler {
                     otp: val.otp,
                     ttl: val.ttl / 60
                 };
-                let result = await gway.send(param);
-
+                // Will be uncommented once SMS sending is completely working
+                /*let result = await gway.send(param);
                 if (log.isDebugEnabled()) {
-                    log.debug('Response from gateway: %s', result.message);
-                }
+                    log.debug('Response from gateway: %s', result);
+                }*/
                 return {status: 1, otp: val};
             }
         }
