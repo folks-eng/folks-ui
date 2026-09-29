@@ -31,19 +31,19 @@ async function requestOtp(req, res) {
             
             res.status(200)
                 .set('Accept', 'application/json')
-                .cookie(Utility.STD_COOKIE, token, cookieOpts)
-                .send({success: true, message: 'Otp sent successfully'});
+                .cookie(CookieUtil.STD_COOKIE, token, cookieOpts)
+                .send({message: 'Otp sent successfully'});
         }
         else {
             // res.status = 0
             // Otp has already been generated and sent
             res.status(200)
-                .json({success: true, message: 'Otp has already been sent. Please wait for 5 minute before trying again'});
+                .json({message: 'Otp has already been sent. Please wait for 5 minute before trying again'});
         }
     }
     catch (err) {
         res.status(500)
-                .json({success: false, message: err.message});
+                .json({message: err.message});
     }
 }
 
@@ -66,13 +66,11 @@ async function verifyOtp(req, res) {
 
             case 'INVALID':
                 return res.status(400).json({
-                    success: false,
                     message: 'Incorrect OTP. Please try again'
                 });
 
             case 'EXPIRED':
                 return res.status(400).json({
-                    success: false,
                     message: 'OTP is expired. Go back to previous screen and try generating the OTP again'
                 });
 
@@ -80,7 +78,6 @@ async function verifyOtp(req, res) {
                 log.error('Unexpected OTP verification status: %s', result.state);
 
                 return res.status(500).json({
-                    success: false,
                     message: 'There was a problem verifying the otp. Please try later'
                 });
         }
@@ -88,7 +85,7 @@ async function verifyOtp(req, res) {
     catch (err) {
         log.error('Error in verifying otp for ' + input, err);
         res.status(500)
-                .json({success: false, message: err.message});
+                .json({message: err.message});
     }
 }
 

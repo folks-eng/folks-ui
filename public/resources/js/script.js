@@ -661,8 +661,8 @@ function initSignupFlow() {
                 `You're all set to browse services, ${result.result.fullName.split(' ')[0]}.`;
             setStepDots(0);
             goTo(screens.success, 'forward');
-            completeLogin(result.result);
-            setTimeout(closeModal, 1800);
+            completeLogin(result.result, result.expiresOn);
+            setTimeout(closeModal, 1200);
         }
         else {
             if (result.message.startsWith('Your mobile/email is already registered')) {

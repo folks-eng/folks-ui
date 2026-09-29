@@ -184,7 +184,11 @@ const FolksAPI = (function () {
      * @returns {Promise<{success: boolean, message?: string, user?: object}>}
      */
     async function createUser(payload) {
-        return await invoke('/users', 'POST', payload);
+        let result = await invoke('/users', 'POST', payload);
+        if (result.code === 200) {
+            result.expiresOn = result.headers.get('expiresOn');
+        }
+        return result;
     }
 
     /**
