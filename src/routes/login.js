@@ -3,9 +3,10 @@ const express = require('express');
 const otpHandler = require('./otp');
 const tokenMgr = require('./../auth/token_mgr');
 const JwtUtil = require('./../auth/jwt');
-const httpClient = require('./../util/http_client');
-const { getLogger } = require('../util/logger');
+const CookieUtil = require('./../util/cookie_util');
 const Utility = require('./../util/utility');
+const { getLogger } = require('../util/logger');
+const httpClient = require('./../util/http_client');
 
 const router = express.Router();
 const log = getLogger(__filename);
@@ -15,32 +16,36 @@ async function requestOtp(req, res) {
     const op = req.body.op;
     
     try {
+        // otp {
+        //   input,
+        //   otp,
+        //   ttlMin
+        //   purpose
+        //   createdAt
+        //   jti
+        // }
         const ret = await otpHandler.request(op, input);
         
-        if (ret.status === 0) {
-            // Otp has already been generated and sent
-            res.status(200)
-                .json({success: true, message: 'Otp has already been sent. Please wait for 5 minute before trying again'});
-        }
-        else {
+        if (ret.status === 1) {
             // Otp has just been generated. Therefore generate the token.
-            const {token, ttlMin} = JwtUtil.otpToken(ret.otp.input, ret.otp.jti);
+            let token = JwtUtil.otpToken(input, ret.otp.jti);
+            let cookieOpts = CookieUtil.prepare(ret.otp.ttlMin);
             
             res.status(200)
                 .set('Accept', 'application/json')
-                .cookie('_fks', token, {
-                    maxAge: parseInt(ttlMin, 10) * 60 * 1000,
-                    httpOnly: true,                 // Protects against XSS attacks (not accessible via client JS)
-                    secure: true,                   // Only sent over HTTPS
-                    sameSite: 'lax',                // Mitigates CSRF attacks
-                    path: process.env.BASE_PATH || '/gateway/v1'
-                })
-                .send({success: true, message: 'Otp sent successfully'});
+                .cookie(CookieUtil.STD_COOKIE, token, cookieOpts)
+                .send({message: 'Otp sent successfully'});
+        }
+        else {
+            // res.status = 0
+            // Otp has already been generated and sent
+            res.status(200)
+                .json({message: 'Otp has already been sent. Please wait for 5 minute before trying again'});
         }
     }
     catch (err) {
         res.status(500)
-                .json({success: false, message: err.message});
+                .json({message: err.message});
     }
 }
 
@@ -49,9 +54,10 @@ async function verifyOtp(req, res) {
     const input = req.body.input;
     const type = Utility.getIdentityType(input);
     const otp = Number(req.body.otp);
+    const user = req.user;
     
     try {
-        const result = await otpHandler.verify(input, otp);
+        const result = await otpHandler.verify(input, otp, user.jti);
         
         switch (result.state) {
             case 'VERIFIED':
@@ -65,66 +71,54 @@ async function verifyOtp(req, res) {
                 if (response.status === 200) {
                     if (response.data.total === 1) {
                         const item = response.data.items[0];
-                        const {token, ttlMin} = JwtUtil.loginToken(item.externalId, item.fullName);
-
+                        
                         if (log.isInfoEnabled()) {
-                            log.info(`Successfully retrieved user ${item.fullName} against ${input}. Generating login token ...`);
+                            log.info('Successfully retrieved user %s against %s. Generating login token ...', item.fullName, input);
                         }
+                        
+                        let token = JwtUtil.loginToken(item.externalId, item.fullName, item.role.toLowerCase());
+                        let ttlMin = process.env.TOKEN_TTL_MIN || 600;
+                        let cookieOpts = CookieUtil.prepare(ttlMin);
 
-                        return res.status(response.status)
-                            .cookie('_fks', token, {
-                                maxAge: parseInt(ttlMin, 10) * 60 * 1000,        // Expires (in milliseconds)
-                                httpOnly: true,                 // Protects against XSS attacks (not accessible via client JS)
-                                secure: true,                   // Only sent over HTTPS
-                                sameSite: 'lax',                // Mitigates CSRF attacks
-                                path: process.env.BASE_PATH || '/gateway/v1'
-                            })
-                            .json({externalId: item.externalId, fullName: item.fullName});
+                        return res.status(200)
+                                .setHeader('expiresOn', (Date.now() + cookieOpts.maxAge))
+                                .cookie(CookieUtil.STD_COOKIE, token, cookieOpts)
+                                .json(item);
                     }
                     else {
                         // No associated user found.
                         // Clear the previous cookie.
-                        log.warn(`No user details found against ${input}. Forwarding to sign-up screen ...`);
-                        
-                        res.clearCookie('_fks', {
-                            httpOnly: true,
-                            secure: true,
-                            sameSite: 'lax',
-                            path: process.env.BASE_PATH || '/gateway/v1'
-                        });
+                        log.warn('No user details found against %s. Forwarding to sign-up screen ...', input);
+                        let cookieOpts = CookieUtil.COOKIE_OPTS;
+
+                        res.clearCookie(CookieUtil.STD_COOKIE, cookieOpts);
                         return res.status(404)
-                                .json({success: false, message: 'No user details found'});
+                                .json({message: 'No user details found'});
                     }
                 }
                 else {
-                    throw new Error(`Error fetching user details for ${input}`);
+                    throw new Error('Error fetching user details for %s', input);
                 }
 
             case 'INVALID':
-                return res.status(400).json({
-                    success: false,
-                    message: 'Incorrect OTP. Please try again'
-                });
+                return res.status(400)
+                        .json({message: 'Incorrect OTP. Please try again'});
 
             case 'EXPIRED':
-                return res.status(400).json({
-                    success: false,
-                    message: 'OTP is expired. Go back to previous screen and try generating the OTP again'
-                });
+                return res.status(400)
+                        .json({message: 'OTP is expired. Go back to previous screen and try generating the OTP again'});
 
             default:
-                log.error(`Unexpected OTP verification status: ${result.status}`);
-
-                return res.status(500).json({
-                    success: false,
-                    message: 'There was a problem verifying the otp. Please try later'
-                });
+                log.error('Unexpected OTP verification status: %s', result.status);
+                return res.status(500)
+                        .json({message: 'There was a problem verifying the otp. Please try later'});
         }
     }
     catch (err) {
         log.error('Error in verifying otp for ' + input, err);
+        res.clearCookie(CookieUtil.STD_COOKIE, CookieUtil.COOKIE_OPTS);
         res.status(500)
-                .json({success: false, message: err.message});
+                .json({message: err.message});
     }
 }
 
@@ -190,7 +184,7 @@ async function adminLogin(req, res) {
     if (! userid || ! password) {
         return res.status(400)
                 .set('Content-Type', 'application/json')
-                .json({success: false, message: 'Username and password are required'});
+                .json({message: 'Username and password are required'});
     }
 
     try {
@@ -227,7 +221,7 @@ async function adminLogin(req, res) {
         else {
             log.error('Admin login rejected. Status code: %d', response.status);
             return res.status(response.status)
-                    .json({success: false, message: (response.data && response.data.message) || 'Invalid username or password'});
+                    .json({message: (response.data && response.data.message) || 'Invalid username or password'});
         }
     }
     catch (err) {
@@ -237,10 +231,10 @@ async function adminLogin(req, res) {
             // Vert.x rejected the credentials outright (401/403) — don't leak backend
             // error detail to the login screen beyond a generic message.
             return res.status(err.response.status)
-                    .json({success: false, message: 'Invalid username or password'});
+                    .json({message: 'Invalid username or password'});
         }
         return res.status(503)
-                .json({success: false, message: 'Service temporarily unavailable'});
+                .json({message: 'Service temporarily unavailable'});
     }
 }
 

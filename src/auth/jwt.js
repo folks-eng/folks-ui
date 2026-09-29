@@ -34,8 +34,7 @@ class JwtUtil {
     };
     
     static otpToken(input, jti) {
-        // If everything is successful, generate a jwt token with mobile number as id,
-        // and set it as a cookie.
+        // If everything is successful, generate a jwt token with mobile number as id, and set it as a cookie.
         // In subsequent verify call, this token will be sent back.
         // If the token is not present, then verify call will be rejected.
 
@@ -53,7 +52,7 @@ class JwtUtil {
         if (log.isDebugEnabled()) {
             log.debug('Created otp token for %s. TTL: %s', input, ttlMin);
         }
-        return {token, ttlMin};
+        return token;
     }
     
     static loginToken(id, name, priv) {
@@ -80,20 +79,20 @@ class JwtUtil {
         if (log.isDebugEnabled()) {
             log.debug('Created jwt auth token for user %s. TTL: %s', id, ttlMin);
         }
-        return {token, ttlMin};
+        return token;
     }
     
-    static sign(claims, ttl) {
+    static sign(claims, ttlMin) {
         try {
             const opts = {...JwtUtil.signOptions};
 
-            if (ttl) {
-                opts.expiresIn = ttl;
+            if (ttlMin) {
+                opts.expiresIn = ttlMin;
             }
             let token = jwt.sign(claims, keystore.getPrivateKey(), opts);
             
             if (log.isDebugEnabled()) {
-                log.debug('Generated and signed jwt token from claims: ' + JSON.stringify(claims));
+                log.debug('Generated and signed jwt token from claims: %s', JSON.stringify(claims));
             }
             return token;
         }
@@ -108,7 +107,7 @@ class JwtUtil {
             const decoded = jwt.verify(token, keystore.getPublicKey(), JwtUtil.verifyOptions);
             
             if (log.isDebugEnabled()) {
-                log.debug(`Verified jwt token ${token}`);
+                log.debug('Verified jwt token: ', token);
             }
             return decoded;
         }

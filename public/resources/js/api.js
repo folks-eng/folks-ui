@@ -3,23 +3,132 @@
  All network / AJAX calls live in this file, kept separate from script.js
  which only handles UI behaviour. Exposed as the FolksAPI namespace so
  script.js (loaded after this file) can call FolksAPI.requestOtp(), etc.
- 
- Backend contract:
- 1. POST /api/v1/otp            { mobile }              -> { success, message }
- 2. POST /api/v1/otp/verify     { mobile, otp }          -> { success, message, token? }
- 3. POST /api/v1/users          { mobile, name, email }  -> { success, user }
- 
- DEMO_MODE: this bundle ships with no live backend. If a real endpoint at
- the paths above isn't reachable, each request transparently falls back to
- a simulated response (after a short delay) so the flow can be clicked
- through end-to-end. Set FolksAPI.DEMO_MODE to false once real endpoints
- exist — the fetch calls are already wired with the correct method/payload
- shape and just need a server to answer them.
  ========================================================================= */
 
 const FolksAPI = (function () {
     const DEMO_MODE = false;
     const BASE_URL = '/gateway/v1';
+    const LOGGING = true;
+
+    /**
+     * Sends an HTTP request to the API and returns a normalized response.
+     *
+     * The request is sent to the URL constructed from {@code BASE_URL} and the
+     * provided URI. Cookies are included with the request and, when supplied,
+     * the payload is serialized as JSON.
+     *
+     * HTTP status codes 200, 201, 202, and 204 are treated as successful
+     * responses. API errors, authentication expiration, and unexpected request
+     * failures are returned as normalized error objects rather than being thrown
+     * to the caller.
+     *
+     * @async
+     * @param {string} uri - API endpoint URI relative to {@code BASE_URL}.
+     * @param {string} method - HTTP method to use, such as GET, POST, PUT, or DELETE.
+     * @param {Object} [payload] - Optional request payload. The payload is serialized
+     *                             to JSON before being sent.
+     *
+     * @returns {Promise<{
+     *     success: boolean,
+     *     result?: Object|Array,
+     *     message?: string,
+     *     authExpired?: boolean
+     * }>} A promise that resolves with a normalized API response.
+     *
+     * @example
+     * const response = await invoke('/users/me', 'GET');
+     *
+     * if (response.success) {
+     *     console.log(response.result);
+     * } else {
+     *     console.error(response.message);
+     * }
+     *
+     * @example
+     * const response = await invoke('/users/me', 'PUT', {
+     *     firstName: 'John',
+     *     lastName: 'Doe'
+     * });
+     */
+    async function invoke(uri, method, payload) {
+        let url = BASE_URL + (uri.charAt(0) !== '/' ? '/' + uri : uri);
+
+        let config = {
+            method: method,
+            credentials: 'include',
+            headers: {'Content-Type': 'application/json'}
+        };
+        if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+            if (payload) {
+                config.body = payload ? JSON.stringify(payload) : '';
+            }
+        }
+
+        try {
+            if (LOGGING) {
+                console.log(
+                        'Calling ' + method + ' ' + url +
+                        '. Payload: ' + (payload ? payload : 'N/A')
+                    );
+            }
+
+            // Call the node backend.
+            const res = await fetch(url, config);
+            
+            if (res.status === 403) {
+                let txt = await res.text();
+                if (txt === '403 Forbidden') {
+                    return {
+                        success: false,
+                        message: 'Please refresh the page and try again. If the problem continues, contact support.'
+                    };
+                }
+            }
+            let json = {message: 'Operation executed successfully'};    // A fixed message for http code 204
+            
+            if (res.status !== 204) {
+                json = await res.json();
+            }
+            
+            if (res.status === 200 ||
+                    res.status === 201 ||
+                    res.status === 202 ||
+                    res.status === 204) {
+
+                return {
+                    success: true
+                    , code: res.status
+                    , headers: res.headers
+                    , result: json
+                };
+            }
+            else {
+                if (res.status === 401 && res.message === 'Cookie expired') {
+                    return {
+                        success: false
+                        , code: res.status
+                        , authExpired: true
+                        , message: json.message
+                    };
+                }
+                else if (res.status >= 500) {
+                    // "We're sorry, our system encountered an unexpected problem.
+                    // We've been notified and are working to fix it. Please try again later."
+                    return {
+                        success: false
+                        , code: res.status
+                        , message: 'Unable to complete your request right now. Please try again later.'
+                    };
+                }
+                return {success: false, code: res.status, message: json.message};
+            }
+        }
+        catch (e) {
+            alert(e.message);
+            console.error(e.message, e);
+            return {success: false, message: e.message};
+        }
+    }
 
     /**
      * POST /api/v1/signup/otp/dispatch
@@ -32,32 +141,7 @@ const FolksAPI = (function () {
             op: op,
             input: mobile
         };
-
-        if (DEMO_MODE) {
-            return simulateOtpRequest(payload);
-        }
-
-        try {
-            const res = await fetch(
-                    BASE_URL + '/' + op + '/otp/request',
-                    {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(payload)
-                    }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return json;
-            } else {
-                return {success: false, message: json.message};
-            }
-        } catch (e) {
-            console.error(e.message, e);
-            return {success: false, message: e.message};
-
-            // return simulateOtpRequest(payload);
-        }
+        return await invoke(op + '/otp/request', 'POST', payload);
     }
 
     /**
@@ -71,41 +155,18 @@ const FolksAPI = (function () {
             input: mobile,
             otp: otp
         };
-
-        if (DEMO_MODE) {
-            return simulateOtpVerify(payload);
-        }
-
-        try {
-            const res = await fetch(
-                    BASE_URL + '/' + op + '/otp/verify',
-                    {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(payload)
-                    }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                if (op === 'signup') {
-                    return json;
-                } else {
-                    // Post successful login, the response object will have the user details. 
-                    return {success: true, result: json};
-                }
-            } else if (res.status === 401) {
-                return {success: false, message: 'You are not authorized. Please wait for 5 minutes and start the flow again'};
-            } else if (res.status === 404) {
-                return {success: false, code: 404, message: json.message};
+        let result = await invoke(op + '/otp/verify', 'POST', payload);
+        
+        if (result.code === 200) {
+            if (op === 'signup') {
+                return result;
             } else {
-                return {success: false, message: json.message};
+                // Post successful login, the response object will have the user details.
+                result.expiresOn = result.headers.get('expiresOn');
+                return result;
             }
-        } catch (e) {
-            console.error(e.message, e);
-            return {success: false, message: e.message};
-
-            // return simulateOtpVerify(payload);
         }
+        return result;
     }
 
     /**
@@ -114,29 +175,7 @@ const FolksAPI = (function () {
      * @returns {Promise<{success: boolean, message?: string, user?: object}>}
      */
     async function logout() {
-        try {
-            const res = await fetch(
-                    BASE_URL + '/logout',
-                    {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        credentials: 'include'
-                    }
-            );
-            if (res.status === 204) {
-                return {success: true};
-            }
-            else if (res.status === 401) {
-                // Cookie not found.
-                return {success: true};
-            }
-            else {
-                return {success: false, message: res.message};
-            }
-        } catch (e) {
-            console.error(e.message, e);
-            return {success: false, message: e.message};
-        }
+        return await invoke('/logout', 'POST');
     }
 
     /**
@@ -145,208 +184,96 @@ const FolksAPI = (function () {
      * @returns {Promise<{success: boolean, message?: string, user?: object}>}
      */
     async function createUser(payload) {
-        if (DEMO_MODE) {
-            return simulateCreateUser(payload);
-        }
-
-        try {
-            const res = await fetch(
-                    BASE_URL + '/users',
-                    {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(payload)
-                    }
-            );
-            let json = await res.json();
-            if (res.status === 201) {
-                return {success: true, result: json};
-            }
-            else if (res.status === 409) {
-                return {success: false, message: 'Your mobile/email is already registered ' + payload.fullName + '!'};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error(e.message, e);
-            return {success: false, message: e.message};
-        }
+        return await invoke('/users', 'POST', payload);
     }
 
     /**
-     * PUT /api/v1/users
-     * Payload: full user object, including id, with updated field values.
-     * @returns {Promise<{success: boolean, message?: string, user?: object}>}
+     * Updates the currently authenticated user's information.
+     *
+     * @async
+     * @param {Object} payload - User information to update.
+     * @returns {Promise<Object>} A promise that resolves with the updated user data.
      */
     async function updateUser(id, payload) {
-        if (DEMO_MODE) {
-            return simulateUpdateUser(payload);
-        }
-
-        try {
-            const res = await fetch(
-                BASE_URL + '/users/' + id,
-                {
-                    method: 'PUT',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error(e.message, e);
-            return {'success': false, 'message': e.message};
-
-            // return simulateUpdateUser(payload);
-        }
-    }
-
-    async function viewUser(id) {
-        try {
-            const res = await fetch(
-                BASE_URL + '/users/' + id,
-                {
-                    method: 'GET',
-                    credentials: 'include'
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to fetch profile:', e);
-            return {'success': false, 'message': e.message};
-        }
+        return await invoke('/users/me', 'PUT', payload);
     }
 
     /**
-     * POST /api/v1/addresses
-     * Payload: address fields (no id yet — this is the first address for the user).
-     * @returns {Promise<{success: boolean, message?: string, address?: object}>}
+     * Retrieves information for the currently authenticated user.
+     *
+     * @async
+     * @returns {Promise<Object>} A promise that resolves with the user's information.
+     */
+    async function viewUser() {
+        return await invoke('/users/me', 'GET');
+    }
+
+    /**
+     * Creates a new address for the currently authenticated user.
+     * 
+     * Standard REST API best practices dictate using them for two entirely different use cases.
+     * Choosing between a nested path (/users/me/addresses) and a flat path (/addresses) depends on whether the
+     * resource can exist independently and if you are dealing with a collection vs. a specific item.
+     * 
+     * For resources that have a lifecycle tied to a user (like bookings or addresses), one should use a hybrid approach.
+     * Thus all GET and POST API will use the nested approach.
+     * And for GET, PUT and DELETE use the flat url.
+     * 
+     *  1. Why use /users/me/addresses for listing and creating?
+     *  When you want to see your addresses or add a new one, the relationship is hierarchical.
+     *  
+     *  a) Contextual Safety: Calling POST /users/me/addresses tells the backend explicitly to tie this new address 
+     *     to the authenticated session user. The frontend doesn't need to pass a userId inside the request body payload.
+     *  b) Clarity: It explicitly implies, "Give me the collection of addresses scoped down to me."
+     *  
+     *  2. Why use /addresses/{addressId} for updates and deletions?
+     *  Once an address (or booking, or coupon) is created, it receives its own unique identifier (e.g., addr_12345).
+     *  At that point, nesting it under a user becomes redundant and leads to deeply nested URLs.
+     *  
+     *  a) Avoids Redundant Paths: URLs like PUT /users/me/addresses/123 are unnecessarily long. The backend only needs 
+     *     the addressId to update it; it doesn't need the user context in the path to identify the specific record.
+     *  b) Separation of Concerns: The backend database query can look up the address directly by its primary key (addressId).
+     *    (Security tip: The backend should still verify that the userId from the session cookie owns that addressId before executing the change).
+     *
+     * @async
+     * @param {Object} payload - Address information to create.
+     * @returns {Promise<Object>} A promise that resolves with the newly created address.
      */
     async function createAddress(payload) {
-        if (DEMO_MODE) {
-            return simulateCreateAddress(payload);
-        }
-
-        try {
-            const res = await fetch(
-                BASE_URL + '/addresses',
-                {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                }
-            );
-            let json = await res.json();
-            if (res.status === 201) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error(e.message, e);
-            return {'success': false, 'message': e.message};
-
-            // return simulateCreateAddress(payload);
-        }
+        return await invoke('/addresses', 'POST', payload);
     }
 
     /**
-     * PUT /api/v1/addresses
-     * Payload: full address object, including id, with updated field values.
-     * @returns {Promise<{success: boolean, message?: string, address?: object}>}
+     * Retrieves all addresses associated with the currently authenticated user.
+     *
+     * @async
+     * @returns {Promise<Array<Object>>} A promise that resolves with the user's addresses.
+     */
+    async function viewAddresses() {
+        return await invoke('/addresses', 'GET');
+    }
+
+    /**
+     * Updates an existing address.
+     *
+     * @async
+     * @param {string|number} id - The unique identifier of the address to update.
+     * @param {Object} payload - Address information to update.
+     * @returns {Promise<Object>} A promise that resolves with the updated address.
      */
     async function updateAddress(id, payload) {
-        if (DEMO_MODE) {
-            return simulateUpdateAddress(payload);
-        }
-
-        try {
-            const res = await fetch(
-                BASE_URL + '/addresses/' + id,
-                {
-                    method: 'PUT',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error(e.message, e);
-            return {'success': false, 'message': e.message};
-
-            // return simulateUpdateAddress(payload);
-        }
+        return await invoke('/addresses/' + id, 'PUT', payload);
     }
 
-    async function viewAddresses() {
-        try {
-            const res = await fetch(
-                BASE_URL + '/addresses',
-                {
-                    method: 'GET',
-                    credentials: 'include'
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to fetch all addresses:', e);
-            return {'success': false, 'message': e.message};
-        }
-    }
-
+    /**
+     * Deletes an existing address.
+     *
+     * @async
+     * @param {string|number} id - The unique identifier of the address to delete.
+     * @returns {Promise<*>} A promise that resolves when the address has been deleted.
+     */
     async function deleteAddress(id) {
-        try {
-            const res = await fetch(
-                BASE_URL + '/addresses/' + id,
-                {
-                    method: 'DELETE',
-                    credentials: 'include'
-                }
-            );
-            if (res.status === 204) {
-                return {success: true};
-            }
-            else {
-                let json = await res.json();
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to fetch all addresses:', e);
-            return {'success': false, 'message': e.message};
-        }
+        return await invoke('/addresses/' + id, 'DELETE');
     }
 
     /**
@@ -356,26 +283,7 @@ const FolksAPI = (function () {
      * @returns {Promise<{success: boolean, message?: string, result?: object}>}
      */
     async function viewProvinces() {
-        try {
-            const res = await fetch(
-                BASE_URL + '/provinces',
-                {
-                    method: 'GET',
-                    credentials: 'include'
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to fetch provinces:', e);
-            return {'success': false, 'message': e.message};
-        }
+        return await invoke('/provinces', 'GET');
     }
 
     /**
@@ -384,26 +292,7 @@ const FolksAPI = (function () {
      * @returns {Promise<{success: boolean, message?: string, result?: object}>}
      */
     async function viewCities(provinceId) {
-        try {
-            const res = await fetch(
-                BASE_URL + '/cities?provinceId=' + encodeURIComponent(provinceId),
-                {
-                    method: 'GET',
-                    credentials: 'include'
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to fetch cities:', e);
-            return {'success': false, 'message': e.message};
-        }
+        return await invoke('/cities?provinceId=' + encodeURIComponent(provinceId), 'GET');
     }
 
     /**
@@ -414,26 +303,7 @@ const FolksAPI = (function () {
      * @returns {Promise<{success: boolean, message?: string, result?: object}>}
      */
     async function viewNeighbourhoods(cityId) {
-        try {
-            const res = await fetch(
-                BASE_URL + '/neighbourhoods?cityId=' + encodeURIComponent(cityId),
-                {
-                    method: 'GET',
-                    credentials: 'include'
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to fetch neighbourhoods:', e);
-            return {'success': false, 'message': e.message};
-        }
+        return invoke('/neighbourhoods?cityId=' + encodeURIComponent(cityId), 'GET');
     }
 
     /**
@@ -447,72 +317,29 @@ const FolksAPI = (function () {
      * @returns {Promise<{success: boolean, message?: string, result?: object}>}
      */
     async function checkPincode(pincode) {
-        try {
-            const res = await fetch(
-                BASE_URL + '/neighbourhoods?pincode=' + encodeURIComponent(pincode),
-                {
-                    method: 'GET',
-                    credentials: 'include'
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to check pincode:', e);
-            return {'success': false, 'message': e.message};
-        }
+        return await invoke('/neighbourhoods?pincode=' + encodeURIComponent(pincode), 'GET');
     }
 
+    /**
+     * Retrieves the category hierarchy.
+     *
+     * @async
+     * @returns {Promise<Object>} A promise that resolves with the category hierarchy.
+     */
     async function viewCategories() {
-        try {
-            const res = await fetch(
-                BASE_URL + '/categories/hierarchy',
-                {
-                    method: 'GET',
-                    credentials: 'include'
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to fetch all categories:', e);
-            return {'success': false, 'message': e.message};
-        }
+        return await invoke('/categories/hierarchy', 'GET');
     }
 
+    /**
+     * Retrieves available slots for a specific date and service.
+     *
+     * @async
+     * @param {string} dateKey - The date for which available slots should be retrieved.
+     * @param {string|number} serviceId - The unique identifier of the service.
+     * @returns {Promise<Array<Object>>} A promise that resolves with the available slots.
+     */
     async function viewSlots(dateKey, serviceId) {
-        try {
-            const res = await fetch(
-                BASE_URL + '/availabilities/slots?date=' + dateKey + '&serviceId=' + serviceId,
-                {
-                    method: 'GET',
-                    credentials: 'include'
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to fetch all categories:', e);
-            return {'success': false, 'message': e.message};
-        }
+        return await invoke('/availabilities/slots?date=' + dateKey + '&serviceId=' + serviceId, 'GET');
     }
 
     /**
@@ -525,38 +352,7 @@ const FolksAPI = (function () {
      * @returns {Promise<{success: boolean, message?: string, booking?: object}>}
      */
     async function createBooking(payload) {
-        if (DEMO_MODE) {
-            return simulateCreateBooking(payload);
-        }
-
-        try {
-            let uri = BASE_URL + '/bookings';
-
-            const res = await fetch(uri, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            let json = await res.json();
-            if (res.status === 201) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        } catch (e) {
-            console.error(e.message, e);
-            return {'success': false, 'message': e.message};
-
-            // The demo simulator has no server-side session to read a customer
-            // from, so — only on this client-side-only fallback path — attach
-            // whoever script.js currently considers logged in.
-            // const demoPayload = {
-            //     ...payload,
-            //     customer: (typeof getCurrentUser === 'function' && getCurrentUser()) || null,
-            // };
-            // return simulateCreateBooking(demoPayload);
-        }
+        return await invoke('/bookings', 'POST', payload);
     }
 
     /**
@@ -568,30 +364,7 @@ const FolksAPI = (function () {
      * @returns {Promise<{success: boolean, message?: string, bookings?: object[]}>}
      */
     async function getBookings() {
-        // if (DEMO_MODE) {
-        //     return simulateGetBookings(userId);
-        // }
-
-        try {
-            let uri = BASE_URL + '/bookings?fetchDependency=true';
-
-            const res = await fetch(uri, {
-                method: 'GET',
-                headers: {'Content-Type': 'application/json'}
-            });
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        } catch (e) {
-            console.error(e.message, e);
-            return {'success': false, 'message': e.message};
-
-            // return simulateGetBookings(userId);
-        }
+        return await invoke('/bookings?fetchDependency=true', 'GET');
     }
 
     /**
@@ -600,28 +373,7 @@ const FolksAPI = (function () {
      * @returns {Promise<{success: boolean, message?: string, booking?: object}>}
      */
     async function cancelBooking(bookingId) {
-        if (DEMO_MODE) {
-            return simulateCancelBooking(bookingId);
-        }
-
-        try {
-            let uri = BASE_URL + '/bookings/' + encodeURIComponent(bookingId);
-
-            const res = await fetch(uri, {
-                method: 'DELETE',
-                headers: {'Content-Type': 'application/json'},
-                credentials: 'include'
-            });
-            if (res.status === 204) {
-                return {'success': true, 'message': 'Booking cancelled successfully'};
-            }
-            throw new Error(`Booking cancellation request to url ${uri} has failed. Status: ${res.status}. Error Msg: ${res.message}`);
-        } catch (e) {
-            console.error(e.message, e);
-            return {'success': false, 'message': e.message};
-
-            // return simulateCancelBooking(bookingId);
-        }
+        return await invoke('/bookings/' + encodeURIComponent(bookingId), 'DELETE');
     }
 
     /**
@@ -642,124 +394,68 @@ const FolksAPI = (function () {
      * @returns {Promise<{success: boolean, message?: string, application?: object}>}
      */
     async function applyAsProfessional(payload) {
-        if (DEMO_MODE) {
-            return simulateApplyAsProfessional(payload);
-        }
-
-        try {
-            let uri = BASE_URL + '/professionals';
-
-            const res = await fetch(uri, {
-                method: 'POST',
-                credentials: 'include',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            let json = await res.json();
-            
-            if (res.status === 201) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error(e.message, e);
-            return {'success': false, 'message': e.message};
-        }
+        return await invoke('/professionals', 'POST', payload);
     }
 
+    /**
+     * Retrieves the details of a professional by their unique identifier.
+     *
+     * @async
+     * @param {string|number} id - The unique identifier of the professional.
+     * @returns {Promise<{
+     *     success: boolean,
+     *     result?: Object,
+     *     message?: string,
+     *     authExpired?: boolean
+     * }>} A promise that resolves with the professional details or error information.
+     */
     async function viewProfessional(id) {
-        try {
-            const res = await fetch(
-                BASE_URL + '/professionals/' + id,
-                {
-                    method: 'GET',
-                    credentials: 'include'
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to fetch profile:', e);
-            return {'success': false, 'message': e.message};
-        }
+        return await invoke('/professionals/' + id, 'GET');
     }
 
+    /**
+     * Retrieves the available documents.
+     *
+     * @async
+     * @returns {Promise<{
+     *     success: boolean,
+     *     result?: Array<Object>,
+     *     message?: string,
+     *     authExpired?: boolean
+     * }>} A promise that resolves with the list of documents or error information.
+     */
     async function viewDocuments() {
-        try {
-            const res = await fetch(
-                BASE_URL + '/documents',
-                {
-                    method: 'GET',
-                    credentials: 'include'
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to fetch document:', e);
-            return {'success': false, 'message': e.message};
-        }
+        return await invoke('/documents', 'GET');
     }
 
+    /**
+     * Retrieves the services associated with the current professional.
+     *
+     * @async
+     * @returns {Promise<{
+     *     success: boolean,
+     *     result?: Array<Object>,
+     *     message?: string,
+     *     authExpired?: boolean
+     * }>} A promise that resolves with the list of professional services or error information.
+     */
     async function viewProfessionalServices() {
-        try {
-            const res = await fetch(
-                BASE_URL + '/professionalServices',
-                {
-                    method: 'GET',
-                    credentials: 'include'
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to fetch professional service:', e);
-            return {'success': false, 'message': e.message};
-        }
+        return await invoke('/professionalServices', 'GET');
     }
 
+    /**
+     * Retrieves the available vouchers/coupons.
+     *
+     * @async
+     * @returns {Promise<{
+     *     success: boolean,
+     *     result?: Array<Object>,
+     *     message?: string,
+     *     authExpired?: boolean
+     * }>} A promise that resolves with the list of available vouchers or error information.
+     */
     async function viewVouchers() {
-        try {
-            const res = await fetch(
-                BASE_URL + '/coupons',
-                {
-                    method: 'GET',
-                    credentials: 'include'
-                }
-            );
-            let json = await res.json();
-            if (res.status === 200) {
-                return {success: true, result: json};
-            }
-            else {
-                return {success: false, message: json.message};
-            }
-        }
-        catch (e) {
-            console.error('[Folks] Failed to fetch voucher:', e);
-            return {'success': false, 'message': e.message};
-        }
+        return await invoke('/coupons', 'GET');
     }
 
     /* =====================================================================
@@ -783,22 +479,20 @@ const FolksAPI = (function () {
     async function adminLogin(userid, password) {
         try {
             const res = await fetch(
-                BASE_URL + '/login/admin',
-                {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({userid, password})
-                }
+                    BASE_URL + '/login/admin',
+                    {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({userid, password})
+                    }
             );
             let json = await res.json();
             if (res.status === 200) {
                 return {success: true, result: json};
-            }
-            else {
+            } else {
                 return {success: false, message: json.message || 'Invalid username or password'};
             }
-        }
-        catch (e) {
+        } catch (e) {
             console.error('[Folks] Admin login failed:', e);
             return {success: false, message: e.message};
         }
@@ -819,20 +513,18 @@ const FolksAPI = (function () {
                 body: JSON.stringify(payload)
             });
             let json = await res.json();
-            
+
             if (res.status === 200) {
                 return {success: true, result: json};
-            }
-            else {
+            } else {
                 return {success: false, message: json.message};
             }
-        }
-        catch (e) {
+        } catch (e) {
             console.error('[Folks] Failed to execute query:', e);
             return {success: false, message: e.message};
         }
     }
-    
+
     async function queryApplication(status) {
         try {
             const param = '?' + status;
@@ -842,20 +534,18 @@ const FolksAPI = (function () {
                 headers: {'Content-Type': 'application/json'}
             });
             let json = await res.json();
-            
+
             if (res.status === 200) {
                 return {success: true, result: json};
-            }
-            else {
+            } else {
                 return {success: false, message: json.message};
             }
-        }
-        catch (e) {
+        } catch (e) {
             console.error('[Folks] Failed to fetch all professionals:', e);
             return {success: false, message: e.message};
         }
     }
-    
+
     async function queryCustomer() {
         try {
             const res = await fetch(BASE_URL + '/users?role=CUSTOMER', {
@@ -864,20 +554,18 @@ const FolksAPI = (function () {
                 headers: {'Content-Type': 'application/json'}
             });
             let json = await res.json();
-            
+
             if (res.status === 200) {
                 return {success: true, result: json};
-            }
-            else {
+            } else {
                 return {success: false, message: json.message};
             }
-        }
-        catch (e) {
+        } catch (e) {
             console.error('[Folks] Failed to fetch all professionals:', e);
             return {success: false, message: e.message};
         }
     }
-    
+
     async function queryBooking(status) {
         try {
             const param = '?' + status;
@@ -890,12 +578,10 @@ const FolksAPI = (function () {
 
             if (res.status === 200) {
                 return {success: true, result: json};
-            }
-            else {
+            } else {
                 return {success: false, message: json.message};
             }
-        }
-        catch (e) {
+        } catch (e) {
             console.error('[Folks] Failed to fetch all professionals:', e);
             return {success: false, message: e.message};
         }
@@ -920,131 +606,13 @@ const FolksAPI = (function () {
 
             if (res.status === 200) {
                 return {success: true, result: json};
-            }
-            else {
+            } else {
                 return {success: false, message: json.message};
             }
-        }
-        catch (e) {
+        } catch (e) {
             console.error('[Folks] Failed to update application status:', e);
             return {success: false, message: e.message};
         }
-    }
-
-    /* ---- demo-mode simulators (safe to delete once real endpoints are live) ---- */
-    const _demoOtpByMobile = {};
-
-    // A minimal stand-in for a real backend's bookings table. Persisted under
-    // its own key (distinct from the client-side session/cart keys owned by
-    // script.js) since this represents server state, not client state.
-    const _DEMO_BOOKINGS_KEY = 'folks_demo_bookings_db';
-    function _loadDemoBookings() {
-        try {
-            const raw = localStorage.getItem(_DEMO_BOOKINGS_KEY);
-            const parsed = raw ? JSON.parse(raw) : [];
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (err) {
-            return [];
-        }
-    }
-    const _demoBookingsDb = _loadDemoBookings();
-    function _persistDemoBookings() {
-        try {
-            localStorage.setItem(_DEMO_BOOKINGS_KEY, JSON.stringify(_demoBookingsDb));
-        } catch (err) {
-            console.warn('[Folks] Could not persist demo bookings (safe to ignore):', err);
-        }
-    }
-
-    function simulateOtpRequest(payload) {
-        const otp = String(Math.floor(100000 + Math.random() * 900000));
-        _demoOtpByMobile[payload.mobile] = otp;
-        console.info(`[Folks demo] OTP for ${payload.mobile}: ${otp}`);
-        return delay({success: true, message: 'OTP sent', demoOtp: otp}, 900);
-    }
-
-    function simulateOtpVerify(payload) {
-        const expected = _demoOtpByMobile[payload.mobile];
-        const ok = Boolean(expected) && payload.otp === expected;
-        return delay(
-                ok
-                ? {success: true, message: 'OTP verified', token: 'demo-token'}
-        : {success: false, message: 'Incorrect OTP. Please try again.'},
-                900
-                );
-    }
-
-    function simulateCreateUser(payload) {
-        return delay({
-            success: true,
-            user: {
-                id: `usr-${Date.now()}`,
-                name: payload.name,
-                email: payload.email,
-                mobile: payload.mobile,
-                secondaryPhone: '',
-                role: 'Customer',
-                status: 'Active',
-                createdOn: new Date().toISOString(),
-            },
-        }, 900);
-    }
-
-    function simulateUpdateUser(payload) {
-        return delay({success: true, message: 'Profile updated', user: payload}, 700);
-    }
-
-    function simulateCreateAddress(payload) {
-        return delay({
-            success: true,
-            address: {id: `addr-${Date.now()}`, ...payload},
-        }, 700);
-    }
-
-    function simulateUpdateAddress(payload) {
-        return delay({success: true, message: 'Address updated', address: payload}, 700);
-    }
-
-    function simulateCreateBooking(payload) {
-        const booking = {
-            id: `bkg-${Date.now()}`,
-            status: 'confirmed',
-            createdOn: new Date().toISOString(),
-            ...payload,
-        };
-        _demoBookingsDb.push(booking);
-        _persistDemoBookings();
-        return delay({success: true, booking}, 1000);
-    }
-
-    function simulateGetBookings(userId) {
-        const bookings = _demoBookingsDb
-                .filter(b => !userId || (b.customer && b.customer.id === userId))
-                .sort((a, b) => new Date(b.createdOn) - new Date(a.createdOn));
-        return delay({success: true, bookings}, 600);
-    }
-
-    function simulateCancelBooking(bookingId) {
-        const booking = _demoBookingsDb.find(b => b.id === bookingId);
-        if (!booking) {
-            return delay({success: false, message: 'Booking not found.'}, 400);
-        }
-        booking.status = 'cancelled';
-        booking.cancelledOn = new Date().toISOString();
-        _persistDemoBookings();
-        return delay({success: true, booking}, 700);
-    }
-
-    function simulateApplyAsProfessional(payload) {
-        return delay({
-            success: true,
-            application: {
-                id: `pro-app-${Date.now()}`,
-                status: 'Pending Review',
-                submittedOn: new Date().toISOString(),
-                ...payload,
-            },
-        }, 1000);
     }
 
     function delay(value, ms) {

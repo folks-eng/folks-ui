@@ -18,13 +18,13 @@ class OtpHandler {
             
             if (data !== null) {
                 const val = JSON.parse(data);
-                log.warn(`Otp ${val.otp} has already been sent to: ${input}`);
+                log.warn('Otp %d has already been sent to %s', val.otp, input);
 
                 return {status: 0, otp: val};
             }
             else {
                 if (log.isTraceEnabled()) {
-                    log.trace(`No otp details found for ${type} ${input} in the cache. Generating new otp ...`);
+                    log.trace('No otp details found for %s %s in the cache. Generating new otp ...', type, input);
                 }
                 // Generate 6 digit otp
                 const val = Utility.generateOtp(input, op, ttlMin);
@@ -35,26 +35,25 @@ class OtpHandler {
                     JSON.stringify(val),
                     ttlMin
                 );
-                log.info("Otp generated %d for %s ", val.otp, input)
                 if (log.isDebugEnabled()) {
-                    log.debug(`Cached otp for ${input} in the cache. Result: ${ret}`);
+                    log.debug('Cached otp for %s in the cache. Result: %s', input, ret);
                 }
 
                 // Now, send the otp via sms/email.
                 const gway = GatewayFactory.get(type);
                 if (log.isDebugEnabled()) {
-                    log.debug(`Obtained gateway ${gway.constructor.name} for input ${input} and ops ${op}`);
+                    log.debug('Obtained gateway %s for input %s and ops %s', gway.constructor.name, input, op);
                 }
                 let param = {
                     recipient: val.input,
                     otp: val.otp,
-                    ttl: val.ttl / 60
+                    ttlMin: val.ttlMin
                 };
-                // Will be uncommented once SMS sending is completely working
-                /*let result = await gway.send(param);
+                
+                let result = await gway.send(param);
                 if (log.isDebugEnabled()) {
-                    log.debug('Response from gateway: %s', result);
-                }*/
+                    log.debug('Response from gateway: %s', result.message);
+                }
                 return {status: 1, otp: val};
             }
         }
@@ -64,12 +63,12 @@ class OtpHandler {
         }
     }
 
-    async verify(input, otp) {
+    async verify(input, otp, jti) {
         try {
             const data = await cache.getValue(input);
 
             if (data === null) {
-                log.warn(`No otp found in store against ${input}, or Otp has expired. Try generating the otp again`);
+                log.warn('No otp found in store against %s, or Otp has expired. Try generating the otp again', input);
                 return {
                     state: 'EXPIRED'
                 };
@@ -77,14 +76,14 @@ class OtpHandler {
             // Found the otp in the cache.
             const val = JSON.parse(data);
             
-            if (otp === val.otp) {
+            if (otp === val.otp && jti === val.jti) {
                 if (log.isDebugEnabled()) {
-                    log.debug(`Successfully verified otp ${otp} against ${input}`);
+                    log.debug('Successfully verified otp %d against %s', otp, input);
                 }
 
                 await cache.remove(input);
                 if (log.isDebugEnabled()) {
-                    log.debug(`Removed otp details from redis for ${input}`);
+                    log.debug('Removed otp details from redis for %s', input);
                 }
                 return {
                     state: 'VERIFIED',
@@ -92,7 +91,7 @@ class OtpHandler {
                 };
             }
             else {
-                log.error(`Supplied otp ${otp} does not match with stored otp ${val.otp}`);
+                log.error('Supplied otp %d does not match with stored otp %d', otp, val.otp);
                 return {
                     state: 'INVALID',
                     otp: val

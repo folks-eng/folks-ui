@@ -969,6 +969,15 @@ function initLoginFlow() {
             if (result.code === 404) {
                 goTo(screens.notFound, 'forward');
             }
+            else if (result.code === 401) {
+                goTo(screens.otp, 'back');
+                showError('loginOtpError', 'Your session is expired. Please refresh the browser and try again');
+                otpBoxes.forEach(b => {
+                    b.value = '';
+                    b.classList.remove('is-filled');
+                });
+                otpBoxes[0].focus();
+            }
             else {
                 goTo(screens.otp, 'back');
                 showError('loginOtpError', result.message);
@@ -980,30 +989,32 @@ function initLoginFlow() {
                 startResendCountdown();
             }
         }
-        else {  // success = true
+        else {
+            // success = true
             const loggedInUser = result.result;
-            document.getElementById('loginSuccessMessage').textContent =
-                    `Good to see you again, ${loggedInUser.fullName.split(' ')[0]}.`;
+            
+            document.getElementById('loginSuccessMessage').textContent = `Good to see you again, ${loggedInUser.fullName.split(' ')[0]}.`;
             goTo(screens.success, 'forward');
-            completeLogin(loggedInUser);
+            completeLogin(loggedInUser, result.expiresOn);
 
             // The OTP-verify response only carries {externalId, fullName} —
             // not role — so a professional returning to the site needs a
             // quick lookup here before we know to send them to their
             // dashboard instead of wherever "Become a Professional" (or
             // nothing in particular) wanted them to land.
-            FolksAPI.viewUser(loggedInUser.externalId).then((res) => {
-                if (res.success && res.result && String(res.result.role || '').toUpperCase() === 'PROFESSIONAL') {
-                    saveCurrentUser(res.result);
-                    renderUserChip(res.result);
-                    safeStorageRemove(FOLKS_STORAGE_KEYS.postSignupRedirect);
-                    setTimeout(() => {
-                        window.location.href = 'professional-dashboard.html';
-                    }, 1800);
-                }
-            });
+            // 
+            // FolksAPI.viewUser(loggedInUser.externalId).then((res) => {
+            //     if (res.success && res.result && String(res.result.role || '').toUpperCase() === 'PROFESSIONAL') {
+            //         saveCurrentUser(res.result);
+            //         renderUserChip(res.result);
+            //         safeStorageRemove(FOLKS_STORAGE_KEYS.postSignupRedirect);
+            //         setTimeout(() => {
+            //             window.location.href = 'professional-dashboard.html';
+            //         }, 1800);
+            //     }
+            // });
 
-            setTimeout(closeModal, 1800);
+            setTimeout(closeModal, 1000);
         }
         
         // Demo code
@@ -1108,6 +1119,7 @@ const FOLKS_STORAGE_KEYS = {
     address: 'folks_address', // legacy single-address key, migrated on first read
     addresses: 'folks_addresses',
     session: 'folks_logged_in',
+    expiry: 'folks_expiry',
     cart: 'folks_cart',
     postSignupRedirect: 'folks_post_signup_redirect',
     favouritePros: 'folks_favourite_pros',
@@ -1131,17 +1143,30 @@ function safeStorageSet(key, value) {
 function safeStorageRemove(key) {
     try {
         localStorage.removeItem(key);
-    } catch (err) { /* no-op */
+    } catch (err) {
+        /* no-op */
     }
 }
 
-function isLoggedIn() {
-    return safeStorageGet(FOLKS_STORAGE_KEYS.session) === 'true';
+async function isLoggedIn() {
+    // Make call to to verify the cookie.
+    const expiresOn = safeStorageGet(FOLKS_STORAGE_KEYS.expiry);
+    if (! expiresOn) {
+        return false;
+    }
+    // alert('Current data: ' + new Date(Date.now()).toISOString() + '. Expiry: ' + new Date(Number(expiresOn)).toISOString());
+    if (Date.now() > Number(expiresOn)) {
+        // alert('User session expired ...');
+        postLogout();
+        return false;
+    }
+    return true;
 }
 function getCurrentUser() {
     const raw = safeStorageGet(FOLKS_STORAGE_KEYS.user);
-    if (!raw)
+    if (! raw) {
         return null;
+    }
     try {
         return JSON.parse(raw);
     } catch (err) {
@@ -1156,13 +1181,14 @@ function removeCurrentUser() {
 function saveCurrentUser(user) {
     safeStorageSet(FOLKS_STORAGE_KEYS.user, JSON.stringify(user));
 }
-function setLoggedIn(flag) {
-    if (flag) {
-        safeStorageSet(FOLKS_STORAGE_KEYS.session, 'true');
-    }
-    else {
-        safeStorageRemove(FOLKS_STORAGE_KEYS.session);
-    }
+function setLoggedIn(expiresOn) {
+    safeStorageSet(FOLKS_STORAGE_KEYS.expiry, expiresOn);
+    // if (flag) {
+    //     safeStorageSet(FOLKS_STORAGE_KEYS.session, 'true');
+    // }
+    // else {
+    //     safeStorageRemove(FOLKS_STORAGE_KEYS.session);
+    // }
 }
 /* ---- saved addresses (a person can have several: Home, Work, etc.) -----
  getStoredAddress()/saveStoredAddress() are kept as thin wrappers around
@@ -1192,7 +1218,8 @@ async function getAddresses() {
                 return res.result.items;
             }
         }
-        showError('loginMobileError', res.message || 'Could fetch addresses. Please try again.');
+        // alert(JSON.stringify(res));
+        throw new Error('Unable to fetch address. ' + res.message);
     }
 
     // Migrate a legacy single-address record into the new list, once.
@@ -1442,9 +1469,12 @@ function showConfirmDialog(options) {
 }
 
 /** Called once at signup success: persists the session and swaps the header. */
-function completeLogin(user) {
+function completeLogin(user, expiresOn) {
+    // alert('Expires On: ' + expiresOn);
+    // alert('Current Date: ' + Date.now());
+    
     saveCurrentUser(user);
-    setLoggedIn(true);
+    setLoggedIn(expiresOn);
     renderUserChip(user);
 
     // If the sign-up flow was triggered mid-checkout ("Continue" on the cart
@@ -1461,11 +1491,16 @@ function completeLogin(user) {
 
 /** Called on every page load to restore the header if a session exists. */
 function initAuthState() {
-    if (!isLoggedIn())
+    if (! isLoggedIn()) {
+        // alert('JS:initAuthState - User is not logged in');
         return;
+    }
     const user = getCurrentUser();
-    if (!user)
+    if (! user) {
+        // alert('JS:initAuthState - User is not logged in');
         return;
+    }
+    // alert('JS:initAuthState - User is already logged in');
     renderUserChip(user);
 }
 
@@ -1549,7 +1584,8 @@ function renderUserChip(user) {
             const res = await FolksAPI.logout();
         
             if (res.success) {
-                setLoggedIn(false);
+                // setLoggedIn(false);
+                safeStorageRemove(FOLKS_STORAGE_KEYS.expiry);
                 removeCurrentUser();
                 closeDropdown();
                 restoreLoggedOutHeader(navActions);
@@ -1562,7 +1598,8 @@ function renderUserChip(user) {
 }
 
 function postLogout() {
-    setLoggedIn(false);
+    // setLoggedIn(false);
+    safeStorageRemove(FOLKS_STORAGE_KEYS.expiry);
     removeCurrentUser();
     // closeDropdown();
 }

@@ -5,7 +5,7 @@ class Utility {
     static MIN = 100000;
     static MAX = 1000000;
     static TTL = 5;        // 5 min
-
+    
     static getIdentityType(input) {
         input = input.trim();
 
@@ -38,9 +38,10 @@ class Utility {
         let val = {
             input: input,
             otp: otp,
-            ttl: (ttlMin ? ttlMin * 60 : Utility.TTL * 60),
+            ttlMin: (ttlMin ? ttlMin : Utility.TTL),
             purpose: purpose,
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            jti: crypto.randomUUID()
         };
         return val;
     }

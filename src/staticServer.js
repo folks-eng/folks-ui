@@ -7,7 +7,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const {getLogger} = require('./util/logger');
 
+const log = getLogger(__filename);
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
 const MIME_TYPES = {
@@ -23,15 +25,26 @@ const MIME_TYPES = {
     '.webmanifest': 'application/manifest+json'
 };
 
-function serveStatic(req, res, parsedUrl) {
-    let pathname = decodeURIComponent(parsedUrl.pathname);
+// Convert to an Express middleware signature: (req, res, next)
+function serveStatic(req, res, next) {
+    let pathname = decodeURIComponent(req.path); // Express provides req.path out of the box
+    
+    // if (pathname.endsWith('.html')) {
+    //     res.writeHead(403, {'Content-Type': 'text/plain'});
+    //     res.end('403 Forbidden');
+    //     return;
+    // }
     if (pathname === '/') {
         pathname = '/index.html';
     }
+
+    if (log.isTraceEnabled()) {
+        log.trace('Serving static file %s for uri %s. Cookie: %s', pathname, req.originalUrl, req.cookies._fks);
+    }
     
     // Strip any attempt to walk out of PUBLIC_DIR before joining.
-    const safePath = path.normalize(pathname).replace(/^(\.\.[/\\])+/, '');
-    const filePath = path.join(PUBLIC_DIR, safePath);
+    let safePath = path.normalize(pathname).replace(/^(\.\.[/\\])+/, '');
+    let filePath = path.join(PUBLIC_DIR, safePath);
 
     if (! filePath.startsWith(PUBLIC_DIR)) {
         res.writeHead(403, {'Content-Type': 'text/plain'});
@@ -39,10 +52,37 @@ function serveStatic(req, res, parsedUrl) {
         return;
     }
 
+    // 1. Try serving the path exactly as requested
+    fs.stat(filePath, (err, stats) => {
+        if (! err && stats.isFile()) {
+            return sendStaticFile(filePath, res);
+        }
+
+        // 2. Clean URLs: If no extension, check if a corresponding .html file exists
+        if (! path.extname(filePath)) {
+            const htmlFilePath = filePath + '.html';
+            fs.stat(htmlFilePath, (htmlErr, htmlStats) => {
+                if (!htmlErr && htmlStats.isFile()) {
+                    return sendStaticFile(htmlFilePath, res);
+                }
+                res.writeHead(403, {'Content-Type': 'text/plain'});
+                res.end('403 Forbidden');
+                return;
+            });
+        }
+        else {
+            // Extension exists but file wasn't found, pass to next middleware (e.g., API router or 404 handler)
+            next(); 
+        }
+    });
+}
+
+// Helper function to read and stream the file out
+function sendStaticFile(filePath, res) {
     fs.readFile(filePath, (err, data) => {
         if (err) {
-            res.writeHead(404, {'Content-Type': 'text/plain'});
-            res.end('404 Not Found');
+            res.writeHead(500, {'Content-Type': 'text/plain'});
+            res.end('500 Internal Server Error');
             return;
         }
         const ext = path.extname(filePath).toLowerCase();
@@ -51,4 +91,5 @@ function serveStatic(req, res, parsedUrl) {
     });
 }
 
-module.exports = {serveStatic};
+// Export the middleware
+module.exports = serveStatic;

@@ -118,31 +118,31 @@ function renderSiteFooter() {
     <nav class="footer-col" aria-label="Company">
       <h4>Company</h4>
       <ul>
-        <li><a href="about.html">About Us</a></li>
-        <li><a href="careers.html">Careers</a></li>
-        <li><a href="press.html">Press</a></li>
-        <li><a href="contact.html">Contact Us</a></li>
+        <li><a href="about">About Us</a></li>
+        <li><a href="careers">Careers</a></li>
+        <li><a href="press">Press</a></li>
+        <li><a href="contact">Contact Us</a></li>
       </ul>
     </nav>
 
     <nav class="footer-col" aria-label="Services">
       <h4>Services</h4>
       <ul>
-        <li><a href="categories.html#cleaning-pest-control">Home Cleaning</a></li>
-        <li><a href="categories.html#salon-makeup">Salon at Home</a></li>
-        <li><a href="categories.html#appliance-repair">AC Repair</a></li>
-        <li><a href="categories.html#electrician-plumbing-carpentry">Electrician</a></li>
-        <li><a href="categories.html#electrician-plumbing-carpentry">Plumbing</a></li>
+        <li><a href="categoriesl#cleaning-pest-control">Home Cleaning</a></li>
+        <li><a href="categories#salon-makeup">Salon at Home</a></li>
+        <li><a href="categories#appliance-repair">AC Repair</a></li>
+        <li><a href="categories#electrician-plumbing-carpentry">Electrician</a></li>
+        <li><a href="categories#electrician-plumbing-carpentry">Plumbing</a></li>
       </ul>
     </nav>
 
     <nav class="footer-col" aria-label="Legal">
       <h4>Legal</h4>
       <ul>
-        <li><a href="terms.html">Terms of Service</a></li>
-        <li><a href="privacy.html">Privacy Policy</a></li>
-        <li><a href="refund.html">Refund Policy</a></li>
-        <li><a href="faq.html">FAQs</a></li>
+        <li><a href="terms">Terms of Service</a></li>
+        <li><a href="privacy">Privacy Policy</a></li>
+        <li><a href="refund">Refund Policy</a></li>
+        <li><a href="faq">FAQs</a></li>
       </ul>
     </nav>
 

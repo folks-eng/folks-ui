@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const express = require('express');
 const JwtUtil = require('./../auth/jwt');
 const tokenMgr = require('./../auth/token_mgr');
+const CookieUtil = require('./../util/cookie_util');
+const Utility = require('./../util/utility');
 const httpClient = require('./../util/http_client');
 const {getLogger} = require('./../util/logger');
 const {requireAdmin} = require('./../auth/auth');
@@ -52,17 +54,14 @@ async function register(req, res) {
             if (log.isDebugEnabled()) {
                 log.debug('Successfully registered new user: %s', result.fullName);
             }
-            const {token, ttlMin} = JwtUtil.loginToken(result.externalId, result.fullName);
-
-            res.status(response.status)
-                .cookie('_fks', token, {
-                    maxAge: parseInt(ttlMin, 10) * 60 * 1000,        // Expires (in milliseconds)
-                    httpOnly: true,                 // Protects against XSS attacks (not accessible via client JS)
-                    secure: true,                   // Only sent over HTTPS
-                    sameSite: 'lax',                // Mitigates CSRF attacks
-                    path: process.env.BASE_PATH || '/gateway/v1'
-                })
-                .json(result);
+            let token = JwtUtil.loginToken(result.externalId, result.fullName, result.role.toLowerCase());
+            let ttlMin = process.env.TOKEN_TTL_MIN || 600;
+            let cookieOpts = CookieUtil.prepare(ttlMin);
+            
+            return res.status(200)
+                    .setHeader('expiresOn', (Date.now() + cookieOpts.maxAge))
+                    .cookie(CookieUtil.STD_COOKIE, token, cookieOpts)
+                    .json(result);
         }
         else {
             let result = response.data;
@@ -88,7 +87,7 @@ async function modify(req, res) {
     }
     
     try {
-        let userId = req.params.id;
+        let userId = req.user.sub;
         const response = await httpClient.put(
             '/users/' + userId
             , payload
@@ -121,7 +120,7 @@ async function modify(req, res) {
 
 async function view(req, res) {
     try {
-        let userId = req.params.id;
+        let userId = req.user.sub;
         const response = await httpClient.get(
             '/users/' + userId
             , {
@@ -193,7 +192,7 @@ async function viewAll(req, res) {
 
 async function remove(req, res) {
     try {
-        let userId = req.params.id;
+        let userId = req.user.sub;
         const response = await httpClient.delete(
             '/users/' + userId
             , {
@@ -235,9 +234,9 @@ async function handleError(req, res, err, msg) {
 }
 
 route.post('/', register);
-route.put('/:id', modify);
-route.get('/:id', view);
-route.delete('/:id', remove);
+route.put('/me', modify);
+route.get('/me', view);
+route.delete('/me', remove);
 route.get('/', viewAll);
 
 module.exports = route;

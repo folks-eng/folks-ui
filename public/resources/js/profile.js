@@ -44,14 +44,13 @@ async function initProfileDetailsSection() {
     const grid = document.getElementById('profileFieldsGrid');
     const actions = document.getElementById('profileCardActions');
     const errorEl = document.getElementById('profileFormError');
-    if (!grid)
+    if (!grid) {
         return;
-
-    let st_user = getCurrentUser();
+    }
     let editing = false;
     
     // Fetch the user details.
-    let res = await FolksAPI.viewUser(st_user.externalId);
+    let res = await FolksAPI.viewUser();
     if (! res.success) {
         if (res.message === 'Cookie expired') {
             showError(errorEl, 'Your session is expired. Forwarding you to the home screen ...');
@@ -165,8 +164,9 @@ async function initAddressSection() {
     const actions = document.getElementById('addressCardActions');
     const body = document.getElementById('addressCardBody');
     const errorEl = document.getElementById('addressFormError');
-    if (!body)
+    if (! body) {
         return;
+    }
 
     let editingId = null; // id of the address card currently in edit mode, or 'new'
 
@@ -174,7 +174,7 @@ async function initAddressSection() {
     let res = await FolksAPI.viewAddresses();
 
     if (! res.success) {
-        showError('loginMobileError', res.message || 'Could not fetch addresses. Please try again.');
+        showError(errorEl, res.message || 'Could not fetch addresses. Please try again.');
         return;
     }
     let addresses = res.result.items;
@@ -251,10 +251,8 @@ async function initAddressSection() {
         return locationState[idAttr];
     }
 
-    function render() {
+    async function render() {
         hideError(errorEl);
-        // const addresses = getAddresses();
-
         actions.innerHTML = editingId
                 ? ''
                 : `<button type="button" class="btn btn-primary btn-sm btn-ripple" id="addAddressBtn">+ Add Address</button>`;

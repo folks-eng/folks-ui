@@ -53,7 +53,7 @@ function getScheduleDays() {
             weekday: d.toLocaleDateString('en-IN', {weekday: 'short'}),
             dayNum: d.getDate(),
             month: d.toLocaleDateString('en-IN', {month: 'short'}),
-            isToday: i === 0,
+            isToday: i === 0
         });
     }
     return days;
@@ -457,16 +457,22 @@ function injectSchedulePickerMarkup() {
 
     /* ---- screen 2: choose a saved address (or jump to the add form) ---- */
     async function goToAddressStep(direction) {
-        const addresses = await getAddresses();
-        if (addresses.length === 0) {
-            await showAddressForm(direction);
-            return;
+        try {
+            const addresses = await getAddresses();
+            if (addresses.length === 0) {
+                await showAddressForm(direction);
+                return;
+            }
+            if (! addresses.some(a => a.addressId === state.selectedAddressId)) {
+                state.selectedAddressId = addresses[0].addressId;
+            }
+            renderAddressChoices();
+            goTo(screens.address, direction);
         }
-        if (!addresses.some(a => a.addressId === state.selectedAddressId)) {
-            state.selectedAddressId = addresses[0].addressId;
+        catch (e) {
+            errorEl.textContent = e.message;
+            errorEl.hidden = false;
         }
-        renderAddressChoices();
-        goTo(screens.address, direction);
     }
 
     async function renderAddressChoices() {

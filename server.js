@@ -30,7 +30,7 @@ const voucherRoute = require('./src/routes/voucher');
 const queryRoute = require('./src/routes/query');
 const profMgmtRoute = require('./src/routes/professionalMgmt');
 
-const { serveStatic } = require('./src/staticServer');
+const serveStatic = require('./src/staticServer');
 
 const app = express();
 
@@ -60,14 +60,18 @@ function setup() {
     app.use(basePath + '/signup', signupRoute);
     app.use(basePath + '/login', loginRoute);
     app.use(basePath + '/logout', logoutRoute);
-    app.use(basePath + '/users', userRoute);
-    app.use(basePath + '/addresses', addressRoute);
+    
     app.use(basePath + '/countries', countryRoute);
     app.use(basePath + '/provinces', provinceRoute);
     app.use(basePath + '/cities', cityRoute);
     app.use(basePath + '/neighbourhoods', neighbourhoodRoute);
     app.use(basePath + '/categories', categoryRoute);
+    
+    app.use(basePath + '/users', userRoute);
+    app.use(basePath + '/addresses', addressRoute);
+    
     app.use(basePath + '/bookings', bookingRoute);
+    
     app.use(basePath + '/availabilities', availabilityRoute);
     app.use(basePath + '/professionals', professionalRoute);
     app.use(basePath + '/professionalServices', professionalSrvcRoute);
@@ -78,7 +82,8 @@ function setup() {
     app.use(basePath + '/admin/professionals', profMgmtRoute);
 
     // Middleware to serve static files from a directory
-    app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+    // app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+    app.use(serveStatic);
 }
 
 async function start() {
@@ -93,7 +98,7 @@ async function start() {
     };
     
     https.createServer(httpsOptions, app).listen(8443, () => {
-        log.info(`Started folks node server. Listening to: ${port}`);
+        log.info('Started folks node server. Listening to: %d', port);
     });
     
     // app.listen(port, () => {

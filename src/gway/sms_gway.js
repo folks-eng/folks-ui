@@ -11,6 +11,8 @@ class SmsGateway extends Gateway {
     
     constructor() {
         super();
+        
+        this.flag = false;
         this.smsURL = process.env.SMS_PROVIDER_URL;
         this.accountId = process.env.SMS_ACCOUNT_ID;
         this.authToken = process.env.SMS_AUTH_TOKEN;
@@ -22,25 +24,42 @@ class SmsGateway extends Gateway {
             httpsAgent: new https.Agent({ rejectUnauthorized: false })// This bypasses SSL verification
         };
     }
+    
+    async demoSend(param) {
+        const message = `Folks sms OTP: ${param.otp}. Valid for ${param.ttlMin} minutes. Never share this OTP with anyone.`;
+        
+        let baseURL = 'https://smsgateway.com';
+        
+        let payload = {
+            templateId: '0',
+            mobile: param.input,
+            variables: [
+                param.otp,
+                param.ttlMin
+            ]
+        };
+        if (log.isDebugEnabled()) {
+            log.debug(message);
+        }
+        return Promise.resolve({
+            success: true,
+            message: 'Sms sent successfully',
+            messageId: ''
+        });
+    }
 
     async send(param) {
-        const message = `Folks sms OTP: ${param.otp}. Valid for ${param.ttl} minutes. Never share this OTP with anyone.`;
-        /*let payload = {
-            mobile: config.input,
-            templateId: '0',
-            variables: [
-                config.otp,
-                config.ttl
-            ]
-        };*/
-        log.info(param.recipient +" Start of send OTP " +message);
+        if (! this.flag) {
+            return this.demoSend(param);
+        }
 
         // 1. Prepare form data
-        let mobileStr = "+91" + param.recipient;
+        let mobileNo = '+91' + param.recipient;
+        
         const body = new URLSearchParams({
-            "To": mobileStr, // Replace with regInfo.getMobileNum()
+            "To": mobileNo,
             "From": "+17372508034",
-            "Body": "sms_2fa" // Replace with Template ID and otp
+            "Body": "sms_2fa"           // Replace with Template ID and otp
         });
         // 2. Create Basic Auth Header in constructor
         // 3. Send the SMS Request
@@ -59,7 +78,6 @@ class SmsGateway extends Gateway {
             }
         }
         catch (err) {
-            //console.log(err.response.data.message);
             log.error("Error in sending SMS.", err);
             throw err;
         }
