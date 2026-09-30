@@ -17,15 +17,132 @@
 
         <link rel="stylesheet" href="../resources/css/styles.css">
 
-        <!-- Page-scoped only: lets the existing .modal-phone / .modal-screen
-             styles (login OTP popup) render inline on this page instead of
-             inside a .modal-overlay. Nothing in styles.css is changed. -->
+        <!-- Page-scoped only (nothing in styles.css is changed): lets the
+             existing .modal-phone / .modal-screen styles (login OTP popup)
+             render inline, and lays out this page's split onboarding view. -->
         <style>
+            .po-auth {
+                padding-block: var(--space-lg);
+                background:
+                    radial-gradient(60% 70% at 100% 0%, var(--color-clay-10) 0%, transparent 70%),
+                    var(--color-cream);
+            }
+            .po-auth-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: var(--space-lg);
+                align-items: center;
+            }
+            @media (min-width: 960px) {
+                .po-auth-grid {
+                    grid-template-columns: minmax(0, 1.1fr) minmax(0, 420px);
+                    gap: var(--space-xl);
+                }
+            }
+            .po-intro h1 {
+                font-size: clamp(2rem, 1.6rem + 2vw, 3rem);
+                letter-spacing: -0.02em;
+                margin-bottom: var(--space-sm);
+            }
+            .po-intro .page-lede {
+                color: var(--color-espresso);
+                font-size: 1.05rem;
+                max-width: 52ch;
+            }
+            .po-benefits {
+                list-style: none;
+                padding: 0;
+                margin: var(--space-md) 0 0;
+                display: grid;
+                gap: var(--space-sm);
+            }
+            .po-benefit {
+                display: flex;
+                gap: 0.9rem;
+                align-items: flex-start;
+            }
+            .po-benefit-icon {
+                flex-shrink: 0;
+                width: 40px;
+                height: 40px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--color-white);
+                color: var(--color-clay-dark);
+                box-shadow: var(--shadow-sm);
+            }
+            .po-benefit strong {
+                display: block;
+                color: var(--color-ink);
+                margin-bottom: 0.15rem;
+            }
+            .po-benefit p {
+                color: var(--color-espresso);
+                font-size: 0.92rem;
+                line-height: 1.5;
+            }
+            .po-steps {
+                margin-top: var(--space-md);
+                padding-top: var(--space-md);
+                border-top: 1px solid var(--color-line);
+            }
+            .po-steps-label {
+                font-family: var(--font-mono);
+                font-size: 0.72rem;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--color-clay-dark);
+                margin-bottom: var(--space-xs);
+            }
+            .po-steps ol {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                display: grid;
+                gap: 0.6rem;
+                counter-reset: po-step;
+            }
+            @media (min-width: 640px) {
+                .po-steps ol {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+            .po-steps li {
+                counter-increment: po-step;
+                font-size: 0.88rem;
+                color: var(--color-espresso);
+                line-height: 1.45;
+            }
+            .po-steps li::before {
+                content: counter(po-step, decimal-leading-zero);
+                display: block;
+                font-family: var(--font-mono);
+                font-weight: 600;
+                color: var(--color-clay);
+                margin-bottom: 0.2rem;
+            }
+            .po-steps li strong {
+                display: block;
+                color: var(--color-ink);
+            }
+
+            /* OTP card: the login popup's phone card, shown inline and
+               toned down to a flat, bordered panel. */
             .po-phone.modal-phone {
                 margin: 0 auto;
                 opacity: 1;
                 transform: none;
-                height: 600px;
+                height: 540px;
+                max-width: 420px;
+                background: var(--color-white);
+                border: 1px solid var(--color-line);
+                border-radius: var(--radius-lg);
+                box-shadow: var(--shadow-md);
+            }
+            .po-phone .modal-screen {
+                padding: 2rem 1.8rem 1.8rem;
             }
             .po-phone .modal-screen[data-screen="po-success"],
             .po-phone .modal-screen[data-screen="po-message"] {
@@ -33,12 +150,89 @@
                 justify-content: center;
                 text-align: center;
             }
+            .po-card-eyebrow {
+                font-family: var(--font-mono);
+                font-size: 0.72rem;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--color-clay-dark);
+                margin-bottom: 0.5rem;
+            }
+            .po-secure-note {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.4rem;
+                margin-top: auto;
+                padding-top: var(--space-sm);
+                font-size: 0.78rem;
+                color: var(--color-espresso);
+                opacity: 0.85;
+            }
             @media (max-width: 479.98px) {
                 .po-phone.modal-phone {
-                    height: 600px;
+                    height: 540px;
                     max-height: none;
-                    border-radius: 24px;
                 }
+                .po-phone .modal-screen {
+                    padding: 1.6rem 1.2rem 1.4rem;
+                }
+            }
+
+            /* Progress stepper above the application form / success card. */
+            .po-stepper {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+                margin-bottom: var(--space-md);
+            }
+            .po-stepper-item {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.45rem;
+                font-size: 0.85rem;
+                font-weight: 600;
+                color: var(--color-espresso);
+                opacity: 0.6;
+            }
+            .po-stepper-item.is-active,
+            .po-stepper-item.is-done {
+                opacity: 1;
+            }
+            .po-stepper-dot {
+                width: 26px;
+                height: 26px;
+                border-radius: 50%;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-family: var(--font-mono);
+                font-size: 0.78rem;
+                background: var(--color-cream-dim);
+                color: var(--color-espresso);
+            }
+            .po-stepper-item.is-active .po-stepper-dot {
+                background: var(--color-clay);
+                color: var(--color-cream);
+            }
+            .po-stepper-item.is-done .po-stepper-dot {
+                background: var(--color-sage);
+                color: var(--color-cream);
+            }
+            .po-stepper-line {
+                flex: 0 0 28px;
+                height: 1px;
+                background: var(--color-line);
+            }
+            .po-form-head h1 {
+                font-size: clamp(1.8rem, 1.5rem + 1.5vw, 2.5rem);
+                letter-spacing: -0.02em;
+            }
+            .po-form-head p {
+                color: var(--color-espresso);
+                margin-top: 0.5rem;
+                max-width: 60ch;
             }
         </style>
     </head>
@@ -51,32 +245,72 @@
 
         <main id="main-content">
 
-            <!-- ============ PAGE HERO ============ -->
-            <section class="page-hero">
-                <div class="section-inner">
-                    <p class="breadcrumb"><a href="index.html">Home</a><span aria-hidden="true">/</span><span>Become a Professional</span></p>
-                    <p class="eyebrow">Join Folks</p>
-                    <h1>Become a Folks Professional</h1>
-                    <p class="page-lede">Earn a steady, respected income doing work you're good at. Verify your mobile number to get started — already a Folks professional? The same step takes you straight to your dashboard.</p>
-                </div>
-            </section>
+            <!-- ============ STEP 1: INTRO + OTP VERIFICATION (mirrors the login popup) ============ -->
+            <section class="po-auth" id="poAuthSection">
+                <div class="section-inner po-auth-grid">
 
-            <!-- ============ STEP 1: OTP VERIFICATION (mirrors the login popup) ============ -->
-            <section class="section" id="poAuthSection" style="padding-top: var(--space-md);">
-                <div class="section-inner section-inner-narrow">
+                    <div class="po-intro">
+                        <p class="eyebrow">Folks for Professionals</p>
+                        <h1>Grow your business with Folks</h1>
+                        <p class="page-lede">Take bookings for the services you're skilled at, in the neighbourhoods you choose — and manage your jobs and earnings from one dashboard.</p>
+
+                        <ul class="po-benefits">
+                            <li class="po-benefit">
+                                <span class="po-benefit-icon" aria-hidden="true">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 22s7-7.4 7-12.5A7 7 0 0 0 5 9.5C5 14.6 12 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="9.5" r="2.5" stroke="currentColor" stroke-width="2"/></svg>
+                                </span>
+                                <div>
+                                    <strong>Bookings close to you</strong>
+                                    <p>Choose the localities you serve and get jobs in your own area.</p>
+                                </div>
+                            </li>
+                            <li class="po-benefit">
+                                <span class="po-benefit-icon" aria-hidden="true">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-2.5 2.5-2.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+                                </span>
+                                <div>
+                                    <strong>Work on your terms</strong>
+                                    <p>Pick the services you offer and update them as your skills grow.</p>
+                                </div>
+                            </li>
+                            <li class="po-benefit">
+                                <span class="po-benefit-icon" aria-hidden="true">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6l7-3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </span>
+                                <div>
+                                    <strong>A verified, trusted profile</strong>
+                                    <p>Identity-verified professionals give customers the confidence to book.</p>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div class="po-steps">
+                            <p class="po-steps-label">How it works</p>
+                            <ol>
+                                <li><strong>Verify your number</strong>A one-time password confirms it's you.</li>
+                                <li><strong>Submit your application</strong>Identity, work address, services and localities.</li>
+                                <li><strong>Get approved</strong>Our team reviews it within 2–3 business days.</li>
+                            </ol>
+                        </div>
+                    </div>
+
                     <div class="modal-phone po-phone" id="poPhone" role="region" aria-labelledby="poTitle">
                         <div class="modal-screens">
 
                             <div class="modal-screen screen-current" data-screen="po-mobile">
-                                <h2 id="poTitle" class="modal-title">Join as a professional</h2>
-                                <p class="modal-sub">Enter your mobile number and we'll send you a one-time password.</p>
+                                <p class="po-card-eyebrow">Sign in or join</p>
+                                <h2 id="poTitle" class="modal-title">Continue with your mobile</h2>
+                                <p class="modal-sub">We'll send a one-time password to verify it. Already a Folks professional? This takes you straight to your dashboard.</p>
                                 <div class="otp-mobile-field">
                                     <span class="otp-country-code">+91</span>
                                     <input type="tel" inputmode="numeric" maxlength="10" id="poMobile" placeholder="98765 43210" autocomplete="tel">
                                 </div>
                                 <p class="modal-error" id="poMobileError" hidden></p>
                                 <button type="button" class="btn btn-primary btn-ripple modal-submit" id="poSendOtpBtn">Send OTP</button>
-                                <p class="modal-switch">Looking to book a service instead? <a href="index.html" class="link-btn">Go to Home</a></p>
+                                <p class="po-secure-note">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" stroke-width="2"/></svg>
+                                    Your number is only used to verify your account.
+                                </p>
                             </div>
 
                             <div class="modal-screen screen-off-right" data-screen="po-waiting" inert aria-hidden="true">
@@ -144,10 +378,22 @@
                 </div>
             </section>
 
-            <!-- ============ STEP 2: APPLICATION FORM (ported from become-professional.html) ============ -->
+            <!-- ============ STEP 2: APPLICATION FORM ============ -->
             <div id="poFormContent" hidden>
                 <section class="section" style="padding-bottom: var(--space-md);">
                     <div class="section-inner section-inner-narrow">
+                        <div class="po-stepper" aria-label="Onboarding progress">
+                            <span class="po-stepper-item is-done"><span class="po-stepper-dot">&check;</span>Verify</span>
+                            <span class="po-stepper-line" aria-hidden="true"></span>
+                            <span class="po-stepper-item is-active" aria-current="step"><span class="po-stepper-dot">2</span>Application</span>
+                            <span class="po-stepper-line" aria-hidden="true"></span>
+                            <span class="po-stepper-item"><span class="po-stepper-dot">3</span>Review</span>
+                        </div>
+                        <div class="po-form-head" style="margin-bottom: var(--space-md);">
+                            <h1>Complete your application</h1>
+                            <p>Tell us who you are, where you work from and what you do. Everything here is reviewed by our team before your profile goes live.</p>
+                        </div>
+
 
                         <div class="profile-card">
                             <div class="profile-card-header"><h2>Identity Verification</h2></div>
@@ -250,6 +496,13 @@
             <!-- ============ STEP 3: SUCCESS ============ -->
             <section class="section" id="poApplicationSuccess" hidden>
                 <div class="section-inner section-inner-narrow">
+                        <div class="po-stepper" aria-label="Onboarding progress">
+                            <span class="po-stepper-item is-done"><span class="po-stepper-dot">&check;</span>Verify</span>
+                            <span class="po-stepper-line" aria-hidden="true"></span>
+                            <span class="po-stepper-item is-done"><span class="po-stepper-dot">&check;</span>Application</span>
+                            <span class="po-stepper-line" aria-hidden="true"></span>
+                            <span class="po-stepper-item is-active" aria-current="step"><span class="po-stepper-dot">3</span>Review</span>
+                        </div>
                     <div class="profile-card" style="text-align:center;">
                         <div class="modal-success-icon" style="margin: 0 auto var(--space-md);" aria-hidden="true">&check;</div>
                         <h2>Application submitted!</h2>

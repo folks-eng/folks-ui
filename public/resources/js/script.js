@@ -267,15 +267,54 @@ function initSearchForm() {
  * onboarding page, which runs its own OTP verification and then routes
  * to the application form or, for an already-registered professional,
  * to the professional dashboard (professional-portal.html).
+ * A logged-in customer is asked to confirm a logout first.
  */
 function initProfessionalLinkGate() {
-    document.addEventListener('click', (e) => {
+    const ONBOARDING_PAGE = 'professional-onboarding.html';
+
+    document.addEventListener('click', async (e) => {
         const trigger = e.target.closest('.nav-link-pro');
         if (!trigger)
             return;
 
         e.preventDefault();
-        window.location.href = 'professional-onboarding.html';
+
+        // A logged-in customer has to be logged out first: the onboarding
+        // page runs its own OTP login, and the server refuses a new OTP
+        // request while a session cookie is still active.
+        const user = getCurrentUser();
+        const isCustomerSession = (await isLoggedIn()) && user &&
+                String(user.role || '').toUpperCase() !== 'PROFESSIONAL';
+
+        if (!isCustomerSession) {
+            window.location.href = ONBOARDING_PAGE;
+            return;
+        }
+
+        showConfirmDialog({
+            title: 'Log out to continue?',
+            message: 'Becoming a professional needs a separate sign-in. You will be logged out of your current Folks account before continuing to professional onboarding.',
+            confirmLabel: 'Log out & continue',
+            cancelLabel: 'Cancel',
+            danger: false,
+            onConfirm: async () => {
+                const res = await FolksAPI.logout();
+                // 401 means the server-side session had already expired —
+                // nothing left to clear there, so it's safe to continue.
+                if (res.success || res.code === 401) {
+                    postLogout();
+                    window.location.href = ONBOARDING_PAGE;
+                    return;
+                }
+                showConfirmDialog({
+                    title: 'Could not log you out',
+                    message: res.message || 'Please try again in a moment.',
+                    confirmLabel: 'OK',
+                    danger: false,
+                    onConfirm: () => {}
+                });
+            }
+        });
     });
 }
 

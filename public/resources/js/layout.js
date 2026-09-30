@@ -41,7 +41,41 @@ function currentPageFile() {
     return last ? last : 'index.html';
 }
 
+/** Professional-facing pages get a stripped-down chrome: just the brand
+ *  (not a link) and the account chip — no site nav links, no Log In /
+ *  Sign Up (those are the customer flows), and no footer. Matched without
+ *  ".html" so clean URLs (/professional-portal) match too. */
+const PROFESSIONAL_CHROME_PAGES = ['professional-onboarding', 'professional-portal'];
+
+function isProfessionalChromePage() {
+    return PROFESSIONAL_CHROME_PAGES.includes(currentPageFile().replace(/\.html$/, ''));
+}
+
+function renderProfessionalHeader() {
+    return `<header class="site-header" id="siteHeader">
+  <nav class="navbar" aria-label="Professional navigation">
+    <span class="brand" aria-label="Folks for Professionals">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" width="34" height="34">
+          <path d="M20 4 L36 16 V35 H24 V24 H16 V35 H4 V16 Z" fill="currentColor"/>
+          <circle cx="20" cy="16" r="2.6" fill="var(--color-cream)"/>
+        </svg>
+      </span>
+      <span class="brand-name">Folks</span>
+      <span style="font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-clay-dark); background: var(--color-clay-10); padding: 0.25rem 0.6rem; border-radius: var(--radius-pill); margin-left: 0.2rem;">Professionals</span>
+    </span>
+
+    <!-- Filled by script.js's renderUserChip() once a session exists.
+         Inline display:flex keeps the chip visible on mobile too, since
+         there's no hamburger menu on these pages. -->
+    <div class="nav-actions" id="navActions" style="display:flex;"></div>
+  </nav>
+</header>`;
+}
+
 function renderSiteHeader() {
+    if (isProfessionalChromePage())
+        return renderProfessionalHeader();
     const page = currentPageFile();
     const isHome = page === 'index.html';
     const homeHref = isHome ? '#top' : 'index.html#top';
@@ -181,5 +215,9 @@ function renderSiteFooter() {
     const slot = document.getElementById('siteFooterSlot');
     if (!slot)
         return; // page doesn't use the shared footer (or already has its own)
+    if (isProfessionalChromePage()) {
+        slot.remove(); // professional pages have no footer
+        return;
+    }
     slot.outerHTML = renderSiteFooter();
 })();
