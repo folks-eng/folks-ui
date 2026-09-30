@@ -405,7 +405,6 @@ const FolksAPI = (function () {
      * Retrieves the details of a professional by their unique identifier.
      *
      * @async
-     * @param {string|number} id - The unique identifier of the professional.
      * @returns {Promise<{
      *     success: boolean,
      *     result?: Object,
@@ -413,8 +412,8 @@ const FolksAPI = (function () {
      *     authExpired?: boolean
      * }>} A promise that resolves with the professional details or error information.
      */
-    async function viewProfessional(id) {
-        return await invoke('/professionals/' + id, 'GET');
+    async function viewProfessional() {
+        return await invoke('/professionals/me', 'GET');
     }
 
     /**
@@ -445,6 +444,21 @@ const FolksAPI = (function () {
      */
     async function viewProfessionalServices() {
         return await invoke('/professionalServices', 'GET');
+    }
+
+    /**
+     * Retrieves the neighbourhoods associated with the current professional.
+     *
+     * @async
+     * @returns {Promise<{
+     *     success: boolean,
+     *     result?: Array<Object>,
+     *     message?: string,
+     *     authExpired?: boolean
+     * }>} A promise that resolves with the list of professional services or error information.
+     */
+    async function viewProfessionalNeighbourhoods() {
+        return await invoke('/professionalNeighbourhoods', 'GET');
     }
 
     /**
@@ -647,6 +661,7 @@ const FolksAPI = (function () {
         applyAsProfessional,
         viewProfessional,
         viewProfessionalServices,
+        viewProfessionalNeighbourhoods,
         viewDocuments,
         viewVouchers,
         adminLogin,

@@ -25,6 +25,7 @@ const availabilityRoute = require('./src/routes/availabilities');
 const bookingRoute = require('./src/routes/booking');
 const professionalRoute = require('./src/routes/professional');
 const professionalSrvcRoute = require('./src/routes/professionalService');
+const professionalNbhood = require('./src/routes/professionalNeighbourhood');
 const documentRoute = require('./src/routes/document');
 const voucherRoute = require('./src/routes/voucher');
 const queryRoute = require('./src/routes/query');
@@ -75,6 +76,7 @@ function setup() {
     app.use(basePath + '/availabilities', availabilityRoute);
     app.use(basePath + '/professionals', professionalRoute);
     app.use(basePath + '/professionalServices', professionalSrvcRoute);
+    app.use(basePath + '/professionalNeighbourhoods', professionalNbhood);
     app.use(basePath + '/documents', documentRoute);
     app.use(basePath + '/coupons', voucherRoute);
     

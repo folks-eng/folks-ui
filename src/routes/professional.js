@@ -54,9 +54,9 @@ async function create(req, res) {
 
 async function view(req, res) {
     try {
-        let extId = req.params.id;
+        let professionalId = req.user.sub;
         const response = await httpClient.get(
-            '/professionals/' + extId
+            '/professionals/' + professionalId
             , {
                 headers: {
                     Authorization: `Bearer ${req.token}`
@@ -200,9 +200,9 @@ async function viewAll(req, res) {
 
 async function remove(req, res) {
     try {
-        let extId = req.params.id;
+        let professionalId = req.user.sub;
         const response = await httpClient.delete(
-            '/professionals/' + extId
+            '/professionals/' + professionalId
             , {
                 headers: {
                     Authorization: `Bearer ${req.token}`
@@ -211,13 +211,13 @@ async function remove(req, res) {
         );
         if (response.status === 204) {
             if (log.isDebugEnabled()) {
-                log.debug('Successfully deleted professional %s', extId);
+                log.debug('Successfully deleted professional %s', professionalId);
             }
             return res.status(response.status).end();
         }
         else {
             let result = response.data;
-            log.error('Unable to delete professional %s. Status code: %d. Error Msg: %s', extId, response.status, result);
+            log.error('Unable to delete professional %s. Status code: %d. Error Msg: %s', professionalId, response.status, result);
             
             return res.status(response.status)
                     .json(result);
@@ -241,9 +241,9 @@ async function handleError(req, res, err, msg) {
 }
 
 route.post('/', create);
-route.get('/:id', view);
-route.put('/:id', modify);
-route.patch('/:id', patch);
+route.get('/me', view);
+route.put('/me', modify);
+route.patch('/me', patch);
 
 // Listing every professional application is admin-dashboard functionality
 // (it exposes every applicant's PII), so it's gated behind requireAdmin —

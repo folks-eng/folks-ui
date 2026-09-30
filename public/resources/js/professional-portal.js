@@ -37,28 +37,34 @@
     };
 
     document.addEventListener('DOMContentLoaded', () => {
-        if (typeof FolksAPI === 'undefined' || typeof getCurrentUser === 'undefined')
+        if (typeof FolksAPI === 'undefined' || typeof getCurrentUser === 'undefined') {
             return;
-        if (!document.getElementById('ppContent'))
+        }
+        if (!document.getElementById('ppContent')) {
             return; // guard: only runs on this page
+        }
         initPortal();
     });
 
     async function initPortal() {
+        alert('Init Portal');
         let loggedIn = false;
         try {
             loggedIn = await isLoggedIn();
+            alert('Is logged in: ' + loggedIn);
         } catch (err) {
             loggedIn = false;
         }
         const cachedUser = getCurrentUser();
+        alert('Cached User:\n' + JSON.stringify(cachedUser, null, 2));
+        
         if (!loggedIn || !cachedUser) {
             hide('ppLoading');
             show('ppGate');
             return;
         }
 
-        const res = await FolksAPI.viewProfessional(cachedUser.externalId);
+        const res = await FolksAPI.viewProfessional();
         hide('ppLoading');
 
         if (!res.success) {
@@ -74,12 +80,13 @@
             showErr('ppLoadError', res.message || 'Could not load your dashboard. Please refresh and try again.');
             return;
         }
-
+        alert('Queried professional:\n' + JSON.stringify(res.result, null, 2));
+        
         ctx.professional = res.result || {};
         ctx.user = ctx.professional.user || cachedUser;
-        if (ctx.professional.user)
+        if (ctx.professional.user) {
             renderUserChip(ctx.professional.user);
-
+        }
         const firstName = String(ctx.user.fullName || 'there').trim().split(' ')[0];
         document.getElementById('ppGreeting').textContent = `Welcome back, ${firstName}`;
 
@@ -97,16 +104,18 @@
         document.querySelectorAll('[data-pp-nav]').forEach(link => {
             const active = link.dataset.ppNav === section;
             link.classList.toggle('is-active', active);
-            if (active)
+            if (active) {
                 link.setAttribute('aria-current', 'page');
-            else
+            }
+            else {
                 link.removeAttribute('aria-current');
+            }
         });
         document.querySelectorAll('[data-pp-panel]').forEach(panel => {
             panel.hidden = panel.dataset.ppPanel !== section;
         });
 
-        if (!ctx.loaded[section]) {
+        if (! ctx.loaded[section]) {
             ctx.loaded[section] = true;
             ({
                 profile: loadProfile,
@@ -122,6 +131,8 @@
      MY PROFILE
      ===================================================================== */
     function loadProfile() {
+        alert('Called loadProfile');
+        
         loadProfileDetails();
         loadProfessionalDetails();
         loadAddresses();
@@ -129,11 +140,15 @@
 
     async function loadProfileDetails() {
         const grid = document.getElementById('ppProfileFields');
-        const res = await FolksAPI.viewUser();
-        const user = res.success && res.result ? res.result : ctx.user;
-        if (!res.success)
-            showErr('ppProfileError', res.message || 'Could not load your latest profile details.');
-
+        // const res = await FolksAPI.viewUser();
+        // const user = res.success && res.result ? res.result : ctx.user;
+        // if (!res.success) {
+        //     showErr('ppProfileError', res.message || 'Could not load your latest profile details.');
+        // }
+        // alert('Queried User (2nd time):\n' + JSON.stringify(res.result, null, 2));
+        
+        const user = ctx.professional.user;
+        
         grid.innerHTML = [
             field('User ID', user.externalId),
             field('Full name', user.fullName),
@@ -155,9 +170,11 @@
         // (same source professional-dashboard.js uses).
         let doc = null;
         const res = await FolksAPI.viewDocuments();
-        if (res.success && res.result && Array.isArray(res.result.items))
+        if (res.success && res.result && Array.isArray(res.result.items)) {
             doc = res.result.items[0] || null;
-
+        }
+        alert('Queried Document(s):\n' + JSON.stringify(res.result.items, null, 2));
+        
         const rawStatus = doc && doc.verificationStatus ? doc.verificationStatus : (pro.status || '');
         const status = String(rawStatus).toUpperCase() === 'PENDING' ? 'Pending Review' : (rawStatus || '—');
         const meta = statusMeta(status);
@@ -193,6 +210,8 @@
             showErr('ppAddressError', res.message || 'Could not fetch addresses. Please try again.');
             return;
         }
+        alert('Queried Addres(s):\n' + JSON.stringify(res.result.items, null, 2));
+        
         const addresses = (res.result && res.result.items) || [];
         if (addresses.length === 0) {
             body.innerHTML = `
@@ -251,12 +270,14 @@
         show('ppBookingsLoading');
         hide('ppBookingsError');
         const result = await fetchBookings();
+        
         hide('ppBookingsLoading');
         if (!result.success) {
             ctx.loaded.bookings = false;
             showErr('ppBookingsError', result.message || 'Could not load your bookings. Please try again.');
             return;
         }
+        alert('Queried Bookings:\n' + JSON.stringify(result, null, 2));
         renderBookings();
     }
 
@@ -292,8 +313,9 @@
             upcoming: {label: 'Upcoming', cls: 'booking-status-upcoming'},
             past: {label: 'Completed', cls: 'booking-status-past'},
             cancelled: {label: 'Cancelled', cls: 'booking-status-cancelled'}
-        }[booking._tab];
-        const customer = booking.customerName || (booking.customer && (booking.customer.fullName || booking.customer.name));
+        } [booking._tab];
+        
+        // const customer = booking.customerName;
 
         return `
     <article class="booking-card">
@@ -303,7 +325,7 @@
       </div>
       <h4>${esc(booking.serviceName || 'Service')}</h4>
       <p class="profile-field-label" style="text-transform:none; letter-spacing:0; margin-top: 0.3rem;">
-        ${esc(formatDate(booking.scheduledAt))}${booking.timeSlot ? ' · ' + esc(booking.timeSlot) : ''}${customer ? ' · ' + esc(customer) : ''}
+        ${esc(formatDate(booking.scheduledAt))}${' - ' + esc(booking.timeSlot)}${' · ' + esc(booking.customerName)}${' · ' + esc(booking.customerContact)}
       </p>
       ${booking.address ? `<p class="profile-field-label" style="text-transform:none; letter-spacing:0;">${esc(booking.address)}</p>` : ''}
       ${amountOf(booking) ? `<p class="sku-price" style="margin-top: 0.4rem;">${formatInr(amountOf(booking))}</p>` : ''}
@@ -314,38 +336,25 @@
      MY NEIGHBOURHOODS
      ===================================================================== */
     async function loadNeighbourhoods() {
-        const pro = ctx.professional || {};
+        alert('Loading Neighbourhoods ...');
+        
         const container = document.getElementById('ppNeighbourhoods');
         const empty = document.getElementById('ppNeighbourhoodsEmpty');
-
-        // The professional record may carry full neighbourhood objects or
-        // just the ids submitted at application time; handle both.
-        let items = Array.isArray(pro.neighbourhoods) ? pro.neighbourhoods : [];
-        const ids = (Array.isArray(pro.neighbourhoodIds) ? pro.neighbourhoodIds : []).map(String);
-
-        if (ids.includes(ALL_LOCALITIES_ID) || items.some(n => String(n.neighbourhoodId) === ALL_LOCALITIES_ID)) {
-            const city = pro.cityName || pro.city || 'your city';
-            container.innerHTML = chip(`★ All localities in ${city}`);
+        
+        const res = await FolksAPI.viewProfessionalNeighbourhoods();
+        if (! res.success) {
+            ctx.loaded.neighbourhoods = false;
+            showErr('ppNeighbourhoodsError', res.message || 'Could not load your servicing localities. Please try again.');
             return;
         }
-
-        if (items.length === 0 && ids.length > 0 && pro.cityId) {
-            const res = await FolksAPI.viewNeighbourhoods(pro.cityId);
-            if (res.success) {
-                const all = (res.result && (res.result.items || res.result)) || [];
-                items = all.filter(n => ids.includes(String(n.neighbourhoodId)));
-            } else {
-                showErr('ppNeighbourhoodsError', res.message || 'Could not load neighbourhood names.');
-            }
-        }
-
-        if (items.length === 0) {
+        const nbhoods = (res.result && res.result.items) || [];
+        if (nbhoods.length === 0) {
             container.innerHTML = '';
             empty.hidden = false;
             return;
         }
         empty.hidden = true;
-        container.innerHTML = items
+        container.innerHTML = nbhoods
                 .slice()
                 .sort((a, b) => String(a.locality || '').localeCompare(String(b.locality || ''), undefined, {numeric: true, sensitivity: 'base'}))
                 .map(n => chip(n.pincode ? `${n.locality} - ${n.pincode}` : (n.locality || n.name || n.neighbourhoodId)))
@@ -356,10 +365,13 @@
      MY SERVICES
      ===================================================================== */
     async function loadServices() {
+        alert('Loading Services ...');
+        
         const container = document.getElementById('ppServices');
         const empty = document.getElementById('ppServicesEmpty');
+        
         const res = await FolksAPI.viewProfessionalServices();
-        if (!res.success) {
+        if (! res.success) {
             ctx.loaded.services = false;
             showErr('ppServicesError', res.message || 'Could not load your services. Please try again.');
             return;
@@ -378,6 +390,8 @@
      MY EARNINGS
      ===================================================================== */
     async function loadEarnings() {
+        alert('Loading Earnings ...');
+        
         show('ppEarningsLoading');
         hide('ppEarningsError');
         const result = await fetchBookings();

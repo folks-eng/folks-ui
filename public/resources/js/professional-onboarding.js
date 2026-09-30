@@ -147,8 +147,9 @@
             mobileInput.value = mobileInput.value.replace(/\D/g, '').slice(0, 10);
         });
         mobileInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter')
+            if (e.key === 'Enter') {
                 sendOtpBtn.click();
+            }
         });
 
         sendOtpBtn.addEventListener('click', async () => {
