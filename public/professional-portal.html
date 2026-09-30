@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Professional Dashboard — Folks</title>
+        <meta name="description" content="Your Folks professional dashboard: profile and addresses, bookings, neighbourhoods you serve, services, and earnings.">
+        <meta name="theme-color" content="#cb7651">
+
+        <meta property="og:title" content="Professional Dashboard — Folks">
+        <meta property="og:description" content="Your Folks professional dashboard: profile and addresses, bookings, neighbourhoods you serve, services, and earnings.">
+        <meta property="og:type" content="website">
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+        <link rel="stylesheet" href="../resources/css/styles.css">
+    </head>
+    <body>
+
+        <a class="skip-link" href="#main-content">Skip to main content</a>
+
+        <!-- ============ HEADER / STICKY NAVIGATION ============ -->
+        <div id="siteHeaderSlot"></div>
+
+        <main id="main-content">
+
+            <!-- ============ PAGE HERO ============ -->
+            <section class="page-hero">
+                <div class="section-inner">
+                    <p class="breadcrumb"><a href="index.html">Home</a><span aria-hidden="true">/</span><span>Professional Dashboard</span></p>
+                    <p class="eyebrow">Your professional account</p>
+                    <h1 id="ppGreeting">Welcome back</h1>
+                    <p class="page-lede">Your profile, bookings, service areas, services and earnings — all in one place.</p>
+                </div>
+            </section>
+
+            <section class="section" style="padding-top: var(--space-md);">
+                <div class="section-inner">
+
+                    <!-- ============ LOGGED-OUT GATE ============ -->
+                    <div id="ppGate" hidden>
+                        <div class="address-empty-state" style="background: var(--color-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-lg);">
+                            <span class="address-empty-icon" aria-hidden="true">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                            </span>
+                            <p>Verify your mobile number to see your professional dashboard.</p>
+                            <a href="professional-onboarding.html" class="btn btn-primary btn-ripple">Continue with OTP</a>
+                        </div>
+                    </div>
+
+                    <!-- ============ NOT A PROFESSIONAL YET ============ -->
+                    <div id="ppNotPro" hidden>
+                        <div class="address-empty-state" style="background: var(--color-white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-lg);">
+                            <span class="address-empty-icon" aria-hidden="true">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                            </span>
+                            <p>This dashboard is for Folks professionals. You don't have a professional application on this account yet.</p>
+                            <a href="professional-onboarding.html" class="btn btn-primary btn-ripple">Become a Professional</a>
+                        </div>
+                    </div>
+
+                    <p class="modal-hint" id="ppLoading">Loading your dashboard…</p>
+                    <p class="modal-error" id="ppLoadError" hidden></p>
+
+                    <!-- ============ DASHBOARD ============ -->
+                    <div class="account-layout" id="ppContent" hidden>
+                        <aside class="account-sidebar">
+                            <nav class="account-nav" aria-label="Professional dashboard navigation">
+                                <a href="#profile" class="account-nav-link" data-pp-nav="profile">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                                    <span>My Profile</span>
+                                </a>
+                                <a href="#bookings" class="account-nav-link" data-pp-nav="bookings">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                                    <span>My Bookings</span>
+                                </a>
+                                <a href="#neighbourhoods" class="account-nav-link" data-pp-nav="neighbourhoods">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 22s7-7.4 7-12.5A7 7 0 0 0 5 9.5C5 14.6 12 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="9.5" r="2.5" stroke="currentColor" stroke-width="2"/></svg>
+                                    <span>My Neighbourhoods</span>
+                                </a>
+                                <a href="#services" class="account-nav-link" data-pp-nav="services">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-2.5 2.5-2.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+                                    <span>My Services</span>
+                                </a>
+                                <a href="#earnings" class="account-nav-link" data-pp-nav="earnings">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12.5" r="2.5" stroke="currentColor" stroke-width="2"/><path d="M6 9.5v6M18 9.5v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                                    <span>My Earnings</span>
+                                </a>
+                            </nav>
+                        </aside>
+
+                        <div class="account-main">
+
+                            <!-- ============ MY PROFILE ============ -->
+                            <div data-pp-panel="profile" hidden>
+                                <div class="profile-card">
+                                    <div class="profile-card-header">
+                                        <h2>Profile Details</h2>
+                                        <div class="profile-card-actions">
+                                            <a href="profile.html" class="btn btn-ghost btn-sm">Edit</a>
+                                        </div>
+                                    </div>
+                                    <p class="modal-error" id="ppProfileError" hidden></p>
+                                    <div class="profile-fields-grid" id="ppProfileFields"></div>
+                                </div>
+
+                                <div class="profile-card" style="margin-top: var(--space-md);">
+                                    <div class="profile-card-header">
+                                        <h2>Professional Details</h2>
+                                        <span id="ppStatusBadge" class="booking-status-badge">—</span>
+                                    </div>
+                                    <div class="profile-fields-grid" id="ppProFields"></div>
+                                    <p class="modal-hint" id="ppStatusHint" style="margin-top: var(--space-sm);" hidden></p>
+                                </div>
+
+                                <div class="profile-card" style="margin-top: var(--space-md);">
+                                    <div class="profile-card-header">
+                                        <h2>Addresses</h2>
+                                        <div class="profile-card-actions">
+                                            <a href="profile.html" class="btn btn-ghost btn-sm">Manage</a>
+                                        </div>
+                                    </div>
+                                    <p class="modal-error" id="ppAddressError" hidden></p>
+                                    <div id="ppAddressBody"><p class="modal-hint">Loading your addresses…</p></div>
+                                </div>
+                            </div>
+
+                            <!-- ============ MY BOOKINGS ============ -->
+                            <div data-pp-panel="bookings" hidden>
+                                <div class="subcat-chip-row" style="margin-bottom: var(--space-md);">
+                                    <button type="button" class="subcat-chip is-active" data-pp-booking-tab="upcoming">Upcoming <span data-pp-tab-count style="opacity:.7">(0)</span></button>
+                                    <button type="button" class="subcat-chip" data-pp-booking-tab="past">Completed <span data-pp-tab-count style="opacity:.7">(0)</span></button>
+                                    <button type="button" class="subcat-chip" data-pp-booking-tab="cancelled">Cancelled <span data-pp-tab-count style="opacity:.7">(0)</span></button>
+                                </div>
+                                <p class="modal-hint" id="ppBookingsLoading">Loading your bookings…</p>
+                                <p class="modal-error" id="ppBookingsError" hidden></p>
+                                <div id="ppBookingsList"></div>
+                                <div id="ppBookingsEmpty" class="cat-no-results" hidden>
+                                    <h3>Nothing here yet</h3>
+                                    <p>You don't have any bookings in this tab.</p>
+                                </div>
+                            </div>
+
+                            <!-- ============ MY NEIGHBOURHOODS ============ -->
+                            <div data-pp-panel="neighbourhoods" hidden>
+                                <div class="profile-card">
+                                    <div class="profile-card-header"><h2>Neighbourhoods You Serve</h2></div>
+                                    <p class="modal-hint" style="margin-bottom: var(--space-sm);" id="ppNeighbourhoodsHint">Localities you take bookings in.</p>
+                                    <p class="modal-error" id="ppNeighbourhoodsError" hidden></p>
+                                    <div id="ppNeighbourhoods" class="pro-expertise-chips"></div>
+                                    <p class="modal-hint" id="ppNeighbourhoodsEmpty" hidden>No neighbourhoods on file yet.</p>
+                                </div>
+                            </div>
+
+                            <!-- ============ MY SERVICES ============ -->
+                            <div data-pp-panel="services" hidden>
+                                <div class="profile-card">
+                                    <div class="profile-card-header"><h2>My Services</h2></div>
+                                    <p class="modal-hint" style="margin-bottom: var(--space-sm);">Services you're set up to take bookings for, once your application is approved.</p>
+                                    <p class="modal-error" id="ppServicesError" hidden></p>
+                                    <div id="ppServices" class="pro-expertise-chips"></div>
+                                    <p class="modal-hint" id="ppServicesEmpty" hidden>No services on file yet.</p>
+                                </div>
+                            </div>
+
+                            <!-- ============ MY EARNINGS ============ -->
+                            <div data-pp-panel="earnings" hidden>
+                                <div class="profile-card">
+                                    <div class="profile-card-header"><h2>My Earnings</h2></div>
+                                    <p class="modal-hint" style="margin-bottom: var(--space-sm);">Calculated from the booking amounts of your bookings — payouts, commissions and adjustments aren't included.</p>
+                                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-sm);">
+                                        <div class="stat" style="background: var(--color-sage-20); border-radius: var(--radius-md); padding: var(--space-sm);">
+                                            <span class="stat-number" id="ppEarnCompleted">&#8377;0</span>
+                                            <span class="stat-label">Earned (completed)</span>
+                                        </div>
+                                        <div class="stat" style="background: var(--color-gold-20); border-radius: var(--radius-md); padding: var(--space-sm);">
+                                            <span class="stat-number" id="ppEarnUpcoming">&#8377;0</span>
+                                            <span class="stat-label">Expected (upcoming)</span>
+                                        </div>
+                                        <div class="stat" style="background: var(--color-cream); border-radius: var(--radius-md); padding: var(--space-sm);">
+                                            <span class="stat-number" id="ppEarnJobs">0</span>
+                                            <span class="stat-label">Completed jobs</span>
+                                        </div>
+                                    </div>
+                                    <p class="modal-hint" id="ppEarningsLoading" style="margin-top: var(--space-sm);">Loading your earnings…</p>
+                                    <p class="modal-error" id="ppEarningsError" hidden></p>
+                                    <div id="ppEarningsList" style="margin-top: var(--space-sm);"></div>
+                                    <p class="modal-hint" id="ppEarningsEmpty" hidden>No completed bookings yet.</p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+
+        <!-- ============ FOOTER ============ -->
+        <div id="siteFooterSlot"></div>
+
+        <button class="back-to-top" id="backToTop" aria-label="Back to top">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+
+        <script src="../resources/js/layout.js"></script>
+        <script src="../resources/js/api.js"></script>
+        <script src="../resources/js/script.js"></script>
+        <script src="../resources/js/professional-portal.js"></script>
+    </body>
+</html>

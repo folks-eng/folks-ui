@@ -263,10 +263,10 @@ function initSearchForm() {
 }
 
 /**
- * "Become a Professional" requires an account, same as checkout does.
- * Logged in -> go straight there. Logged out -> open signup (with a
- * "Log in instead" link already built into that modal for existing users)
- * and resume this destination once that completes.
+ * "Become a Professional" always goes to the dedicated professional
+ * onboarding page, which runs its own OTP verification and then routes
+ * to the application form or, for an already-registered professional,
+ * to the professional dashboard (professional-portal.html).
  */
 function initProfessionalLinkGate() {
     document.addEventListener('click', (e) => {
@@ -275,15 +275,7 @@ function initProfessionalLinkGate() {
             return;
 
         e.preventDefault();
-        if (isLoggedIn() && getCurrentUser()) {
-            window.location.href = 'become-professional.html';
-            return;
-        }
-        safeStorageSet(FOLKS_STORAGE_KEYS.postSignupRedirect, 'become-professional.html');
-        const signupBtn = document.getElementById('signupBtn');
-        if (signupBtn) {
-            signupBtn.click();
-        }
+        window.location.href = 'professional-onboarding.html';
     });
 }
 
@@ -1513,15 +1505,12 @@ function renderUserChip(user) {
         const isProfessional = String(user.role || '').toUpperCase() === 'PROFESSIONAL';
 
         // A professional account doesn't browse/book services, so its menu
-        // points at the professional dashboard instead of "My Bookings".
+        // is just "My Dashboard" (the left-nav professional portal, which
+        // itself covers profile, bookings, etc.) plus "Log out" below.
         const accountMenuLinks = isProfessional ? `
-          <a href="profile.html" role="menuitem" class="user-dropdown-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            View Profile
-          </a>
-          <a href="professional-dashboard.html" role="menuitem" class="user-dropdown-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            Professional Dashboard
+          <a href="professional-portal.html" role="menuitem" class="user-dropdown-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="5" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="12" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="16" width="7" height="5" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>
+            My Dashboard
           </a>
         ` : `
           <a href="profile.html" role="menuitem" class="user-dropdown-item">

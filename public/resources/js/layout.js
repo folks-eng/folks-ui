@@ -29,11 +29,11 @@
  *  a plain call-to-action rather than a "you are here" indicator. */
 const SITE_NAV_LINKS = [
     {file: 'index.html', label: 'Home'},
-    {file: 'categories.html', label: 'Categories'},
+    {file: 'categories.html', label: 'Categories', hiddenOn: ['professional-portal.html']},
     {file: 'about.html', label: 'About Us'},
     {file: 'contact.html', label: 'Contact Us'},
     {file: 'faq.html', label: 'FAQs'},
-    {file: null, href: 'become-professional.html', label: 'Become a Professional', extraClass: 'nav-link-pro'}
+    {file: null, href: 'professional-onboarding.html', label: 'Become a Professional', extraClass: 'nav-link-pro', hiddenOn: ['professional-portal.html']}
 ];
 
 function currentPageFile() {
@@ -46,7 +46,13 @@ function renderSiteHeader() {
     const isHome = page === 'index.html';
     const homeHref = isHome ? '#top' : 'index.html#top';
 
-    const linksHtml = SITE_NAV_LINKS.map(link => {
+    // `hiddenOn` lists pages where a link shouldn't appear at all (e.g. the
+    // professional portal has no use for customer browsing / onboarding links).
+    // Compared without ".html" so clean URLs (/professional-portal) match too.
+    const pageKey = page.replace(/\.html$/, '');
+    const linksHtml = SITE_NAV_LINKS
+            .filter(link => !(link.hiddenOn || []).some(p => p.replace(/\.html$/, '') === pageKey))
+            .map(link => {
         const isActive = !!link.file && link.file === page;
         const cls = ['nav-link', link.extraClass, isActive ? 'is-active' : ''].filter(Boolean).join(' ');
         const href = link.file === 'index.html' ? homeHref : (link.href || link.file);
