@@ -375,7 +375,7 @@ async function initAddressSection() {
         // a serviceable locality is picked, the address form itself makes it
         // obvious they're good to continue.
         const intro = !loc.confirmed
-                ? `<p class="modal-hint">Before you add this address, let's check Folks is live in your area — enter your pincode.</p>`
+                ? `<p class="modal-hint">Before you add this address, let's check Hearth is live in your area — enter your pincode.</p>`
                 : '';
 
         let sectionBody;
@@ -404,7 +404,7 @@ async function initAddressSection() {
             status = `<p class="modal-error">We don't recognize that pincode yet. Try again, or pick your state, city and locality manually.</p>`;
         }
         else if (loc.serviceable === false && loc.neighbourhoodId) {
-            status = `<p class="modal-error">Folks hasn't launched in ${escapeHtmlP(loc.locality || 'this area')} yet. Please try another pincode, or check back soon.</p>`;
+            status = `<p class="modal-error">Hearth hasn't launched in ${escapeHtmlP(loc.locality || 'this area')} yet. Please try another pincode, or check back soon.</p>`;
         }
 
         return `
@@ -453,7 +453,7 @@ async function initAddressSection() {
     function renderCascadePicker(idAttr, loc, isNew) {
         let statusMsg = '';
         if (loc.serviceable === false) {
-            statusMsg = `<p class="modal-error">Folks hasn't launched in ${escapeHtmlP(loc.locality || 'this locality')} yet. Please pick another locality, or check back soon.</p>`;
+            statusMsg = `<p class="modal-error">Hearth hasn't launched in ${escapeHtmlP(loc.locality || 'this locality')} yet. Please pick another locality, or check back soon.</p>`;
         }
         else if (loc.cityId && !loc.loadingNeighbourhoods && loc.neighbourhoods.length === 0 && !loc.neighbourhoodId) {
             statusMsg = `<p class="modal-hint">No localities found for the selected city yet.</p>`;

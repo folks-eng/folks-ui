@@ -79,15 +79,15 @@ class EmailGateway extends Gateway {
      * @returns {nm$_email_gway.EmailGateway.send.email_gwayAnonym$1}
     */
     async send(param) {
-        const message = `Folks email OTP: ${param.otp}. Valid for ${param.ttl} minutes. Never share this OTP with anyone.`;
+        const message = `Hearth email OTP: ${param.otp}. Valid for ${param.ttl} minutes. Never share this OTP with anyone.`;
         
         const recipient = param.recipient;
         const otp = param.otp;
         const validity = param.ttl;
         
-        const subject = 'Folks OTP';
+        const subject = 'Hearth OTP';
         const text =
-            `Folks email OTP: ${otp}. ` +
+            `Hearth email OTP: ${otp}. ` +
             `Valid for ${validity} minutes. ` +
             `Never share this OTP with anyone.`;
 

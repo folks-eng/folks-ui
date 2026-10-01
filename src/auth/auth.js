@@ -27,6 +27,10 @@ function authenticate(req, res, next) {
         }
         return next();
     }
+    if (req.path === '/categories/hierarchy') {
+        // Un-Authenticated access.
+        return next();
+    }
     let token = req.cookies[CookieUtil.STD_COOKIE];
     if (! token) {
         log.error('No folks cookie found, or cookie is already expired');

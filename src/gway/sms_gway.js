@@ -26,7 +26,7 @@ class SmsGateway extends Gateway {
     }
     
     async demoSend(param) {
-        const message = `Folks sms OTP: ${param.otp}. Valid for ${param.ttlMin} minutes. Never share this OTP with anyone.`;
+        const message = `Hearth sms OTP: ${param.otp}. Valid for ${param.ttlMin} minutes. Never share this OTP with anyone.`;
         
         let baseURL = 'https://smsgateway.com';
         

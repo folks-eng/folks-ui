@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node --env-file=.env server.js",
-    "dev": "node --watch --env-file=.env server.js"
+    "dev": "node --watch --env-file=.env server.js",
+    "fonts": "node scripts/fetch-fonts.js"
   },
   "engines": {
     "node": ">=18.0.0"

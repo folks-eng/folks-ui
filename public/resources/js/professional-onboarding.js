@@ -365,7 +365,7 @@
 
             const user = result.result;
             startSession(user, result.expiresOn);
-            showSuccess('Welcome to Folks!', `Thanks, ${firstName(user)}. Next, tell us about your work.`);
+            showSuccess('Welcome to Hearth!', `Thanks, ${firstName(user)}. Next, tell us about your work.`);
             setTimeout(() => showApplicationForm(user), REDIRECT_DELAY_MS);
         }
 

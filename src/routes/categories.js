@@ -9,7 +9,7 @@ const log = getLogger(__filename);
 async function viewAll(req, res) {
     try {
         const response = await httpClient.get(
-            '/categories/hierarchy'
+            '/mgmt/categories/hierarchy'
             , {
                 headers: {
                     Authorization: `Bearer ${req.token}`

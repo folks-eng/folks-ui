@@ -293,7 +293,7 @@ function initProfessionalLinkGate() {
 
         showConfirmDialog({
             title: 'Log out to continue?',
-            message: 'Becoming a professional needs a separate sign-in. You will be logged out of your current Folks account before continuing to professional onboarding.',
+            message: 'Becoming a professional needs a separate sign-in. You will be logged out of your current Hearth account before continuing to professional onboarding.',
             confirmLabel: 'Log out & continue',
             cancelLabel: 'Cancel',
             danger: false,
@@ -1084,7 +1084,7 @@ function injectLoginModalMarkup() {
         </div>
         <p class="modal-error" id="loginMobileError" hidden></p>
         <button type="button" class="btn btn-primary btn-ripple modal-submit" id="loginSendOtpBtn">Send OTP</button>
-        <p class="modal-switch">New to Folks? <button type="button" class="link-btn" id="switchToSignupBtn">Sign up</button></p>
+        <p class="modal-switch">New to Hearth? <button type="button" class="link-btn" id="switchToSignupBtn">Sign up</button></p>
       </div>
 
       <div class="modal-screen screen-off-right" data-screen="login-waiting" inert aria-hidden="true">
@@ -1118,7 +1118,7 @@ function injectLoginModalMarkup() {
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9 15l6 6M15 15l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </div>
         <h2 class="modal-title">No account found</h2>
-        <p class="modal-sub">We verified your number, but couldn't find a Folks account for it yet.</p>
+        <p class="modal-sub">We verified your number, but couldn't find a Hearth account for it yet.</p>
         <button type="button" class="btn btn-primary btn-ripple modal-submit" id="switchToSignupFromNotFoundBtn">Sign up instead</button>
         <p class="modal-resend"><button type="button" class="link-btn" id="loginTryAnotherNumberBtn">Try another number</button></p>
       </div>
@@ -1720,7 +1720,7 @@ function injectSignupModalMarkup() {
 
       <div class="modal-screen screen-off-right" data-screen="success" inert aria-hidden="true">
         <div class="modal-success-icon" aria-hidden="true">&check;</div>
-        <h2 class="modal-title">Welcome to Folks!</h2>
+        <h2 class="modal-title">Welcome to Hearth!</h2>
         <p class="modal-sub" id="successMessage">You're all set to browse services.</p>
       </div>
 

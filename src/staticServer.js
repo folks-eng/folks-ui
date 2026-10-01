@@ -22,7 +22,9 @@ const MIME_TYPES = {
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
     '.ico': 'image/x-icon',
-    '.webmanifest': 'application/manifest+json'
+    '.webmanifest': 'application/manifest+json',
+    '.woff2': 'font/woff2',
+    '.woff': 'font/woff'
 };
 
 // Convert to an Express middleware signature: (req, res, next)

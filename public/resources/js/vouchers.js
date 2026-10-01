@@ -10,7 +10,7 @@ const VOUCHERS = [
     {
         code: 'WELCOME50',
         title: 'Welcome offer',
-        description: 'Flat ₹50 off your first booking on Folks.',
+        description: 'Flat ₹50 off your first booking on Hearth.',
         terms: 'Valid on orders above ₹299. One-time use per account.',
         expiry: 'No expiry',
     },
@@ -31,7 +31,7 @@ const VOUCHERS = [
     {
         code: 'REFER200',
         title: 'Refer & earn',
-        description: '₹200 Folks credit for every friend who completes their first booking.',
+        description: '₹200 Hearth credit for every friend who completes their first booking.',
         terms: 'Credit is added to your account within 24 hours of their booking.',
         expiry: 'No expiry',
     },

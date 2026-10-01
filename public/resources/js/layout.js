@@ -54,14 +54,14 @@ function isProfessionalChromePage() {
 function renderProfessionalHeader() {
     return `<header class="site-header" id="siteHeader">
   <nav class="navbar" aria-label="Professional navigation">
-    <span class="brand" aria-label="Folks for Professionals">
+    <span class="brand" aria-label="Hearth for Professionals">
       <span class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 40 40" width="34" height="34">
           <path d="M20 4 L36 16 V35 H24 V24 H16 V35 H4 V16 Z" fill="currentColor"/>
           <circle cx="20" cy="16" r="2.6" fill="var(--color-cream)"/>
         </svg>
       </span>
-      <span class="brand-name">Folks</span>
+      <span class="brand-name">Hearth</span>
       <span style="font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-clay-dark); background: var(--color-clay-10); padding: 0.25rem 0.6rem; border-radius: var(--radius-pill); margin-left: 0.2rem;">Professionals</span>
     </span>
 
@@ -95,14 +95,17 @@ function renderSiteHeader() {
 
     return `<header class="site-header" id="siteHeader">
   <nav class="navbar" aria-label="Primary navigation">
-    <a href="${homeHref}" class="brand" aria-label="Folks home">
+    <a href="${homeHref}" class="brand" aria-label="Hearth home">
       <span class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 40 40" width="34" height="34">
           <path d="M20 4 L36 16 V35 H24 V24 H16 V35 H4 V16 Z" fill="currentColor"/>
           <circle cx="20" cy="16" r="2.6" fill="var(--color-cream)"/>
         </svg>
       </span>
-      <span class="brand-name">Folks</span>
+      <span class="brand-text">
+        <span class="brand-name">Hearth</span>
+        <span class="brand-tagline">Home, Warmth and Care</span>
+      </span>
     </a>
 
     <ul class="nav-links" id="navLinks">
@@ -141,17 +144,20 @@ function renderSiteFooter() {
     return `<footer class="site-footer"${footerIdAttr}>
   <div class="footer-top section-inner">
     <div class="footer-brand">
-      <a href="${homeHref}" class="brand brand-footer" aria-label="Folks home">
+      <a href="${homeHref}" class="brand brand-footer" aria-label="Hearth home">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 40 40" width="30" height="30"><path d="M20 4 L36 16 V35 H24 V24 H16 V35 H4 V16 Z" fill="currentColor"/><circle cx="20" cy="16" r="2.6" fill="var(--color-espresso)"/></svg>
         </span>
-        <span class="brand-name">Folks</span>
+        <span class="brand-text">
+          <span class="brand-name">Hearth</span>
+          <span class="brand-tagline">Home, Warmth and Care</span>
+        </span>
       </a>
       <p>Trusted home services, booked in minutes. Verified pros, upfront pricing, guaranteed work.</p>
-      <div class="social-links" aria-label="Folks on social media">
-        <a href="#" aria-label="Folks on Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
-        <a href="#" aria-label="Folks on X"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3l7.5 9.5L3.4 21H6l5.8-6.8L16.5 21H21l-8-10.1L20.6 3H18l-5.3 6.2L8.5 3H3z"/></svg></a>
-        <a href="#" aria-label="Folks on LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9h4v12H3zM9.5 9H13v1.7c.6-1 1.9-2 3.9-2 3.3 0 4.6 2.1 4.6 5.6V21H17v-6.1c0-1.6-.6-2.7-2-2.7-1.1 0-1.7.8-2 1.5-.1.3-.1.6-.1 1V21H9.5Z"/></svg></a>
+      <div class="social-links" aria-label="Hearth on social media">
+        <a href="#" aria-label="Hearth on Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
+        <a href="#" aria-label="Hearth on X"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3l7.5 9.5L3.4 21H6l5.8-6.8L16.5 21H21l-8-10.1L20.6 3H18l-5.3 6.2L8.5 3H3z"/></svg></a>
+        <a href="#" aria-label="Hearth on LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9h4v12H3zM9.5 9H13v1.7c.6-1 1.9-2 3.9-2 3.3 0 4.6 2.1 4.6 5.6V21H17v-6.1c0-1.6-.6-2.7-2-2.7-1.1 0-1.7.8-2 1.5-.1.3-.1.6-.1 1V21H9.5Z"/></svg></a>
       </div>
     </div>
 
@@ -198,7 +204,7 @@ function renderSiteFooter() {
   </div>
 
   <div class="footer-bottom section-inner">
-    <p>&copy; 2026 Folks Technologies Pvt. Ltd. All rights reserved.</p>
+    <p>&copy; 2026 Hearth Technologies Pvt. Ltd. All rights reserved.</p>
     <p>Made with care, for homes everywhere.</p>
   </div>
 </footer>`;
