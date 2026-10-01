@@ -15,6 +15,15 @@ const CAT_ICONS = {
     'paint-roller': '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="14" height="6" rx="1.5" stroke="currentColor" stroke-width="2"/><path d="M8 10v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="5" y="15" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>',
 };
 
+/* ---- per-service photos ---------------------------------------------------
+ Each service carries its own image from the backend (fks_services.image).
+ Falls back to the sub-category's image if a service has none. */
+function serviceImage(sku, subCategory) {
+    if (sku && sku.image)
+        return sku.image;
+    return subCategory ? subCategory.image : '';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // if (typeof CATEGORY_DATA === 'undefined') {
     //     return; // guard: only runs on categories.html
@@ -27,8 +36,7 @@ async function loadCategories() {
     let res = await FolksAPI.viewCategories();
         
     if (! res.success) {
-        alert('Failed');
-        // showError('categoryError', res.message || 'Could fetch categories. Please try again.');
+        showError('categoryError', res.message || 'Could fetch categories. Please try again.');
         return;
     }
     categories_hierarchy = res.result.items;
@@ -250,7 +258,7 @@ function initCategoriesPage() {
         return `
       <article class="sku-card" data-sku-id="${sku.serviceId}">
         <div class="sku-thumb">
-          <img src="${subCategory.image}" alt="" loading="lazy">
+          <img src="${serviceImage(sku, subCategory)}" alt="${escapeHtml(sku.name)}" loading="lazy">
           ${sku.isPopular ? '<span class="sku-popular-badge">Popular</span>' : ''}
           <button type="button" class="sku-wishlist-btn" data-wishlist-toggle aria-label="Save ${escapeHtml(sku.name)} to wishlist" aria-pressed="${isWishlisted(sku.serviceId)}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
@@ -330,7 +338,7 @@ function initCategoriesPage() {
                         currency: sku.currency,
                         categoryName: category.name,
                         subCategoryName: subCategory.name,
-                        image: subCategory.image,
+                        image: serviceImage(sku, subCategory),
                         duration: sku.durationMinutes
                     });
                     wishlistBtn.setAttribute('aria-pressed', String(nowWishlisted));
