@@ -366,24 +366,223 @@
      ===================================================================== */
     async function loadServices() {
         alert('Loading Services ...');
-        
-        const container = document.getElementById('ppServices');
-        const empty = document.getElementById('ppServicesEmpty');
-        
-        const res = await FolksAPI.viewProfessionalServices();
-        if (! res.success) {
+
+        hide('ppServicesError');
+        show('ppServicesLoading');
+
+        // The category hierarchy (category › sub-category › services, each
+        // service with its image) drives both the read view and the editor.
+        // The professional's own services only decide which sub-categories
+        // are selected.
+        const [catRes, svcRes] = await Promise.all([
+            ctx.hierarchy ? Promise.resolve({success: true, result: {items: ctx.hierarchy}}) : FolksAPI.viewCategories(),
+            FolksAPI.viewProfessionalServices()
+        ]);
+        hide('ppServicesLoading');
+
+        if (!catRes.success || !svcRes.success) {
             ctx.loaded.services = false;
-            showErr('ppServicesError', res.message || 'Could not load your services. Please try again.');
+            showErr('ppServicesError', (!catRes.success ? catRes.message : svcRes.message) || 'Could not load your services. Please try again.');
             return;
         }
-        const services = (res.result && res.result.items) || [];
-        if (services.length === 0) {
+
+        ctx.hierarchy = (catRes.result && catRes.result.items) || [];
+        ctx.selectedSubIds = selectedSubCategoryIds(ctx.hierarchy, (svcRes.result && svcRes.result.items) || []);
+
+        wireServicesEditor();
+        renderServicesView();
+    }
+
+    /** Works out which sub-categories the professional has selected from the
+     *  services GET /professionalServices returns. Matches on, in order: an
+     *  explicit sub-category id on the item, the serviceId, then the service
+     *  name — whichever the backend provides. */
+    function selectedSubCategoryIds(hierarchy, items) {
+        const bySubId = new Map(), byServiceId = new Map(), byName = new Map();
+        const norm = v => String(v || '').trim().toLowerCase();
+        hierarchy.forEach(cat => (cat.subCategories || []).forEach(sub => {
+            bySubId.set(String(sub.categoryId), sub.categoryId);
+            (sub.services || []).forEach(svc => {
+                byServiceId.set(String(svc.serviceId), sub.categoryId);
+                byName.set(norm(svc.name), sub.categoryId);
+            });
+        }));
+
+        const selected = new Set();
+        items.forEach(it => {
+            const subId = [it.subCategoryId, it.categoryId].find(v => v !== undefined && v !== null && bySubId.has(String(v)));
+            if (subId !== undefined) {
+                selected.add(String(subId));
+                return;
+            }
+            if (it.serviceId !== undefined && byServiceId.has(String(it.serviceId))) {
+                selected.add(String(byServiceId.get(String(it.serviceId))));
+                return;
+            }
+            const name = norm(it.serviceName || it.name);
+            if (byName.has(name))
+                selected.add(String(byName.get(name)));
+        });
+        return selected;
+    }
+
+    /* ---- read view: category › sub-category › service cards -------------- */
+    function renderServicesView() {
+        const container = document.getElementById('ppServices');
+        const empty = document.getElementById('ppServicesEmpty');
+
+        document.getElementById('ppServicesEditor').hidden = true;
+        container.hidden = false;
+        document.getElementById('ppServicesEditBtn').hidden = false;
+        document.getElementById('ppServicesCancelBtn').hidden = true;
+        document.getElementById('ppServicesSaveBtn').hidden = true;
+        document.getElementById('ppServicesHint').textContent =
+                'Services you\'re set up to take bookings for, grouped by category and sub-category.';
+
+        const groups = ctx.hierarchy
+                .map(cat => ({cat, subs: (cat.subCategories || []).filter(sub => ctx.selectedSubIds.has(String(sub.categoryId)))}))
+                .filter(g => g.subs.length > 0);
+
+        if (groups.length === 0) {
             container.innerHTML = '';
             empty.hidden = false;
             return;
         }
         empty.hidden = true;
-        container.innerHTML = services.map(s => chip(s.serviceName || s.name || 'Service')).join('');
+
+        container.innerHTML = groups.map(({cat, subs}) => `
+      <section class="pp-svc-cat">
+        <h3 class="pp-svc-cat-title">${esc(cat.name)}</h3>
+        ${subs.map(sub => {
+            const services = sub.services || [];
+            return `
+          <div class="pp-svc-sub">
+            <div class="pp-svc-sub-head">
+              <span class="pp-svc-sub-name">${esc(sub.name)}</span>
+              <span class="pp-svc-sub-count">${services.length} service${services.length === 1 ? '' : 's'}</span>
+            </div>
+            ${services.length ? `
+            <div class="pp-svc-grid">
+              ${services.map(svc => `
+                <div class="pp-svc-card">
+                  <img src="${esc(svc.image || sub.image || cat.image || '')}" alt="${esc(svc.name)}" loading="lazy">
+                  <span>${esc(svc.name)}</span>
+                </div>`).join('')}
+            </div>` : '<p class="modal-hint">No services listed under this sub-category yet.</p>'}
+          </div>`;
+        }).join('')}
+      </section>`).join('');
+    }
+
+    /* ---- edit view: choose sub-categories under each category ------------ */
+    function renderServicesEditor() {
+        const editor = document.getElementById('ppServicesEditor');
+        document.getElementById('ppServices').hidden = true;
+        document.getElementById('ppServicesEmpty').hidden = true;
+        editor.hidden = false;
+        document.getElementById('ppServicesEditBtn').hidden = true;
+        document.getElementById('ppServicesCancelBtn').hidden = false;
+        document.getElementById('ppServicesSaveBtn').hidden = false;
+        document.getElementById('ppServicesHint').textContent =
+                'Tap a sub-category to select it — you\'ll take bookings for every service under it. Tap a selected one again to remove it.';
+
+        // Each sub-category is a clickable image tile wrapping a real (visually
+        // hidden) checkbox, so it works with mouse, touch and keyboard.
+        editor.innerHTML = ctx.hierarchy.map(cat => `
+      <section class="pp-svc-cat pp-svc-edit-cat">
+        <h3 class="pp-svc-cat-title">${esc(cat.name)}</h3>
+        <div class="pp-sub-grid">
+          ${(cat.subCategories || []).map(sub => {
+            const count = (sub.services || []).length;
+            return `
+            <label class="pp-sub-tile">
+              <input type="checkbox" value="${esc(sub.categoryId)}" data-pp-sub ${ctx.draftSubIds.has(String(sub.categoryId)) ? 'checked' : ''}>
+              <span class="pp-sub-tile-media">
+                <img src="${esc(sub.image || cat.image || '')}" alt="" loading="lazy">
+                <span class="pp-sub-tile-check" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+              </span>
+              <span class="pp-sub-tile-body">
+                <span class="pp-sub-tile-name">${esc(sub.name)}</span>
+                <span class="pp-sub-tile-count">${count} service${count === 1 ? '' : 's'}</span>
+              </span>
+            </label>`;
+          }).join('')}
+        </div>
+      </section>`).join('');
+
+        editor.querySelectorAll('[data-pp-sub]').forEach(cb => {
+            cb.addEventListener('change', () => {
+                if (cb.checked)
+                    ctx.draftSubIds.add(cb.value);
+                else
+                    ctx.draftSubIds.delete(cb.value);
+                hide('ppServicesError');
+            });
+        });
+    }
+
+    function wireServicesEditor() {
+        if (ctx.servicesEditorWired)
+            return;
+        ctx.servicesEditorWired = true;
+
+        const editBtn = document.getElementById('ppServicesEditBtn');
+        const cancelBtn = document.getElementById('ppServicesCancelBtn');
+        const saveBtn = document.getElementById('ppServicesSaveBtn');
+
+        editBtn.addEventListener('click', () => {
+            ctx.draftSubIds = new Set(ctx.selectedSubIds);
+            hide('ppServicesError');
+            renderServicesEditor();
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            hide('ppServicesError');
+            renderServicesView();
+        });
+
+        saveBtn.addEventListener('click', async () => {
+            hide('ppServicesError');
+            if (ctx.draftSubIds.size === 0) {
+                showErr('ppServicesError', 'Select at least one sub-category to keep taking bookings.');
+                return;
+            }
+
+            // Keep the ids' original type (number vs string) as the hierarchy has them.
+            const ids = [];
+            ctx.hierarchy.forEach(cat => (cat.subCategories || []).forEach(sub => {
+                if (ctx.draftSubIds.has(String(sub.categoryId)))
+                    ids.push(sub.categoryId);
+            }));
+
+            saveBtn.disabled = true;
+            cancelBtn.disabled = true;
+            saveBtn.textContent = 'Saving…';
+            
+            alert(JSON.stringify(ids));
+            const res = await FolksAPI.updateProfessionalServices(ids);
+            
+            saveBtn.disabled = false;
+            cancelBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+
+            if (!res.success) {
+                showErr('ppServicesError', res.message || 'Could not save your services. Please try again.');
+                return;
+            }
+
+            // Re-read from the server rather than trusting the local draft, so
+            // the view always shows what was actually stored.
+            const svcRes = await FolksAPI.viewProfessionalServices();
+            if (svcRes.success) {
+                ctx.selectedSubIds = selectedSubCategoryIds(ctx.hierarchy, (svcRes.result && svcRes.result.items) || []);
+            } else {
+                ctx.selectedSubIds = new Set(ctx.draftSubIds);
+            }
+            renderServicesView();
+        });
     }
 
     /* =====================================================================

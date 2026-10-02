@@ -135,7 +135,9 @@ async function patch(req, res) {
     }
 
     try {
-        let extId = req.params.id;
+        // Route is PATCH /me — the professional is whoever the session cookie
+        // identifies (same as view() above), not a URL parameter.
+        let extId = req.user.sub;
         const response = await httpClient.patch(
             '/professionals/' + extId
             , payload

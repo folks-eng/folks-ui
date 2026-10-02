@@ -747,16 +747,29 @@
         }
         const categories = (res.result && res.result.items) || [];
 
+        // One clickable image tile per sub-category (a <label> wrapping a
+        // visually hidden checkbox, so mouse, touch and keyboard all work).
         container.innerHTML = categories.map(cat => `
-    <div class="pro-expertise-group">
+    <div class="pro-expertise-group po-exp-cat">
       <p class="pro-expertise-group-label">${escapeHtml(cat.name)}</p>
-      <div class="pro-expertise-chips">
-        ${(cat.subCategories || []).map(sub => `
-          <label class="pro-expertise-chip">
+      <div class="pp-sub-grid">
+        ${(cat.subCategories || []).map(sub => {
+            const count = (sub.services || []).length;
+            return `
+          <label class="pp-sub-tile">
             <input type="checkbox" value="${escapeAttr(sub.categoryId)}" data-po-expertise>
-            <span>${escapeHtml(sub.name)}</span>
-          </label>
-        `).join('')}
+            <span class="pp-sub-tile-media">
+              <img src="${escapeAttr(sub.image || cat.image || '')}" alt="" loading="lazy">
+              <span class="pp-sub-tile-check" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </span>
+            <span class="pp-sub-tile-body">
+              <span class="pp-sub-tile-name">${escapeHtml(sub.name)}</span>
+              ${count ? `<span class="pp-sub-tile-count">${count} service${count === 1 ? '' : 's'}</span>` : ''}
+            </span>
+          </label>`;
+        }).join('')}
       </div>
     </div>
   `).join('');

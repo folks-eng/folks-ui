@@ -446,6 +446,10 @@ const FolksAPI = (function () {
         return await invoke('/professionalServices', 'GET');
     }
 
+    async function updateProfessionalServices(subCategoryIds) {
+        return await invoke('/professionalServices', 'PATCH', subCategoryIds);
+    }
+
     /**
      * Retrieves the neighbourhoods associated with the current professional.
      *
@@ -456,6 +460,15 @@ const FolksAPI = (function () {
      *     message?: string,
      *     authExpired?: boolean
      * }>} A promise that resolves with the list of professional services or error information.
+     */
+    /**
+     * PATCH /professionals/me
+     * Payload: { expertise: (string|number)[] }  — sub-category ids.
+     * Replaces the signed-in professional's areas of expertise. Selection is
+     * always at sub-category level (same `expertise` field the application
+     * form sends to POST /professionals); the services offered are every
+     * service under the selected sub-categories.
+     * @returns {Promise<{success: boolean, message?: string, result?: object}>}
      */
     async function viewProfessionalNeighbourhoods() {
         return await invoke('/professionalNeighbourhoods', 'GET');
@@ -661,6 +674,7 @@ const FolksAPI = (function () {
         applyAsProfessional,
         viewProfessional,
         viewProfessionalServices,
+        updateProfessionalServices,
         viewProfessionalNeighbourhoods,
         viewDocuments,
         viewVouchers,

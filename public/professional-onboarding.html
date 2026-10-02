@@ -230,6 +230,98 @@
                 margin-top: 0.5rem;
                 max-width: 60ch;
             }
+            /* Areas of expertise: sub-category image tiles (same look as the
+               professional portal's My Services editor). */
+            .pp-sub-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+                gap: 0.75rem;
+            }
+            .pp-sub-tile {
+                position: relative;
+                display: block;
+                cursor: pointer;
+                border-radius: var(--radius-md);
+                overflow: hidden;
+                background: var(--color-white);
+                border: 2px solid var(--color-line);
+                transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+            }
+            .pp-sub-tile:hover {
+                border-color: var(--color-clay-20);
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-sm);
+            }
+            .pp-sub-tile input {
+                position: absolute;
+                opacity: 0;
+                pointer-events: none;
+            }
+            .pp-sub-tile-media {
+                position: relative;
+                display: block;
+            }
+            .pp-sub-tile-media img {
+                display: block;
+                width: 100%;
+                aspect-ratio: 4 / 3;
+                object-fit: cover;
+                background: var(--color-clay-10);
+                filter: grayscale(35%);
+                opacity: 0.8;
+                transition: filter var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+            }
+            .pp-sub-tile-check {
+                position: absolute;
+                top: 0.5rem;
+                right: 0.5rem;
+                width: 26px;
+                height: 26px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(255, 255, 255, 0.85);
+                border: 2px solid var(--color-white);
+                color: transparent;
+                box-shadow: var(--shadow-sm);
+            }
+            .pp-sub-tile-body {
+                display: block;
+                padding: 0.55rem 0.7rem 0.7rem;
+            }
+            .pp-sub-tile-name {
+                display: block;
+                font-weight: 700;
+                font-size: 0.9rem;
+                color: var(--color-ink);
+            }
+            .pp-sub-tile-count {
+                display: block;
+                font-family: var(--font-mono);
+                font-size: 0.72rem;
+                color: var(--color-espresso);
+                margin-top: 0.15rem;
+            }
+            .pp-sub-tile:has(input:checked) {
+                border-color: var(--color-clay);
+                box-shadow: 0 0 0 3px var(--color-clay-10);
+            }
+            .pp-sub-tile input:checked + .pp-sub-tile-media img {
+                filter: none;
+                opacity: 1;
+            }
+            .pp-sub-tile input:checked + .pp-sub-tile-media .pp-sub-tile-check {
+                background: var(--color-clay);
+                color: var(--color-cream);
+            }
+            .pp-sub-tile input:focus-visible + .pp-sub-tile-media {
+                outline: 3px solid var(--color-clay);
+                outline-offset: -3px;
+            }
+            .po-exp-cat { margin-top: var(--space-md); }
+            .po-exp-cat:first-child { margin-top: 0; }
+            .po-exp-cat .pro-expertise-group-label { margin-bottom: 0.6rem; }
         </style>
     </head>
     <body>
@@ -466,7 +558,7 @@
                             </div>
 
                             <p class="profile-field-label" style="margin-top: var(--space-md); margin-bottom: 0.5rem;">Areas of expertise</p>
-                            <p class="modal-hint" style="margin-bottom: var(--space-sm);">Select every service you're able to take bookings for.</p>
+                            <p class="modal-hint" style="margin-bottom: var(--space-sm);">Tap each sub-category you work in — you'll take bookings for every service under it. Tap again to remove it.</p>
                             <div id="poExpertiseGroups"></div>
                             <p class="modal-error" id="poExpertiseError" hidden></p>
 
