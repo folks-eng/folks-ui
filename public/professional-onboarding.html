@@ -322,6 +322,204 @@
             .po-exp-cat { margin-top: var(--space-md); }
             .po-exp-cat:first-child { margin-top: 0; }
             .po-exp-cat .pro-expertise-group-label { margin-bottom: 0.6rem; }
+            /* Localities you serve — zone-wise checklist */
+            .po-zone-toolbar {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 0.6rem;
+            }
+            .po-zone-search {
+                flex: 1 1 220px;
+                min-width: 0;
+                padding: 0.55rem 0.85rem;
+                border: 1.5px solid var(--color-line);
+                border-radius: var(--radius-pill);
+                background: var(--color-white);
+                font: inherit;
+                font-size: 0.88rem;
+                color: var(--color-ink);
+            }
+            .po-zone-search:focus {
+                outline: none;
+                border-color: var(--color-clay);
+                box-shadow: 0 0 0 3px var(--color-clay-10);
+            }
+            .po-zone-search:disabled { opacity: 0.5; }
+            .po-zone-summary {
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+                margin: 0.7rem 0 0.6rem;
+                font-size: 0.82rem;
+                color: var(--color-espresso);
+            }
+            .po-zone-clear {
+                border: 0;
+                background: none;
+                padding: 0;
+                font: inherit;
+                font-weight: 700;
+                color: var(--color-clay);
+                cursor: pointer;
+                text-decoration: underline;
+            }
+            .po-zone-list {
+                border: 1.5px solid var(--color-line);
+                border-radius: var(--radius-md);
+                overflow: hidden;
+                background: var(--color-white);
+            }
+            .po-zone-list.is-disabled .po-zone-body { opacity: 0.5; }
+            .po-zone + .po-zone { border-top: 1px solid var(--color-line); }
+            .po-zone[hidden], .po-loc[hidden] { display: none; }
+            .po-zone-head {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding-right: 0.9rem;
+            }
+            .po-zone.has-selection .po-zone-head { background: var(--color-clay-10); }
+            .po-zone-toggle {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+                padding: 0.75rem 0.9rem;
+                border: 0;
+                background: none;
+                font: inherit;
+                text-align: left;
+                cursor: pointer;
+                color: var(--color-ink);
+            }
+            .po-zone-toggle:focus-visible {
+                outline: 2.5px solid var(--color-clay);
+                outline-offset: -2.5px;
+            }
+            .po-zone-chevron {
+                width: 8px;
+                height: 8px;
+                flex: none;
+                border-right: 2px solid currentColor;
+                border-bottom: 2px solid currentColor;
+                transform: rotate(-45deg);
+                transition: transform var(--dur-fast) var(--ease);
+            }
+            .po-zone.is-open .po-zone-chevron { transform: rotate(45deg); }
+            .po-zone-name {
+                white-space: nowrap;
+                font-weight: 700;
+                font-size: 0.92rem;
+            }
+            .po-zone-count {
+                font-family: var(--font-mono);
+                font-size: 0.72rem;
+                color: var(--color-espresso);
+            }
+            .po-zone.has-selection .po-zone-count {
+                color: var(--color-clay);
+                font-weight: 600;
+            }
+            .po-zone-all {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.4rem;
+                flex: none;
+                font-size: 0.8rem;
+                font-weight: 600;
+                color: var(--color-espresso);
+                cursor: pointer;
+                white-space: nowrap;
+            }
+            .po-zone-all input {
+                width: 16px;
+                height: 16px;
+                margin: 0;
+                accent-color: var(--color-clay);
+                cursor: pointer;
+            }
+            .po-zone-body {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                gap: 0.1rem 0.75rem;
+                padding: 0.25rem 0.9rem 0.8rem 2.3rem;
+            }
+            .po-zone-body[hidden] { display: none; }
+            .po-loc {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 0.55rem;
+                min-width: 0;
+                padding: 0.4rem 0.45rem;
+                border-radius: var(--radius-sm, 6px);
+                cursor: pointer;
+                font-size: 0.86rem;
+                color: var(--color-ink);
+            }
+            .po-loc:hover { background: var(--color-clay-10); }
+            .po-loc input {
+                position: absolute;
+                opacity: 0;
+                pointer-events: none;
+            }
+            .po-loc-box {
+                width: 16px;
+                height: 16px;
+                flex: none;
+                border: 1.5px solid var(--color-line);
+                border-radius: 4px;
+                background: var(--color-white);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .po-loc input:checked + .po-loc-box {
+                background: var(--color-clay);
+                border-color: var(--color-clay);
+            }
+            .po-loc input:checked + .po-loc-box::after {
+                content: "";
+                width: 4px;
+                height: 8px;
+                border: solid var(--color-cream);
+                border-width: 0 2px 2px 0;
+                transform: translateY(-1px) rotate(45deg);
+            }
+            .po-loc input:focus-visible + .po-loc-box {
+                outline: 2.5px solid var(--color-clay);
+                outline-offset: 2px;
+            }
+            .po-loc input:disabled + .po-loc-box { opacity: 0.6; }
+            .po-loc:has(input:disabled) { cursor: not-allowed; }
+            .po-loc-name {
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .po-loc input:checked ~ .po-loc-name { font-weight: 600; }
+            .po-loc-pin {
+                flex: none;
+                font-family: var(--font-mono);
+                font-size: 0.72rem;
+                color: var(--color-espresso);
+            }
+            .po-zone-empty {
+                margin: 0;
+                padding: 1rem;
+                font-size: 0.85rem;
+                color: var(--color-espresso);
+                text-align: center;
+            }
+            @media (max-width: 560px) {
+                .po-zone-toggle { flex-wrap: wrap; row-gap: 0.15rem; }
+                .po-zone-count { flex-basis: 100%; padding-left: calc(8px + 0.6rem); }
+                .po-zone-body { padding-left: 0.9rem; grid-template-columns: 1fr; }
+            }
         </style>
     </head>
     <body>
@@ -564,7 +762,7 @@
 
                             <p class="profile-field-label" style="margin-top: var(--space-md); margin-bottom: 0.5rem;">Localities you serve</p>
                             <p class="modal-hint" id="poServingLocalitiesHint" style="margin-bottom: var(--space-sm);">Select your state and city above to see localities you can serve.</p>
-                            <div id="poServingLocalities" class="pro-expertise-chips"></div>
+                            <div id="poServingLocalities" class="po-zones"></div>
                             <p class="modal-error" id="poServingLocalitiesError" hidden></p>
                         </div>
 

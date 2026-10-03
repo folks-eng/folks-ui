@@ -36,6 +36,8 @@
 
     // Sentinel id for "All Localities" (same contract as become-professional.js).
     const ALL_LOCALITIES_ID = '-1';
+    // Group label for neighbourhoods whose zone is not set yet.
+    const UNZONED_LABEL = 'Other localities';
 
     document.addEventListener('DOMContentLoaded', () => {
         if (typeof FolksAPI === 'undefined' || typeof getCurrentUser === 'undefined')
@@ -448,7 +450,9 @@
         neighbourhoodId: '', locality: '', pincode: '',
         provinces: [], cities: [], neighbourhoods: [],
         loadingNeighbourhoods: false,
-        servingNeighbourhoodIds: []
+        servingNeighbourhoodIds: [],
+        openZones: new Set(),   // zones expanded in "Localities you serve"
+        localitySearch: ''      // search text in "Localities you serve"
     };
 
     function showApplicationForm(user) {
@@ -494,9 +498,17 @@
                 cities.map(c => `<option value="${escapeAttr(c.cityId)}">${escapeHtml(c.cityName)}</option>`).join('');
     }
 
+    /* "Locality - pincode" options grouped into one <optgroup> per zone.
+     Falls back to a flat list when the city has no zone data. */
     function localityOptions(neighbourhoods) {
-        return '<option value="">Select a locality…</option>' +
-                sortByLocalityOptionLabel(neighbourhoods).map(n => `<option value="${escapeAttr(n.neighbourhoodId)}">${escapeHtml(localityOptionLabel(n))}</option>`).join('');
+        const option = n => `<option value="${escapeAttr(n.neighbourhoodId)}">${escapeHtml(localityOptionLabel(n))}</option>`;
+        const zones = groupByZone(neighbourhoods);
+        const body = zones.length === 1 && zones[0][0] === UNZONED_LABEL
+                ? sortByLocalityOptionLabel(neighbourhoods).map(option).join('')
+                : zones.map(([zone, list]) =>
+                    `<optgroup label="${escapeAttr(zone)}">${sortByLocalityOptionLabel(list).map(option).join('')}</optgroup>`
+                ).join('');
+        return '<option value="">Select a locality…</option>' + body;
     }
 
     async function initLocationPicker() {
@@ -591,9 +603,49 @@
         proLoc.pincode = '';
         proLoc.neighbourhoods = [];
         proLoc.servingNeighbourhoodIds = [];
+        proLoc.openZones = new Set();
+        proLoc.localitySearch = '';
         const pincodeInput = document.getElementById('poPincode');
         if (pincodeInput)
             pincodeInput.value = '';
+    }
+
+    /* ---------------------------------------------------------------
+     Localities you serve — grouped by zone (fks_neighbourhoods.zone).
+     Layout: [★ All Localities] [search]  ·  "N selected · Clear"
+             then one collapsible block per zone with a tri-state
+             "Select all" and a checklist of "Locality · pincode" rows.
+     The DOM is built once per city (or when "All Localities" flips);
+     ticking boxes, searching and expanding only patch the DOM so
+     open/closed zones and the search text are never lost.
+     Payload contract unchanged: proLoc.servingNeighbourhoodIds holds
+     neighbourhoodIds, or [ALL_LOCALITIES_ID] for every locality.
+     --------------------------------------------------------------- */
+    function zoneOf(n) {
+        const zone = n && n.zone != null ? String(n.zone).trim() : '';
+        return zone || UNZONED_LABEL;
+    }
+
+    /** [[zoneName, neighbourhoods sorted by locality]] — zones A→Z, un-zoned last. */
+    function groupByZone(neighbourhoods) {
+        const groups = new Map();
+        sortByLocalityName(neighbourhoods).forEach(n => {
+            const zone = zoneOf(n);
+            if (!groups.has(zone))
+                groups.set(zone, []);
+            groups.get(zone).push(n);
+        });
+        return Array.from(groups.entries()).sort(([a], [b]) => {
+            if (a === UNZONED_LABEL)
+                return 1;
+            if (b === UNZONED_LABEL)
+                return -1;
+            return a.localeCompare(b, undefined, {sensitivity: 'base'});
+        });
+    }
+
+    function servingSelectedSet() {
+        return new Set(proLoc.servingNeighbourhoodIds.map(String));
     }
 
     function renderServingLocalities() {
@@ -612,40 +664,207 @@
             return setHint('Loading localities…');
         if (proLoc.neighbourhoods.length === 0)
             return setHint('No localities found for this city yet.');
-        hint.hidden = true;
+        hint.hidden = false;
+        hint.textContent = 'Pick whole zones with “Select all”, or open a zone to choose individual localities. Choose “All Localities” to serve the entire city.';
 
         // "All Localities" is mutually exclusive with picking individual ones.
         const allSelected = proLoc.servingNeighbourhoodIds.includes(ALL_LOCALITIES_ID);
+        const selected = servingSelectedSet();
+        const zones = groupByZone(proLoc.neighbourhoods);
 
-        const allChip = `
-      <label class="pro-expertise-chip pro-expertise-chip-all">
-        <input type="checkbox" value="${ALL_LOCALITIES_ID}" data-po-serving-all ${allSelected ? 'checked' : ''}>
-        <span>★ All Localities</span>
-      </label>`;
-        const localityChips = sortByLocalityName(proLoc.neighbourhoods).map(n => `
-      <label class="pro-expertise-chip">
-        <input type="checkbox" value="${escapeAttr(n.neighbourhoodId)}" data-po-serving ${allSelected ? 'disabled' : ''} ${!allSelected && proLoc.servingNeighbourhoodIds.includes(String(n.neighbourhoodId)) ? 'checked' : ''}>
-        <span>${escapeHtml(n.locality)}</span>
-      </label>`).join('');
-        container.innerHTML = allChip + localityChips;
+        // A city without zone data still gets one (open) group.
+        if (zones.length === 1)
+            proLoc.openZones.add(zones[0][0]);
 
+        const zoneBlocks = zones.map(([zone, list], idx) => {
+            const isOpen = proLoc.openZones.has(zone);
+            const bodyId = `poZoneBody${idx}`;
+            const rows = list.map(n => {
+                const id = String(n.neighbourhoodId);
+                const searchText = `${n.locality || ''} ${n.pincode || ''} ${zone}`.toLowerCase();
+                return `
+            <label class="po-loc" data-po-loc-search="${escapeAttr(searchText)}">
+              <input type="checkbox" value="${escapeAttr(id)}" data-po-serving ${allSelected ? 'disabled' : ''} ${!allSelected && selected.has(id) ? 'checked' : ''}>
+              <span class="po-loc-box" aria-hidden="true"></span>
+              <span class="po-loc-name">${escapeHtml(n.locality)}</span>
+              ${n.pincode ? `<span class="po-loc-pin">${escapeHtml(n.pincode)}</span>` : ''}
+            </label>`;
+            }).join('');
+            return `
+        <section class="po-zone${isOpen ? ' is-open' : ''}" data-po-zone="${escapeAttr(zone)}">
+          <div class="po-zone-head">
+            <button type="button" class="po-zone-toggle" data-po-zone-toggle aria-expanded="${isOpen}" aria-controls="${bodyId}">
+              <span class="po-zone-chevron" aria-hidden="true"></span>
+              <span class="po-zone-name">${escapeHtml(zone)}</span>
+              <span class="po-zone-count" data-po-zone-count></span>
+            </button>
+            <label class="po-zone-all">
+              <input type="checkbox" data-po-zone-all ${allSelected ? 'disabled' : ''}>
+              <span>Select all</span>
+            </label>
+          </div>
+          <div class="po-zone-body" id="${bodyId}" ${isOpen ? '' : 'hidden'}>${rows}
+          </div>
+        </section>`;
+        }).join('');
+
+        container.innerHTML = `
+      <div class="po-zone-toolbar">
+        <label class="pro-expertise-chip pro-expertise-chip-all">
+          <input type="checkbox" value="${ALL_LOCALITIES_ID}" data-po-serving-all ${allSelected ? 'checked' : ''}>
+          <span>★ All Localities</span>
+        </label>
+        <input type="search" class="po-zone-search" data-po-zone-search placeholder="Search locality or pincode" autocomplete="off" aria-label="Search localities" value="${escapeAttr(proLoc.localitySearch)}" ${allSelected ? 'disabled' : ''}>
+      </div>
+      <div class="po-zone-summary">
+        <span data-po-zone-summary></span>
+        <button type="button" class="po-zone-clear" data-po-zone-clear hidden>Clear</button>
+      </div>
+      <div class="po-zone-list${allSelected ? ' is-disabled' : ''}">${zoneBlocks}
+        <p class="po-zone-empty" data-po-zone-empty hidden>No localities match your search.</p>
+      </div>`;
+
+        // ★ All Localities
         const allCb = container.querySelector('[data-po-serving-all]');
         allCb.addEventListener('change', () => {
             proLoc.servingNeighbourhoodIds = allCb.checked ? [ALL_LOCALITIES_ID] : [];
             renderServingLocalities();
         });
 
-        container.querySelectorAll('[data-po-serving]').forEach(cb => {
-            cb.addEventListener('change', () => {
-                const id = cb.value;
-                if (cb.checked) {
-                    if (!proLoc.servingNeighbourhoodIds.includes(id))
-                        proLoc.servingNeighbourhoodIds.push(id);
-                } else {
-                    proLoc.servingNeighbourhoodIds = proLoc.servingNeighbourhoodIds.filter(x => x !== id);
-                }
+        // Search (locality name, pincode or zone name)
+        const searchInput = container.querySelector('[data-po-zone-search]');
+        searchInput.addEventListener('input', () => {
+            proLoc.localitySearch = searchInput.value;
+            applyLocalitySearch(container);
+        });
+
+        // Clear selection
+        container.querySelector('[data-po-zone-clear]').addEventListener('click', () => {
+            proLoc.servingNeighbourhoodIds = [];
+            container.querySelectorAll('[data-po-serving]').forEach(cb => { cb.checked = false; });
+            syncServingZones(container);
+        });
+
+        container.querySelectorAll('[data-po-zone]').forEach(zoneEl => {
+            const zone = zoneEl.getAttribute('data-po-zone');
+            const toggle = zoneEl.querySelector('[data-po-zone-toggle]');
+            const body = zoneEl.querySelector('.po-zone-body');
+
+            // Expand / collapse
+            toggle.addEventListener('click', () => {
+                const open = body.hidden;
+                body.hidden = !open;
+                zoneEl.classList.toggle('is-open', open);
+                toggle.setAttribute('aria-expanded', String(open));
+                if (open)
+                    proLoc.openZones.add(zone);
+                else
+                    proLoc.openZones.delete(zone);
+            });
+
+            // Select all localities in this zone
+            const zoneAll = zoneEl.querySelector('[data-po-zone-all]');
+            zoneAll.addEventListener('change', () => {
+                zoneEl.querySelectorAll('[data-po-serving]').forEach(cb => {
+                    cb.checked = zoneAll.checked;
+                    setServing(cb.value, cb.checked);
+                });
+                syncServingZones(container);
+            });
+
+            // Individual localities
+            zoneEl.querySelectorAll('[data-po-serving]').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    setServing(cb.value, cb.checked);
+                    syncServingZones(container);
+                });
             });
         });
+
+        syncServingZones(container);
+        applyLocalitySearch(container);
+    }
+
+    function setServing(id, on) {
+        id = String(id);
+        const has = proLoc.servingNeighbourhoodIds.includes(id);
+        if (on && !has)
+            proLoc.servingNeighbourhoodIds.push(id);
+        else if (!on && has)
+            proLoc.servingNeighbourhoodIds = proLoc.servingNeighbourhoodIds.filter(x => x !== id);
+    }
+
+    /** Refreshes per-zone counts, tri-state "Select all" and the summary line. */
+    function syncServingZones(container) {
+        const summary = container.querySelector('[data-po-zone-summary]');
+        const clearBtn = container.querySelector('[data-po-zone-clear]');
+        if (!summary)
+            return;
+
+        if (proLoc.servingNeighbourhoodIds.includes(ALL_LOCALITIES_ID)) {
+            summary.textContent = `You'll serve every locality in ${proLoc.city || 'this city'} (${proLoc.neighbourhoods.length}).`;
+            clearBtn.hidden = true;
+            container.querySelectorAll('[data-po-zone]').forEach(zoneEl => {
+                const boxes = zoneEl.querySelectorAll('[data-po-serving]');
+                zoneEl.querySelector('[data-po-zone-count]').textContent = `${boxes.length} localities`;
+                const zoneAll = zoneEl.querySelector('[data-po-zone-all]');
+                zoneAll.checked = true;
+                zoneAll.indeterminate = false;
+            });
+            return;
+        }
+
+        let zonesTouched = 0;
+        container.querySelectorAll('[data-po-zone]').forEach(zoneEl => {
+            const boxes = Array.from(zoneEl.querySelectorAll('[data-po-serving]'));
+            const checked = boxes.filter(cb => cb.checked).length;
+            const zoneAll = zoneEl.querySelector('[data-po-zone-all]');
+            zoneAll.checked = checked > 0 && checked === boxes.length;
+            zoneAll.indeterminate = checked > 0 && checked < boxes.length;
+            zoneEl.classList.toggle('has-selection', checked > 0);
+            zoneEl.querySelector('[data-po-zone-count]').textContent =
+                    checked > 0 ? `${checked} of ${boxes.length} selected` : `${boxes.length} localities`;
+            if (checked > 0)
+                zonesTouched++;
+        });
+
+        const total = proLoc.servingNeighbourhoodIds.length;
+        summary.textContent = total === 0
+                ? 'No localities selected yet.'
+                : `${total} ${total === 1 ? 'locality' : 'localities'} selected across ${zonesTouched} ${zonesTouched === 1 ? 'zone' : 'zones'}.`;
+        clearBtn.hidden = total === 0;
+    }
+
+    /** Filters rows by the search text; matching zones open automatically
+     while searching and return to their own open/closed state when cleared. */
+    function applyLocalitySearch(container) {
+        const query = (proLoc.localitySearch || '').trim().toLowerCase();
+        let anyVisible = false;
+
+        container.querySelectorAll('[data-po-zone]').forEach(zoneEl => {
+            const zone = zoneEl.getAttribute('data-po-zone');
+            const body = zoneEl.querySelector('.po-zone-body');
+            const toggle = zoneEl.querySelector('[data-po-zone-toggle]');
+            let matches = 0;
+            zoneEl.querySelectorAll('.po-loc').forEach(row => {
+                const hit = !query || row.getAttribute('data-po-loc-search').includes(query);
+                row.hidden = !hit;
+                if (hit)
+                    matches++;
+            });
+            zoneEl.hidden = matches === 0;
+            if (matches > 0)
+                anyVisible = true;
+
+            const open = query ? matches > 0 : proLoc.openZones.has(zone);
+            body.hidden = !open;
+            zoneEl.classList.toggle('is-open', open);
+            toggle.setAttribute('aria-expanded', String(open));
+        });
+
+        const empty = container.querySelector('[data-po-zone-empty]');
+        if (empty)
+            empty.hidden = anyVisible;
     }
 
     /* Best-effort pre-fill of the cascade from a saved address ("Use my saved
