@@ -10,8 +10,8 @@ const log = getLogger(__filename);
 class HttpClient {
 
     constructor() {
-        this.server = process.env.FOLKS_SERVER || 'http://localhost:8080';
-        this.contextRoot = process.env.FOLKS_CONTEXT_ROOT || '/api/v1';
+        this.server = process.env.HEARTH_SERVER || 'http://localhost:8080';
+        this.contextRoot = process.env.HEARTH_CONTEXT_ROOT || '/api/v1';
         
         const httpsAgent = new https.Agent({
             key: fs.readFileSync(process.env.MTLS_CLIENT_KEY_PATH),

@@ -23,14 +23,14 @@ class JwtUtil {
     static signOptions = {
         algorithm: 'RS256',
         expiresIn: (process.env.TOKEN_TTL_MIN || '600') + 'm',
-        issuer: process.env.TOKEN_ISSUER || 'folks',
-        audience: process.env.TOKEN_AUDIENCE || 'folks-ui'
+        issuer: process.env.TOKEN_ISSUER || 'hearth',
+        audience: process.env.TOKEN_AUDIENCE || 'hearth-ui'
     };
 
     static verifyOptions = {
         algorithms: ['RS256'],
-        issuer: process.env.TOKEN_ISSUER || 'folks',
-        audience: process.env.TOKEN_AUDIENCE || 'folks-ui'
+        issuer: process.env.TOKEN_ISSUER || 'hearth',
+        audience: process.env.TOKEN_AUDIENCE || 'hearth-ui'
     };
     
     static otpToken(input, jti) {

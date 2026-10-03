@@ -30,7 +30,7 @@ function loadRouteMap(configPath) {
     }
 
     return {
-        vertxBaseUrl: config.folksBaseUrl,
+        vertxBaseUrl: config.hearthBaseUrl,
         routeMap
     };
 }

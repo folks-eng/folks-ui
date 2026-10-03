@@ -1,5 +1,5 @@
 /* =========================================================================
- FOLKS — scheduling.js
+ HEARTH — scheduling.js
  A small mobile-screen-sized picker for choosing a service date + time
  slot, followed by choosing (or adding) a delivery address, opened
  whenever a service is added to the cart (or its slot/address is changed
@@ -67,7 +67,7 @@ async function getSlotsForDate(dateKey, serviceId) {
     const now = new Date();
     const isToday = dateKey === formatDateKey(now);
     
-    let res = await FolksAPI.viewSlots(dateKey, serviceId);
+    let res = await HearthAPI.viewSlots(dateKey, serviceId);
         
     if (! res.success) {
         alert('Failed');
@@ -250,7 +250,7 @@ function injectSchedulePickerMarkup() {
     async function ensureAddressFormProvincesLoaded() {
         if (addressFormLoc.provinces.length)
             return;
-        const res = await FolksAPI.viewProvinces();
+        const res = await HearthAPI.viewProvinces();
         if (res.success) {
             addressFormLoc.provinces = res.result.items || res.result || [];
         } else {
@@ -289,7 +289,7 @@ function injectSchedulePickerMarkup() {
 
         addrCitySel.innerHTML = '<option value="">Loading cities…</option>';
         addrCitySel.disabled = true;
-        const citiesRes = await FolksAPI.viewCities('provinceId', addressFormLoc.provinceId);
+        const citiesRes = await HearthAPI.viewCities('provinceId', addressFormLoc.provinceId);
         if (citiesRes.success) {
             addressFormLoc.cities = citiesRes.result.items || citiesRes.result || [];
         } else {
@@ -319,7 +319,7 @@ function injectSchedulePickerMarkup() {
 
         addrLocalitySel.innerHTML = '<option value="">Loading localities…</option>';
         addrLocalitySel.disabled = true;
-        const neighbourhoodsRes = await FolksAPI.viewNeighbourhoods(addressFormLoc.cityId);
+        const neighbourhoodsRes = await HearthAPI.viewNeighbourhoods(addressFormLoc.cityId);
         if (neighbourhoodsRes.success) {
             addressFormLoc.neighbourhoods = neighbourhoodsRes.result.items || neighbourhoodsRes.result || [];
         } else {
@@ -547,7 +547,7 @@ function injectSchedulePickerMarkup() {
             neighbourhoodId: addressFormLoc.neighbourhoodId
         };
         
-        const res = await FolksAPI.createAddress(payload);
+        const res = await HearthAPI.createAddress(payload);
         if (! res.success) {
             showAddressFormError(res.message || 'Could not save the address. Please try again.');
             return;

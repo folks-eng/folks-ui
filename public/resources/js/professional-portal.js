@@ -1,5 +1,5 @@
 /* =========================================================================
- FOLKS — professional-portal.js
+ HEARTH — professional-portal.js
  Drives professional-portal.html: the left-navigation dashboard a
  registered professional lands on after verifying through
  professional-onboarding.html. Sections (switched via the URL hash, so
@@ -16,7 +16,7 @@
  profile.html editor rather than duplicating it here.
 
  Reuses session helpers from script.js (isLoggedIn, getCurrentUser,
- renderUserChip, postLogout) and FolksAPI (api.js) for every request.
+ renderUserChip, postLogout) and HearthAPI (api.js) for every request.
  Wrapped in an IIFE so nothing here collides with other page scripts.
  ========================================================================= */
 
@@ -37,7 +37,7 @@
     };
 
     document.addEventListener('DOMContentLoaded', () => {
-        if (typeof FolksAPI === 'undefined' || typeof getCurrentUser === 'undefined') {
+        if (typeof HearthAPI === 'undefined' || typeof getCurrentUser === 'undefined') {
             return;
         }
         if (!document.getElementById('ppContent')) {
@@ -64,7 +64,7 @@
             return;
         }
 
-        const res = await FolksAPI.viewProfessional();
+        const res = await HearthAPI.viewProfessional();
         hide('ppLoading');
 
         if (!res.success) {
@@ -140,7 +140,7 @@
 
     async function loadProfileDetails() {
         const grid = document.getElementById('ppProfileFields');
-        // const res = await FolksAPI.viewUser();
+        // const res = await HearthAPI.viewUser();
         // const user = res.success && res.result ? res.result : ctx.user;
         // if (!res.success) {
         //     showErr('ppProfileError', res.message || 'Could not load your latest profile details.');
@@ -169,7 +169,7 @@
         // Application status lives on the submitted identity document
         // (same source professional-dashboard.js uses).
         let doc = null;
-        const res = await FolksAPI.viewDocuments();
+        const res = await HearthAPI.viewDocuments();
         if (res.success && res.result && Array.isArray(res.result.items)) {
             doc = res.result.items[0] || null;
         }
@@ -204,7 +204,7 @@
 
     async function loadAddresses() {
         const body = document.getElementById('ppAddressBody');
-        const res = await FolksAPI.viewAddresses();
+        const res = await HearthAPI.viewAddresses();
         if (!res.success) {
             body.innerHTML = '';
             showErr('ppAddressError', res.message || 'Could not fetch addresses. Please try again.');
@@ -245,7 +245,7 @@
      ===================================================================== */
     function fetchBookings() {
         if (!ctx.bookingsPromise) {
-            ctx.bookingsPromise = FolksAPI.getBookings().then(result => {
+            ctx.bookingsPromise = HearthAPI.getBookings().then(result => {
                 if (result.success) {
                     const items = (result.result && result.result.items) || [];
                     ctx.bookings = items.map(b => ({...b, _tab: classifyBooking(b)}));
@@ -338,7 +338,7 @@
     async function loadNeighbourhoods() {
         // alert('Loading Neighbourhoods ...');
         
-        const res = await FolksAPI.viewProfessionalNeighbourhoods();
+        const res = await HearthAPI.viewProfessionalNeighbourhoods();
         if (! res.success) {
             ctx.loaded.neighbourhoods = false;
             showErr('ppNeighbourhoodsError', res.message || 'Could not load your servicing localities. Please try again.');
@@ -385,7 +385,7 @@
         if (!cityName) {
             return null;
         }
-        const res = await FolksAPI.viewCities('cityName', cityName);
+        const res = await HearthAPI.viewCities('cityName', cityName);
         if (! res.success || !res.result || res.result.total !== 1) {
             return null;
         }
@@ -420,7 +420,7 @@
                 }
                 editBtn.disabled = true;
                 editBtn.textContent = 'Loading…';
-                const res = await FolksAPI.viewNeighbourhoods(cityId);
+                const res = await HearthAPI.viewNeighbourhoods(cityId);
                 editBtn.disabled = false;
                 editBtn.textContent = 'Edit';
                 if (!res.success) {
@@ -456,7 +456,7 @@
             saveBtn.disabled = true;
             cancelBtn.disabled = true;
             saveBtn.textContent = 'Saving…';
-            const res = await FolksAPI.updateProfessionalNeighbourhoods(payload);
+            const res = await HearthAPI.updateProfessionalNeighbourhoods(payload);
             saveBtn.disabled = false;
             cancelBtn.disabled = false;
             saveBtn.textContent = 'Save';
@@ -466,7 +466,7 @@
                 return;
             }
 
-            const fresh = await FolksAPI.viewProfessionalNeighbourhoods();
+            const fresh = await HearthAPI.viewProfessionalNeighbourhoods();
             if (fresh.success) {
                 ctx.servedNbhoods = (fresh.result && fresh.result.items) || [];
             } else {
@@ -849,8 +849,8 @@
         // The professional's own services only decide which sub-categories
         // are selected.
         const [catRes, svcRes] = await Promise.all([
-            ctx.hierarchy ? Promise.resolve({success: true, result: {items: ctx.hierarchy}}) : FolksAPI.viewCategories(),
-            FolksAPI.viewProfessionalServices()
+            ctx.hierarchy ? Promise.resolve({success: true, result: {items: ctx.hierarchy}}) : HearthAPI.viewCategories(),
+            HearthAPI.viewProfessionalServices()
         ]);
         hide('ppServicesLoading');
 
@@ -1036,7 +1036,7 @@
             saveBtn.textContent = 'Saving…';
             
             // alert(JSON.stringify(ids));
-            const res = await FolksAPI.updateProfessionalServices(ids);
+            const res = await HearthAPI.updateProfessionalServices(ids);
             
             saveBtn.disabled = false;
             cancelBtn.disabled = false;
@@ -1049,7 +1049,7 @@
 
             // Re-read from the server rather than trusting the local draft, so
             // the view always shows what was actually stored.
-            const svcRes = await FolksAPI.viewProfessionalServices();
+            const svcRes = await HearthAPI.viewProfessionalServices();
             if (svcRes.success) {
                 ctx.selectedSubIds = selectedSubCategoryIds(ctx.hierarchy, (svcRes.result && svcRes.result.items) || []);
             } else {

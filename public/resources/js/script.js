@@ -1,5 +1,5 @@
 /* =========================================================================
- FOLKS — script.js
+ HEARTH — script.js
  Vanilla JS only. Progressive enhancement — page works without it.
  ========================================================================= */
 
@@ -298,7 +298,7 @@ function initProfessionalLinkGate() {
             cancelLabel: 'Cancel',
             danger: false,
             onConfirm: async () => {
-                const res = await FolksAPI.logout();
+                const res = await HearthAPI.logout();
                 // 401 means the server-side session had already expired —
                 // nothing left to clear there, so it's safe to continue.
                 if (res.success || res.code === 401) {
@@ -324,7 +324,7 @@ function initProfessionalLinkGate() {
  A mobile-screen-sized popup that behaves like real app navigation: each
  step is its own "page" that slides in/out, with a dedicated waiting page
  shown while a network call is in flight. All network calls themselves
- live in api.js (see the FolksAPI namespace) — this file only handles
+ live in api.js (see the HearthAPI namespace) — this file only handles
  screen navigation and UI state.
  
  Screen sequence:
@@ -461,10 +461,10 @@ function initSignupFlow() {
 
     document.getElementById('switchToLoginBtn')?.addEventListener('click', () => {
         closeModal();
-        document.dispatchEvent(new CustomEvent('folks:open-login', {detail: {mobile: mobileInput.value.trim()}}));
+        document.dispatchEvent(new CustomEvent('hearth:open-login', {detail: {mobile: mobileInput.value.trim()}}));
     });
 
-    document.addEventListener('folks:open-signup', (e) => {
+    document.addEventListener('hearth:open-signup', (e) => {
         openModal();
         if (e.detail && e.detail.mobile) {
             setTimeout(() => {
@@ -523,7 +523,7 @@ function initSignupFlow() {
         goToWaiting('Sending your OTP…', 'forward');
 
         // make the REST API call
-        const result = await FolksAPI.requestOtp('signup', mobile);
+        const result = await HearthAPI.requestOtp('signup', mobile);
         
         if (! result.success) {
             goTo(screens.mobile, 'back');
@@ -610,7 +610,7 @@ function initSignupFlow() {
     resendOtpBtn.addEventListener('click', async () => {
         resendOtpBtn.disabled = true;
         resendOtpBtn.textContent = 'Resending…';
-        const result = await FolksAPI.requestOtp(state.mobile);
+        const result = await HearthAPI.requestOtp(state.mobile);
         const hint = document.getElementById('otpDemoHint');
         if (hint && result.demoOtp) {
             hint.hidden = false;
@@ -633,7 +633,7 @@ function initSignupFlow() {
         clearInterval(state.resendTimer);
         goToWaiting('Verifying your code…', 'forward');
 
-        const result = await FolksAPI.verifyOtp('signup', state.mobile, otp);
+        const result = await HearthAPI.verifyOtp('signup', state.mobile, otp);
 
         if (! result.success) {
             goTo(screens.otp, 'back');
@@ -674,13 +674,13 @@ function initSignupFlow() {
         }
 
         goToWaiting('Setting up your profile…', 'forward');
-        const redirectTo = safeStorageGet(FOLKS_STORAGE_KEYS.postSignupRedirect);
+        const redirectTo = safeStorageGet(HEARTH_STORAGE_KEYS.postSignupRedirect);
         let role = 'CUSTOMER';
         if (redirectTo && redirectTo === 'become-professional.html') {
             role = 'PROFESSIONAL';
         }
 
-        const result = await FolksAPI.createUser({
+        const result = await HearthAPI.createUser({
             phone1: state.mobile,
             fullName: name,
             email: email,
@@ -713,7 +713,7 @@ function initSignupFlow() {
  A mobile-screen-sized popup mirroring the signup flow's navigation style
  (mobile -> waiting -> otp -> waiting -> success), but shorter — no
  profile step, since the person already has one. Reuses the same
- FolksAPI.requestOtp / verifyOtp endpoints signup uses (a real backend
+ HearthAPI.requestOtp / verifyOtp endpoints signup uses (a real backend
  would share OTP delivery between login and signup too).
  
  This demo has no server-side user registry, so "is this number
@@ -825,7 +825,7 @@ function initLoginFlow() {
         }
     });
 
-    document.addEventListener('folks:open-login', (e) => {
+    document.addEventListener('hearth:open-login', (e) => {
         openModal(e.detail && e.detail.mobile);
     });
 
@@ -864,11 +864,11 @@ function initLoginFlow() {
 
     document.getElementById('switchToSignupBtn')?.addEventListener('click', () => {
         closeModal();
-        document.dispatchEvent(new CustomEvent('folks:open-signup', {detail: {mobile: mobileInput.value.trim()}}));
+        document.dispatchEvent(new CustomEvent('hearth:open-signup', {detail: {mobile: mobileInput.value.trim()}}));
     });
     document.getElementById('switchToSignupFromNotFoundBtn')?.addEventListener('click', () => {
         closeModal();
-        document.dispatchEvent(new CustomEvent('folks:open-signup', {detail: {mobile: state.mobile}}));
+        document.dispatchEvent(new CustomEvent('hearth:open-signup', {detail: {mobile: state.mobile}}));
     });
     document.getElementById('loginTryAnotherNumberBtn')?.addEventListener('click', () => {
         goTo(screens.mobile, 'back');
@@ -888,7 +888,7 @@ function initLoginFlow() {
         state.mobile = mobile;
         goToWaiting('Sending your OTP…', 'forward');
 
-        const result = await FolksAPI.requestOtp('login', mobile);
+        const result = await HearthAPI.requestOtp('login', mobile);
         
         if (! result.success) {
             goTo(screens.mobile, 'back');
@@ -970,7 +970,7 @@ function initLoginFlow() {
     resendOtpBtn.addEventListener('click', async () => {
         resendOtpBtn.disabled = true;
         resendOtpBtn.textContent = 'Resending…';
-        const result = await FolksAPI.requestOtp(state.mobile);
+        const result = await HearthAPI.requestOtp(state.mobile);
         const hint = document.getElementById('loginOtpDemoHint');
         if (hint && result.demoOtp) {
             hint.hidden = false;
@@ -994,7 +994,7 @@ function initLoginFlow() {
         goToWaiting('Verifying your code…', 'forward');
 
         // Verify the otp for login process.
-        const result = await FolksAPI.verifyOtp('login', state.mobile, otp);
+        const result = await HearthAPI.verifyOtp('login', state.mobile, otp);
         
         if (! result.success) {
             if (result.code === 404) {
@@ -1034,11 +1034,11 @@ function initLoginFlow() {
             // dashboard instead of wherever "Become a Professional" (or
             // nothing in particular) wanted them to land.
             // 
-            // FolksAPI.viewUser(loggedInUser.externalId).then((res) => {
+            // HearthAPI.viewUser(loggedInUser.externalId).then((res) => {
             //     if (res.success && res.result && String(res.result.role || '').toUpperCase() === 'PROFESSIONAL') {
             //         saveCurrentUser(res.result);
             //         renderUserChip(res.result);
-            //         safeStorageRemove(FOLKS_STORAGE_KEYS.postSignupRedirect);
+            //         safeStorageRemove(HEARTH_STORAGE_KEYS.postSignupRedirect);
             //         setTimeout(() => {
             //             window.location.href = 'professional-dashboard.html';
             //         }, 1800);
@@ -1145,16 +1145,16 @@ function injectLoginModalMarkup() {
  rather than losing it.
  ========================================================================= */
 
-const FOLKS_STORAGE_KEYS = {
-    user: 'folks_user',
-    address: 'folks_address', // legacy single-address key, migrated on first read
-    addresses: 'folks_addresses',
-    session: 'folks_logged_in',
-    expiry: 'folks_expiry',
-    cart: 'folks_cart',
-    postSignupRedirect: 'folks_post_signup_redirect',
-    favouritePros: 'folks_favourite_pros',
-    wishlist: 'folks_wishlist'
+const HEARTH_STORAGE_KEYS = {
+    user: 'hearth_user',
+    address: 'hearth_address', // legacy single-address key, migrated on first read
+    addresses: 'hearth_addresses',
+    session: 'hearth_logged_in',
+    expiry: 'hearth_expiry',
+    cart: 'hearth_cart',
+    postSignupRedirect: 'hearth_post_signup_redirect',
+    favouritePros: 'hearth_favourite_pros',
+    wishlist: 'hearth_wishlist'
 };
 
 function safeStorageGet(key) {
@@ -1168,7 +1168,7 @@ function safeStorageSet(key, value) {
     try {
         localStorage.setItem(key, value);
     } catch (err) {
-        console.warn('[Folks] Could not persist to localStorage (safe to ignore):', err);
+        console.warn('[Hearth] Could not persist to localStorage (safe to ignore):', err);
     }
 }
 function safeStorageRemove(key) {
@@ -1181,7 +1181,7 @@ function safeStorageRemove(key) {
 
 async function isLoggedIn() {
     // Make call to to verify the cookie.
-    const expiresOn = safeStorageGet(FOLKS_STORAGE_KEYS.expiry);
+    const expiresOn = safeStorageGet(HEARTH_STORAGE_KEYS.expiry);
     if (! expiresOn) {
         return false;
     }
@@ -1194,7 +1194,7 @@ async function isLoggedIn() {
     return true;
 }
 function getCurrentUser() {
-    const raw = safeStorageGet(FOLKS_STORAGE_KEYS.user);
+    const raw = safeStorageGet(HEARTH_STORAGE_KEYS.user);
     if (! raw) {
         return null;
     }
@@ -1205,20 +1205,20 @@ function getCurrentUser() {
     }
 }
 function removeCurrentUser() {
-    safeStorageRemove(FOLKS_STORAGE_KEYS.user);
-    safeStorageRemove(FOLKS_STORAGE_KEYS.addresses);
-    safeStorageRemove(FOLKS_STORAGE_KEYS.cart);
+    safeStorageRemove(HEARTH_STORAGE_KEYS.user);
+    safeStorageRemove(HEARTH_STORAGE_KEYS.addresses);
+    safeStorageRemove(HEARTH_STORAGE_KEYS.cart);
 }
 function saveCurrentUser(user) {
-    safeStorageSet(FOLKS_STORAGE_KEYS.user, JSON.stringify(user));
+    safeStorageSet(HEARTH_STORAGE_KEYS.user, JSON.stringify(user));
 }
 function setLoggedIn(expiresOn) {
-    safeStorageSet(FOLKS_STORAGE_KEYS.expiry, expiresOn);
+    safeStorageSet(HEARTH_STORAGE_KEYS.expiry, expiresOn);
     // if (flag) {
-    //     safeStorageSet(FOLKS_STORAGE_KEYS.session, 'true');
+    //     safeStorageSet(HEARTH_STORAGE_KEYS.session, 'true');
     // }
     // else {
-    //     safeStorageRemove(FOLKS_STORAGE_KEYS.session);
+    //     safeStorageRemove(HEARTH_STORAGE_KEYS.session);
     // }
 }
 /* ---- saved addresses (a person can have several: Home, Work, etc.) -----
@@ -1226,7 +1226,7 @@ function setLoggedIn(expiresOn) {
  "the first saved address" so existing callers (become-professional.js's
  quick-fill, for instance) keep working unchanged. -------------------- */
 async function getAddresses() {
-    const raw = safeStorageGet(FOLKS_STORAGE_KEYS.addresses);
+    const raw = safeStorageGet(HEARTH_STORAGE_KEYS.addresses);
     if (raw) {
         try {
             const parsed = JSON.parse(raw);
@@ -1239,13 +1239,13 @@ async function getAddresses() {
     }
     else {
         // Query the backend to fetch address list.
-        let res = await FolksAPI.viewAddresses();
+        let res = await HearthAPI.viewAddresses();
         if (res.success) {
             if (res.result.items.length === 0) {
                 return res.result.items;
             }
             else if (Array.isArray(res.result.items)) {
-                safeStorageSet(FOLKS_STORAGE_KEYS.addresses, JSON.stringify(res.result.items));
+                safeStorageSet(HEARTH_STORAGE_KEYS.addresses, JSON.stringify(res.result.items));
                 return res.result.items;
             }
         }
@@ -1254,7 +1254,7 @@ async function getAddresses() {
     }
 
     // Migrate a legacy single-address record into the new list, once.
-    const legacyRaw = safeStorageGet(FOLKS_STORAGE_KEYS.address);
+    const legacyRaw = safeStorageGet(HEARTH_STORAGE_KEYS.address);
     if (legacyRaw) {
         try {
             const legacy = JSON.parse(legacyRaw);
@@ -1269,7 +1269,7 @@ async function getAddresses() {
     return [];
 }
 function saveAddresses(list) {
-    safeStorageSet(FOLKS_STORAGE_KEYS.addresses, JSON.stringify(list));
+    safeStorageSet(HEARTH_STORAGE_KEYS.addresses, JSON.stringify(list));
 }
 async function getAddressById(id) {
     let list = await getAddresses();
@@ -1323,7 +1323,7 @@ async function saveStoredAddress(address) {
  qty, date, timeSlotId, timeSlotLabel }
  ------------------------------------------------------------------------ */
 function getCart() {
-    const raw = safeStorageGet(FOLKS_STORAGE_KEYS.cart);
+    const raw = safeStorageGet(HEARTH_STORAGE_KEYS.cart);
     
     if (!raw)
         return [];
@@ -1336,10 +1336,10 @@ function getCart() {
     }
 }
 function saveCart(cartItems) {
-    safeStorageSet(FOLKS_STORAGE_KEYS.cart, JSON.stringify(cartItems));
+    safeStorageSet(HEARTH_STORAGE_KEYS.cart, JSON.stringify(cartItems));
 }
 function clearCart() {
-    safeStorageRemove(FOLKS_STORAGE_KEYS.cart);
+    safeStorageRemove(HEARTH_STORAGE_KEYS.cart);
 }
 function getCartTotal(cartItems) {
     return cartItems.reduce((sum, item) => sum + item.qty * item.price, 0);
@@ -1353,7 +1353,7 @@ function getCartCount(cartItems) {
  browsing (home page pro cards, categories page service cards) and later
  review from the Favourites & Wishlist account page. ------------------- */
 function getFavouriteProfessionals() {
-    const raw = safeStorageGet(FOLKS_STORAGE_KEYS.favouritePros);
+    const raw = safeStorageGet(HEARTH_STORAGE_KEYS.favouritePros);
     if (!raw)
         return [];
     try {
@@ -1364,7 +1364,7 @@ function getFavouriteProfessionals() {
     }
 }
 function saveFavouriteProfessionals(list) {
-    safeStorageSet(FOLKS_STORAGE_KEYS.favouritePros, JSON.stringify(list));
+    safeStorageSet(HEARTH_STORAGE_KEYS.favouritePros, JSON.stringify(list));
 }
 /** Adds/removes a professional from favourites. Returns true if now favourited. */
 function toggleFavouriteProfessional(pro) {
@@ -1376,7 +1376,7 @@ function toggleFavouriteProfessional(pro) {
 }
 
 function getWishlist() {
-    const raw = safeStorageGet(FOLKS_STORAGE_KEYS.wishlist);
+    const raw = safeStorageGet(HEARTH_STORAGE_KEYS.wishlist);
     if (!raw)
         return [];
     try {
@@ -1387,7 +1387,7 @@ function getWishlist() {
     }
 }
 function saveWishlist(list) {
-    safeStorageSet(FOLKS_STORAGE_KEYS.wishlist, JSON.stringify(list));
+    safeStorageSet(HEARTH_STORAGE_KEYS.wishlist, JSON.stringify(list));
 }
 /** Adds/removes a service from the wishlist. Returns true if now wishlisted. */
 function toggleWishlistItem(item) {
@@ -1511,9 +1511,9 @@ function completeLogin(user, expiresOn) {
     // If the sign-up flow was triggered mid-checkout ("Continue" on the cart
     // bar), resume that journey now instead of leaving the user on whatever
     // page they signed up from.
-    const redirectTo = safeStorageGet(FOLKS_STORAGE_KEYS.postSignupRedirect);
+    const redirectTo = safeStorageGet(HEARTH_STORAGE_KEYS.postSignupRedirect);
     if (redirectTo) {
-        safeStorageRemove(FOLKS_STORAGE_KEYS.postSignupRedirect);
+        safeStorageRemove(HEARTH_STORAGE_KEYS.postSignupRedirect);
         setTimeout(() => {
             window.location.href = redirectTo;
         }, 1900);
@@ -1609,11 +1609,11 @@ function renderUserChip(user) {
         });
 
         logoutBtn.addEventListener('click', async () => {
-            const res = await FolksAPI.logout();
+            const res = await HearthAPI.logout();
         
             if (res.success) {
                 // setLoggedIn(false);
-                safeStorageRemove(FOLKS_STORAGE_KEYS.expiry);
+                safeStorageRemove(HEARTH_STORAGE_KEYS.expiry);
                 removeCurrentUser();
                 closeDropdown();
                 restoreLoggedOutHeader(navActions);
@@ -1627,7 +1627,7 @@ function renderUserChip(user) {
 
 function postLogout() {
     // setLoggedIn(false);
-    safeStorageRemove(FOLKS_STORAGE_KEYS.expiry);
+    safeStorageRemove(HEARTH_STORAGE_KEYS.expiry);
     removeCurrentUser();
     // closeDropdown();
 }

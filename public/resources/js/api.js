@@ -1,11 +1,11 @@
 /* =========================================================================
- FOLKS — api.js
+ HEARTH — api.js
  All network / AJAX calls live in this file, kept separate from script.js
- which only handles UI behaviour. Exposed as the FolksAPI namespace so
- script.js (loaded after this file) can call FolksAPI.requestOtp(), etc.
+ which only handles UI behaviour. Exposed as the HearthAPI namespace so
+ script.js (loaded after this file) can call HearthAPI.requestOtp(), etc.
  ========================================================================= */
 
-const FolksAPI = (function () {
+const HearthAPI = (function () {
     const DEMO_MODE = false;
     const BASE_URL = '/gateway/v1';
     const LOGGING = true;
@@ -282,7 +282,7 @@ const FolksAPI = (function () {
 
     /**
      * GET /api/v1/provinces
-     * Returns every state/province Folks recognises, for the state → city →
+     * Returns every state/province Hearth recognises, for the state → city →
      * locality picker shown before a customer can add an address.
      * @returns {Promise<{success: boolean, message?: string, result?: object}>}
      */
@@ -292,7 +292,7 @@ const FolksAPI = (function () {
 
     /**
      * GET /api/v1/cities?provinceId={provinceId}
-     * Returns the cities within the given state that Folks operates in.
+     * Returns the cities within the given state that Hearth operates in.
      * @returns {Promise<{success: boolean, message?: string, result?: object}>}
      */
     async function viewCities(key, value) {
@@ -303,7 +303,7 @@ const FolksAPI = (function () {
      * GET /api/v1/neighbourhoods?cityId={cityId}
      * Returns the localities/neighbourhoods within the given city. Each item
      * is expected to carry a `serviceable` flag so the UI can tell the
-     * customer whether Folks has actually launched there yet.
+     * customer whether Hearth has actually launched there yet.
      * @returns {Promise<{success: boolean, message?: string, result?: object}>}
      */
     async function viewNeighbourhoods(cityId) {
@@ -504,7 +504,7 @@ const FolksAPI = (function () {
     /* =====================================================================
      ADMIN
      Everything below is used only by admin-login.html / admin-dashboard.html.
-     Kept in the same FolksAPI namespace (same fetch conventions, same
+     Kept in the same HearthAPI namespace (same fetch conventions, same
      BASE_URL) rather than a separate file, since it's the same backend
      contract style as the rest of this file — just a different caller.
      ===================================================================== */
@@ -536,7 +536,7 @@ const FolksAPI = (function () {
                 return {success: false, message: json.message || 'Invalid username or password'};
             }
         } catch (e) {
-            console.error('[Folks] Admin login failed:', e);
+            console.error('[Hearth] Admin login failed:', e);
             return {success: false, message: e.message};
         }
     }
@@ -563,7 +563,7 @@ const FolksAPI = (function () {
                 return {success: false, message: json.message};
             }
         } catch (e) {
-            console.error('[Folks] Failed to execute query:', e);
+            console.error('[Hearth] Failed to execute query:', e);
             return {success: false, message: e.message};
         }
     }
@@ -584,7 +584,7 @@ const FolksAPI = (function () {
                 return {success: false, message: json.message};
             }
         } catch (e) {
-            console.error('[Folks] Failed to fetch all professionals:', e);
+            console.error('[Hearth] Failed to fetch all professionals:', e);
             return {success: false, message: e.message};
         }
     }
@@ -604,7 +604,7 @@ const FolksAPI = (function () {
                 return {success: false, message: json.message};
             }
         } catch (e) {
-            console.error('[Folks] Failed to fetch all professionals:', e);
+            console.error('[Hearth] Failed to fetch all professionals:', e);
             return {success: false, message: e.message};
         }
     }
@@ -625,7 +625,7 @@ const FolksAPI = (function () {
                 return {success: false, message: json.message};
             }
         } catch (e) {
-            console.error('[Folks] Failed to fetch all professionals:', e);
+            console.error('[Hearth] Failed to fetch all professionals:', e);
             return {success: false, message: e.message};
         }
     }
@@ -653,7 +653,7 @@ const FolksAPI = (function () {
                 return {success: false, message: json.message};
             }
         } catch (e) {
-            console.error('[Folks] Failed to update application status:', e);
+            console.error('[Hearth] Failed to update application status:', e);
             return {success: false, message: e.message};
         }
     }

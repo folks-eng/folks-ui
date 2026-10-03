@@ -5,8 +5,8 @@ const { getLogger } = require('./../util/logger');
 
 const log = getLogger(path.basename(__filename, '.js'));
 
-const privateKeyFile = path.join(__dirname, '..', '..', 'keystore', 'folks_prv.pem');
-const publicKeyFile = path.join(__dirname, '..', '..', 'keystore', 'folks_pub.pem');
+const privateKeyFile = path.join(__dirname, '..', '..', 'keystore', 'hearth_prv.pem');
+const publicKeyFile = path.join(__dirname, '..', '..', 'keystore', 'hearth_pub.pem');
 
 class KeyStore {
 

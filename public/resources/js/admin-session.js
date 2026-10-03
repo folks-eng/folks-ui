@@ -1,5 +1,5 @@
 /* =========================================================================
- FOLKS — admin-session.js
+ HEARTH — admin-session.js
  The admin equivalent of script.js's customer session helpers (isLoggedIn,
  getCurrentUser, ...), but kept separate on purpose: own localStorage keys
  so an admin session never mixes with a customer/professional session in
@@ -23,8 +23,8 @@
  ========================================================================= */
 
 const ADMIN_STORAGE_KEYS = {
-    session: 'folks_admin_logged_in',
-    user: 'folks_admin_user'
+    session: 'hearth_admin_logged_in',
+    user: 'hearth_admin_user'
 };
 
 function adminIsLoggedIn() {
@@ -49,7 +49,7 @@ function saveAdminSession(admin) {
         localStorage.setItem(ADMIN_STORAGE_KEYS.user, JSON.stringify(admin));
         localStorage.setItem(ADMIN_STORAGE_KEYS.session, 'true');
     } catch (err) {
-        console.warn('[Folks Admin] Could not persist admin session (safe to ignore):', err);
+        console.warn('[Hearth Admin] Could not persist admin session (safe to ignore):', err);
     }
 }
 

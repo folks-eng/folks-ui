@@ -1,6 +1,6 @@
-# Folks — Node.js Middleware & Frontend
+# Hearth — Node.js Middleware & Frontend
 
-Folks is a home-services marketplace (conceptually similar to Urban Company). This repo is the **Node.js middleware + frontend**: an Express server that serves the static site under `public/` and fronts every REST call the browser makes, forwarding most of them to a separate **Vert.x (Java) backend** over mTLS. Node owns the session — it signs and validates its own JWTs — but it does not own the data; PostgreSQL sits behind the Vert.x service, not behind this repo.
+Hearth is a home-services marketplace (conceptually similar to Urban Company). This repo is the **Node.js middleware + frontend**: an Express server that serves the static site under `public/` and fronts every REST call the browser makes, forwarding most of them to a separate **Vert.x (Java) backend** over mTLS. Node owns the session — it signs and validates its own JWTs — but it does not own the data; PostgreSQL sits behind the Vert.x service, not behind this repo.
 
 There is no database and no build step in this repo. `src/data/*.json` is a legacy leftover from an earlier local-only version of this server and is no longer read by any route — every route here talks to the real Vert.x backend.
 
@@ -36,7 +36,7 @@ An admin's session JWT carries an extra claim, `priv: "admin"`, that admin-only 
 **Prerequisites**
 - Node.js ≥ 18 (`engines` in `package.json`; developed against newer Node as well)
 - Redis or Memurai running and reachable at `REDIS_HOST:REDIS_PORT`
-- The Vert.x backend running and reachable at `FOLKS_SERVER`
+- The Vert.x backend running and reachable at `HEARTH_SERVER`
 - TLS material already present under `cert/`, `ca/`, and `keystore/` (Node's own HTTPS listener cert, the mTLS client identity for talking to Vert.x, and the RS256 keypair Node uses to sign session JWTs). These are environment-specific — generate/obtain your own rather than reusing another environment's.
 
 **Setup**
@@ -54,13 +54,13 @@ BASE_PATH=/gateway/v1
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-FOLKS_SERVER=https://localhost:9443     # the Vert.x backend
+HEARTH_SERVER=https://localhost:9443     # the Vert.x backend
 STORE_PASS=secret                       # keystore password
 
 # mTLS: Node's client identity when calling the Vert.x backend, and the CA
 # that lets Node trust the Vert.x server's certificate.
-MTLS_CLIENT_KEY_PATH=./cert/folks-ui.key
-MTLS_CLIENT_CERT_PATH=./cert/folks-ui.crt
+MTLS_CLIENT_KEY_PATH=./cert/hearth-ui.key
+MTLS_CLIENT_CERT_PATH=./cert/hearth-ui.crt
 MTLS_CA_CERT_PATH=./ca/ca_javalabs.crt
 MTLS_SERVER_NAME=localhost
 
@@ -132,7 +132,7 @@ Admin-only API routes (mounted under `BASE_PATH`, default `/gateway/v1`) are gat
 ## Project structure
 
 ```
-folks-ui/
+hearth-ui/
 ├── server.js                    entry point — Express app, HTTPS listener on :8443
 ├── package.json
 ├── .env                         local config (gitignored — see above)
@@ -146,7 +146,7 @@ folks-ui/
 │   └── resources/
 │       ├── css/styles.css        one stylesheet, design tokens + one section per feature
 │       └── js/
-│           ├── api.js                     all fetch() calls, exposed as window.FolksAPI
+│           ├── api.js                     all fetch() calls, exposed as window.HearthAPI
 │           ├── script.js, layout.js       customer site behaviour + shared header/footer
 │           ├── admin-session.js           admin session helpers (shared by both admin pages)
 │           ├── admin-login.js             admin-login.html only

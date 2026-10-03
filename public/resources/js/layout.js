@@ -1,5 +1,5 @@
 /* =========================================================================
- FOLKS — layout.js
+ HEARTH — layout.js
  Single source of truth for the site chrome (top nav header + footer),
  previously copy-pasted (with drift) into every page's <header
  class="site-header">...</header> and <footer class="site-footer">...

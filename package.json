@@ -1,7 +1,7 @@
 {
-  "name": "folks-ui",
+  "name": "hearth-ui",
   "version": "1.0.0",
-  "description": "Folks home-services marketplace — Node.js backend (no framework, no database) serving the existing frontend as static files and the REST API from JSON files on disk.",
+  "description": "Hearth home-services marketplace — Node.js backend (no framework, no database) serving the existing frontend as static files and the REST API from JSON files on disk.",
   "main": "server.js",
   "scripts": {
     "start": "node --env-file=.env server.js",
@@ -12,8 +12,9 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "axios": "^1.18.1",
+    "axios": "^1.20.0",
     "cookie-parser": "^1.4.7",
+    "crypto": "^1.0.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^6.10.0",

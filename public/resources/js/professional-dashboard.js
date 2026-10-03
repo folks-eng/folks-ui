@@ -1,13 +1,13 @@
 /* =========================================================================
- FOLKS — professional-dashboard.js
- Drives the Professional Dashboard page: the screen a Folks professional
+ HEARTH — professional-dashboard.js
+ Drives the Professional Dashboard page: the screen a Hearth professional
  lands on instead of the regular customer experience. Shows their
  application status, the expertise areas they applied with, and a summary
  of their booking activity (no browsing/booking UI lives here — this is a
  read-only account screen, not a storefront).
 
  Reads session helpers from script.js (getCurrentUser, saveCurrentUser,
- isLoggedIn) and calls FolksAPI (api.js) for the actual GET requests. No
+ isLoggedIn) and calls HearthAPI (api.js) for the actual GET requests. No
  network calls happen directly in this file.
  ========================================================================= */
 
@@ -49,7 +49,7 @@ function initProfessionalDashboardPage() {
 
 async function loadProfessional(notPro, content, showEl, hideEl) {
     let user = getCurrentUser();
-    const res = await FolksAPI.viewProfessional(user.externalId);
+    const res = await HearthAPI.viewProfessional(user.externalId);
     
     if (res.success && res.result) {
         user = res.result.user;
@@ -87,7 +87,7 @@ function renderGreeting(user) {
 
 /* ---- application status card -------------------------------------------- */
 async function renderApplicationStatus(professional) {
-    const res = await FolksAPI.viewDocuments();
+    const res = await HearthAPI.viewDocuments();
     if (! res.success) {
         alert('Unable to fetch document. Msg: ' + res.message);
     }
@@ -143,7 +143,7 @@ async function renderExpertise(professional) {
     if (!container)
         return;
 
-    const res = await FolksAPI.viewProfessionalServices();
+    const res = await HearthAPI.viewProfessionalServices();
     if (! res.success) {
         alert('Unable to fetch expertise. Msg: ' + res.message);
         return;
@@ -180,7 +180,7 @@ async function loadBookingActivity() {
     recentEl.innerHTML = '';
     emptyEl.hidden = true;
 
-    const result = await FolksAPI.getBookings();
+    const result = await HearthAPI.getBookings();
     loading.hidden = true;
 
     if (!result.success) {

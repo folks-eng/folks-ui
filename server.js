@@ -42,7 +42,7 @@ const log = getLogger(__filename);
 
 function setup() {
     if (log.isInfoEnabled()) {
-        log.info("Starting up folks node server");
+        log.info("Starting up hearth node server");
     }
     // Middleware to parse JSON request bodies
     app.use(express.json());
@@ -100,12 +100,12 @@ async function start() {
     };
     
     https.createServer(httpsOptions, app).listen(8443, () => {
-        log.info('Started folks node server. Listening to: %d', port);
+        log.info('Started hearth node server. Listening to: %d', port);
     });
     
     // app.listen(port, () => {
     //     if (log.isInfoEnabled()) {
-    //         log.info(`Started folks node server. Listening to: ${port}`);
+    //         log.info(`Started hearth node server. Listening to: ${port}`);
     //     }
     // });
 

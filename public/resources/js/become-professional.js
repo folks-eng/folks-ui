@@ -1,8 +1,8 @@
 /* =========================================================================
- FOLKS — become-professional.js
+ HEARTH — become-professional.js
  Drives the professional application page: identity fields, an
  expertise multi-select sourced from CATEGORY_DATA, and submission via
- FolksAPI.applyAsProfessional() (api.js). No network calls happen
+ HearthAPI.applyAsProfessional() (api.js). No network calls happen
  directly in this file.
  ========================================================================= */
 
@@ -65,7 +65,7 @@ async function initLocationPicker() {
     if (!stateSel || !citySel || !localitySel)
         return;
 
-    const res = await FolksAPI.viewProvinces();
+    const res = await HearthAPI.viewProvinces();
     if (res.success) {
         proLoc.provinces = res.result.items || res.result || [];
         stateSel.innerHTML = '<option value="">Select a state…</option>' +
@@ -88,7 +88,7 @@ async function initLocationPicker() {
         }
         citySel.disabled = true;
         citySel.innerHTML = '<option value="">Loading cities…</option>';
-        const citiesRes = await FolksAPI.viewCities('provinceId', Loc.provinceId);
+        const citiesRes = await HearthAPI.viewCities('provinceId', Loc.provinceId);
         if (citiesRes.success) {
             proLoc.cities = citiesRes.result.items || citiesRes.result || [];
             citySel.innerHTML = '<option value="">Select a city…</option>' +
@@ -116,7 +116,7 @@ async function initLocationPicker() {
         localitySel.innerHTML = '<option value="">Loading localities…</option>';
         proLoc.loadingNeighbourhoods = true;
         renderServingLocalities();
-        const neighbourhoodsRes = await FolksAPI.viewNeighbourhoods(proLoc.cityId);
+        const neighbourhoodsRes = await HearthAPI.viewNeighbourhoods(proLoc.cityId);
         proLoc.loadingNeighbourhoods = false;
         if (neighbourhoodsRes.success) {
             // proLoc.neighbourhoods keeps the API's original order — it also
@@ -267,7 +267,7 @@ async function primeLocationFromSavedAddress(savedAddress) {
         return;
     citySel.disabled = true;
     citySel.innerHTML = '<option value="">Loading cities…</option>';
-    const citiesRes = await FolksAPI.viewCities('provinceId', savedAddress.provinceId);
+    const citiesRes = await HearthAPI.viewCities('provinceId', savedAddress.provinceId);
     if (!citiesRes.success)
         return;
     proLoc.cities = citiesRes.result.items || citiesRes.result || [];
@@ -282,7 +282,7 @@ async function primeLocationFromSavedAddress(savedAddress) {
         return;
     localitySel.disabled = true;
     localitySel.innerHTML = '<option value="">Loading localities…</option>';
-    const neighbourhoodsRes = await FolksAPI.viewNeighbourhoods(savedAddress.cityId);
+    const neighbourhoodsRes = await HearthAPI.viewNeighbourhoods(savedAddress.cityId);
     if (!neighbourhoodsRes.success)
         return;
     proLoc.neighbourhoods = neighbourhoodsRes.result.items || neighbourhoodsRes.result || [];
@@ -397,7 +397,7 @@ async function renderExpertiseGroups() {
     if (!container) // || typeof CATEGORY_DATA === 'undefined')
         return;
 
-    let res = await FolksAPI.viewCategories();
+    let res = await HearthAPI.viewCategories();
 
     if (!res.success) {
         alert('Failed');
@@ -520,7 +520,7 @@ function wireSubmit(user) {
         };
         // alert(JSON.stringify(payload));
         // const result = {success:false};
-        const result = await FolksAPI.applyAsProfessional(payload);
+        const result = await HearthAPI.applyAsProfessional(payload);
 
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Application';
@@ -539,7 +539,7 @@ function wireSubmit(user) {
         //     professionalStatus: result.application.status,
         //     aadhaarLast4: aadhaar.slice(-4),
         //     expertiseAreas: expertise,
-        //     // Kept separate from the account's main saved address (folks_address)
+        //     // Kept separate from the account's main saved address (hearth_address)
         //     // on purpose — this is where they currently work from, which may
         //     // differ from their permanent/home address.
         //     professionalCurrentAddress: {addressLine, locality, city, pincode},

@@ -1,5 +1,5 @@
 /* =========================================================================
- FOLKS — categories.js
+ HEARTH — categories.js
  Renders and drives the Categories & Services browser page. Reads data
  from CATEGORY_DATA (categories-data.js). Presentation/interaction only —
  no data lives in this file, and no network calls happen here.
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadCategories() {
-    let res = await FolksAPI.viewCategories();
+    let res = await HearthAPI.viewCategories();
         
     if (! res.success) {
         showError('categoryError', res.message || 'Could fetch categories. Please try again.');
@@ -137,7 +137,7 @@ function initCategoriesPage() {
                 try {
                     history.replaceState(null, '', `#${state.activeCategoryId}`);
                 } catch (err) {
-                    console.warn('[Folks] Could not update URL hash (safe to ignore):', err);
+                    console.warn('[Hearth] Could not update URL hash (safe to ignore):', err);
                 }
             });
         });
@@ -461,7 +461,7 @@ function initCategoriesPage() {
 
         // Not signed in yet: capture where to land after signup completes,
         // then open the same signup flow used everywhere else on the site.
-        safeStorageSet(FOLKS_STORAGE_KEYS.postSignupRedirect, 'checkout.html');
+        safeStorageSet(HEARTH_STORAGE_KEYS.postSignupRedirect, 'checkout.html');
         const signupBtn = document.getElementById('signupBtn');
         if (signupBtn)
             signupBtn.click();

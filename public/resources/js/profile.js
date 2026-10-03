@@ -1,9 +1,9 @@
 /* =========================================================================
- FOLKS — profile.js
+ HEARTH — profile.js
  Drives the My Profile page: Profile Details + Address sections, each with
  independent Edit/Save/Cancel state. Reads/writes the session helpers
  defined in script.js (getCurrentUser, saveCurrentUser, getStoredAddress,
- saveStoredAddress, isLoggedIn, renderUserChip) and calls FolksAPI
+ saveStoredAddress, isLoggedIn, renderUserChip) and calls HearthAPI
  (api.js) for the actual PUT/POST requests. No network calls happen in
  this file directly.
  ========================================================================= */
@@ -50,7 +50,7 @@ async function initProfileDetailsSection() {
     let editing = false;
     
     // Fetch the user details.
-    let res = await FolksAPI.viewUser();
+    let res = await HearthAPI.viewUser();
     if (! res.success) {
         if (res.message === 'Cookie expired') {
             showError(errorEl, 'Your session is expired. Forwarding you to the home screen ...');
@@ -135,7 +135,7 @@ async function initProfileDetailsSection() {
         saveBtn.textContent = 'Saving…';
 
         const payload = {...user, fullName, email, phone1, phone2};
-        const res = await FolksAPI.updateUser(id, payload);
+        const res = await HearthAPI.updateUser(id, payload);
         
         saveBtn.disabled = false;
         saveBtn.textContent = 'Save';
@@ -171,7 +171,7 @@ async function initAddressSection() {
     let editingId = null; // id of the address card currently in edit mode, or 'new'
 
     // Fetch the address details.
-    let res = await FolksAPI.viewAddresses();
+    let res = await HearthAPI.viewAddresses();
 
     if (! res.success) {
         showError(errorEl, res.message || 'Could not fetch addresses. Please try again.');
@@ -179,15 +179,15 @@ async function initAddressSection() {
     }
     let addresses = res.result.items;
 
-    // Folks only operates in selected states/cities/localities, so a new (or
+    // Hearth only operates in selected states/cities/localities, so a new (or
     // relocated) address has to be pinned to a serviceable locality before
     // the rest of the address form is shown. The state list is small and
     // shared by every card, so it's fetched once up front; cities and
     // localities are fetched on demand as the customer narrows things down.
-    let provincesRes = await FolksAPI.viewProvinces();
+    let provincesRes = await HearthAPI.viewProvinces();
     let provinces = provincesRes.success ? (provincesRes.result.items || provincesRes.result || []) : [];
     if (!provincesRes.success) {
-        console.error('[Folks] Failed to load provinces:', provincesRes.message);
+        console.error('[Hearth] Failed to load provinces:', provincesRes.message);
     }
 
     // Per-card location-picker state, keyed by the card's id attribute
@@ -347,7 +347,7 @@ async function initAddressSection() {
     }
 
     /* ---- location picker (pincode-first, State → City → Locality fallback)
-     Folks only operates in selected states, cities and localities, so this
+     Hearth only operates in selected states, cities and localities, so this
      gate has to be cleared — with a locality the backend reports as
      serviceable — before the rest of the address fields are shown.
 
@@ -691,7 +691,7 @@ async function initAddressSection() {
         loc.province = '';
         render();
 
-        const res = await FolksAPI.checkPincode(pincode);
+        const res = await HearthAPI.checkPincode(pincode);
         loc.pincodeChecking = false;
         loc.pincodeChecked = true;
 
@@ -717,7 +717,7 @@ async function initAddressSection() {
         if (loc.provinceId && loc.cities.length === 0) {
             loc.loadingCities = true;
             render();
-            const citiesRes = await FolksAPI.viewCities('provinceId', loc.provinceId);
+            const citiesRes = await HearthAPI.viewCities('provinceId', loc.provinceId);
             loc.loadingCities = false;
             if (citiesRes.success) {
                 loc.cities = citiesRes.result.items || citiesRes.result || [];
@@ -730,7 +730,7 @@ async function initAddressSection() {
         if (loc.cityId && loc.neighbourhoods.length === 0) {
             loc.loadingNeighbourhoods = true;
             render();
-            const neighbourhoodsRes = await FolksAPI.viewNeighbourhoods(loc.cityId);
+            const neighbourhoodsRes = await HearthAPI.viewNeighbourhoods(loc.cityId);
             loc.loadingNeighbourhoods = false;
             if (neighbourhoodsRes.success) {
                 loc.neighbourhoods = neighbourhoodsRes.result.items || neighbourhoodsRes.result || [];
@@ -768,7 +768,7 @@ async function initAddressSection() {
 
             if (!loc.provinceId)
                 return;
-            const citiesRes = await FolksAPI.viewCities('provinceId', loc.provinceId);
+            const citiesRes = await HearthAPI.viewCities('provinceId', loc.provinceId);
             loc.loadingCities = false;
             if (citiesRes.success) {
                 loc.cities = citiesRes.result.items || citiesRes.result || [];
@@ -793,7 +793,7 @@ async function initAddressSection() {
 
             if (!loc.cityId)
                 return;
-            const neighbourhoodsRes = await FolksAPI.viewNeighbourhoods(loc.cityId);
+            const neighbourhoodsRes = await HearthAPI.viewNeighbourhoods(loc.cityId);
             loc.loadingNeighbourhoods = false;
             if (neighbourhoodsRes.success) {
                 loc.neighbourhoods = neighbourhoodsRes.result.items || neighbourhoodsRes.result || [];
@@ -818,7 +818,7 @@ async function initAddressSection() {
     }
 
     async function onDelete(idAttr) {
-        const result = await FolksAPI.deleteAddress(idAttr);
+        const result = await HearthAPI.deleteAddress(idAttr);
 
         if (!result.success) {
             showError(errorEl, result.message || 'Could not delete the address. Please try again.');
@@ -882,8 +882,8 @@ async function initAddressSection() {
         };
 
         const result = isNew
-                ? await FolksAPI.createAddress(payload)
-                : await FolksAPI.updateAddress(idAttr, payload);
+                ? await HearthAPI.createAddress(payload)
+                : await HearthAPI.updateAddress(idAttr, payload);
 
         saveBtn.disabled = false;
 

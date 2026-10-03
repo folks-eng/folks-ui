@@ -1,5 +1,5 @@
 /* =========================================================================
-   FOLKS — favourites.js
+   HEARTH — favourites.js
    Renders two independent lists: Favourite Professionals and Wishlist
    (saved services), both backed by the localStorage helpers defined in
    script.js (getFavouriteProfessionals/toggleFavouriteProfessional,

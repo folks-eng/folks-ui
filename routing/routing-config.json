@@ -1,14 +1,14 @@
 {
-    "folksBaseUrl": "https://localhost:9443",
+    "hearthBaseUrl": "https://localhost:9443",
     "routes": [
         {
             "name": "otp.request",
-            "folks.ui": {
+            "hearth.ui": {
                 "method": "POST",
                 "path": "/gateway/v1/otp/request",
                 "contentType": "application/json"
             },
-            "folks.app": {
+            "hearth.app": {
                 "method": "POST",
                 "path": "/api/v1/otp/request",
                 "contentType": "application/json"
@@ -16,12 +16,12 @@
         },
         {
             "name": "otp.verify",
-            "folks.ui": {
+            "hearth.ui": {
                 "method": "POST",
                 "path": "/gateway/v1/otp/verify",
                 "contentType": "application/json"
             },
-            "folks.app": {
+            "hearth.app": {
                 "method": "POST",
                 "path": "/api/v1/otp/verify",
                 "contentType": "application/json"

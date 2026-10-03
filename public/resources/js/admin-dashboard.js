@@ -1,5 +1,5 @@
 /* =========================================================================
- FOLKS — admin-dashboard.js
+ HEARTH — admin-dashboard.js
  Drives admin-dashboard.html: the left-nav tab shell plus one loader/render
  pair per tab. No client-side router/history — tabs are plain show/hide,
  matching the rest of this codebase's "no framework" approach.
@@ -97,7 +97,7 @@ function initFilterBar(containerId, onChange) {
 /* ---- logout -------------------------------------------------------------- */
 function initAdminLogout() {
     document.getElementById('adminLogoutBtn')?.addEventListener('click', async () => {
-        await FolksAPI.logout(); // clears the shared _fks cookie server-side
+        await HearthAPI.logout(); // clears the shared _fks cookie server-side
         clearAdminSession();
         window.location.replace('admin-login.html');
     });
@@ -141,9 +141,9 @@ async function loadOverview() {
     };
 
     const [proResult, userResult, bookingResult] = await Promise.all([
-        FolksAPI.query(profPayload),
-        FolksAPI.query(userPayload),
-        FolksAPI.query(bookPayload)
+        HearthAPI.query(profPayload),
+        HearthAPI.query(userPayload),
+        HearthAPI.query(bookPayload)
     ]);
 
     loading.hidden = true;
@@ -235,7 +235,7 @@ async function loadProfessionals(status) {
     emptyEl.hidden = true;
     body.innerHTML = '';
 
-    const res = await FolksAPI.queryApplication(status ? 'verificationStatus=' + status : 'verificationStatus=PENDING&verificationStatus=APPROVED&verificationStatus=REJECTED');
+    const res = await HearthAPI.queryApplication(status ? 'verificationStatus=' + status : 'verificationStatus=PENDING&verificationStatus=APPROVED&verificationStatus=REJECTED');
     loading.hidden = true;
 
     if (!res.success) {
@@ -287,7 +287,7 @@ function renderApplicationActions(applicationId, status) {
     const isPending = String(status || '').toUpperCase() === 'PENDING';
     if (!isPending) return '—';
     if (!applicationId) {
-        console.warn('[Folks Admin] PENDING application with no applicationId — cannot offer approve/reject.');
+        console.warn('[Hearth Admin] PENDING application with no applicationId — cannot offer approve/reject.');
         return '—';
     }
     const id = escapeAdminHtml(applicationId);
@@ -343,7 +343,7 @@ async function applyApplicationStatusChange(applicationId, status) {
     const rowButtons = document.querySelectorAll(`.admin-action-link[data-app-id="${cssEscapeAdmin(applicationId)}"]`);
     rowButtons.forEach(b => b.disabled = true);
 
-    const res = await FolksAPI.setApplicationStatus(applicationId, status);
+    const res = await HearthAPI.setApplicationStatus(applicationId, status);
 
     if (!res.success) {
         rowButtons.forEach(b => b.disabled = false);
@@ -447,7 +447,7 @@ async function loadBookings(status) {
     emptyEl.hidden = true;
     body.innerHTML = '';
 
-    const res = await FolksAPI.queryBooking(status ? 'status=' + status : 'status=PENDING&status=CONFIRMED&status=IN_PROGRESS&status=COMPLETED&status=CANCELLED');
+    const res = await HearthAPI.queryBooking(status ? 'status=' + status : 'status=PENDING&status=CONFIRMED&status=IN_PROGRESS&status=COMPLETED&status=CANCELLED');
     loading.hidden = true;
 
     if (!res.success) {
@@ -497,7 +497,7 @@ async function loadCustomers() {
     emptyEl.hidden = true;
     body.innerHTML = '';
 
-    const res = await FolksAPI.queryCustomer();
+    const res = await HearthAPI.queryCustomer();
     loading.hidden = true;
 
     if (!res.success) {

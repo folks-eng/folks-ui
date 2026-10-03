@@ -1,5 +1,5 @@
 /* =========================================================================
-   FOLKS — categories-data.js
+   HEARTH — categories-data.js
 
    Clean, scalable 3-tier data model consumed by categories.js:
 

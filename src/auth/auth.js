@@ -33,7 +33,7 @@ function authenticate(req, res, next) {
     }
     let token = req.cookies[CookieUtil.STD_COOKIE];
     if (! token) {
-        log.error('No folks cookie found, or cookie is already expired');
+        log.error('No hearth cookie found, or cookie is already expired');
         return res.status(401)
                 .set('Content-Type', 'application/json')
                 .send({message: 'Cookie expired'});

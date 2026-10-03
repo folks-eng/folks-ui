@@ -1,5 +1,5 @@
 /* =========================================================================
- FOLKS — professional-onboarding.js
+ HEARTH — professional-onboarding.js
  Drives professional-onboarding.html, the page "Become a Professional"
  now lands on. Three steps:
 
@@ -8,15 +8,15 @@
    2. Routing once the number is verified:
         - already a registered professional  -> professional-portal.html
         - existing account, no application   -> application form (step 3)
-        - no Folks account for this number   -> name/email, one more OTP
+        - no Hearth account for this number   -> name/email, one more OTP
           via the signup endpoint, account created with role PROFESSIONAL,
           then the application form (step 3)
    3. Application form — ported from become-professional.js (identity,
       current address cascade, expertise, serving localities, declaration)
-      and submitted via FolksAPI.applyAsProfessional().
+      and submitted via HearthAPI.applyAsProfessional().
 
  Reuses, without modifying:
-   - api.js    : FolksAPI.requestOtp / verifyOtp / createUser /
+   - api.js    : HearthAPI.requestOtp / verifyOtp / createUser /
                  viewProfessional / applyAsProfessional / viewProvinces /
                  viewCities / viewNeighbourhoods / viewCategories
    - script.js : isLoggedIn, getCurrentUser, saveCurrentUser, setLoggedIn,
@@ -40,7 +40,7 @@
     const UNZONED_LABEL = 'Other localities';
 
     document.addEventListener('DOMContentLoaded', () => {
-        if (typeof FolksAPI === 'undefined' || typeof getCurrentUser === 'undefined')
+        if (typeof HearthAPI === 'undefined' || typeof getCurrentUser === 'undefined')
             return;
         if (!document.getElementById('poPhone'))
             return; // guard: only runs on this page
@@ -168,7 +168,7 @@
             state.mode = 'login';
             goToWaiting('Sending your OTP…', 'forward');
 
-            const result = await FolksAPI.requestOtp('login', mobile);
+            const result = await HearthAPI.requestOtp('login', mobile);
 
             if (!result.success) {
                 goTo(screens.mobile, 'back');
@@ -253,7 +253,7 @@
             resendOtpBtn.disabled = true;
             resendOtpBtn.textContent = 'Resending…';
             hideErr('poOtpError');
-            const result = await FolksAPI.requestOtp(state.mode, state.mobile);
+            const result = await HearthAPI.requestOtp(state.mode, state.mobile);
             if (!result.success) {
                 showErr('poOtpError', result.message || 'Could not resend OTP. Please try again.');
             }
@@ -277,11 +277,11 @@
             clearInterval(state.resendTimer);
             goToWaiting('Verifying your code…', 'forward');
 
-            const result = await FolksAPI.verifyOtp(state.mode, state.mobile, otp);
+            const result = await HearthAPI.verifyOtp(state.mode, state.mobile, otp);
 
             if (!result.success) {
                 if (state.mode === 'login' && result.code === 404) {
-                    // Number verified, but no Folks account behind it.
+                    // Number verified, but no Hearth account behind it.
                     goTo(screens.account, 'forward');
                     setTimeout(() => document.getElementById('poName')?.focus(), 300);
                     return;
@@ -335,7 +335,7 @@
             state.mode = 'signup';
             goToWaiting('Sending your OTP…', 'forward');
 
-            const result = await FolksAPI.requestOtp('signup', state.mobile);
+            const result = await HearthAPI.requestOtp('signup', state.mobile);
             if (!result.success) {
                 state.mode = 'login';
                 goTo(screens.account, 'back');
@@ -348,7 +348,7 @@
         async function createProfessionalAccount() {
             goToWaiting('Setting up your account…', 'forward');
 
-            const result = await FolksAPI.createUser({
+            const result = await HearthAPI.createUser({
                 phone1: state.mobile,
                 fullName: state.account.fullName,
                 email: state.account.email,
@@ -375,7 +375,7 @@
         async function routeAfterLogin(user) {
             goToWaiting('Checking your professional account…', 'forward');
 
-            const res = await FolksAPI.viewProfessional(user.externalId);
+            const res = await HearthAPI.viewProfessional(user.externalId);
 
             if (res.success && hasProfessionalRecord(res.result)) {
                 showSuccess('You\'re logged in!', `Good to see you again, ${firstName(user)}. Taking you to your dashboard…`);
@@ -516,7 +516,7 @@
         const citySel = document.getElementById('poCity');
         const localitySel = document.getElementById('poLocality');
 
-        const res = await FolksAPI.viewProvinces();
+        const res = await HearthAPI.viewProvinces();
         if (res.success) {
             proLoc.provinces = listFrom(res);
             stateSel.innerHTML = '<option value="">Select a state…</option>' +
@@ -541,7 +541,7 @@
             }
             citySel.disabled = true;
             citySel.innerHTML = '<option value="">Loading cities…</option>';
-            const citiesRes = await FolksAPI.viewCities('provinceId', proLoc.provinceId);
+            const citiesRes = await HearthAPI.viewCities('provinceId', proLoc.provinceId);
             if (citiesRes.success) {
                 proLoc.cities = listFrom(citiesRes);
                 citySel.innerHTML = cityOptions(proLoc.cities);
@@ -568,7 +568,7 @@
             localitySel.innerHTML = '<option value="">Loading localities…</option>';
             proLoc.loadingNeighbourhoods = true;
             renderServingLocalities();
-            const neighbourhoodsRes = await FolksAPI.viewNeighbourhoods(proLoc.cityId);
+            const neighbourhoodsRes = await HearthAPI.viewNeighbourhoods(proLoc.cityId);
             proLoc.loadingNeighbourhoods = false;
             if (neighbourhoodsRes.success) {
                 proLoc.neighbourhoods = listFrom(neighbourhoodsRes);
@@ -888,7 +888,7 @@
             return;
         citySel.disabled = true;
         citySel.innerHTML = '<option value="">Loading cities…</option>';
-        const citiesRes = await FolksAPI.viewCities('provinceId', savedAddress.provinceId);
+        const citiesRes = await HearthAPI.viewCities('provinceId', savedAddress.provinceId);
         if (!citiesRes.success)
             return;
         proLoc.cities = listFrom(citiesRes);
@@ -902,7 +902,7 @@
             return;
         localitySel.disabled = true;
         localitySel.innerHTML = '<option value="">Loading localities…</option>';
-        const neighbourhoodsRes = await FolksAPI.viewNeighbourhoods(savedAddress.cityId);
+        const neighbourhoodsRes = await HearthAPI.viewNeighbourhoods(savedAddress.cityId);
         if (!neighbourhoodsRes.success)
             return;
         proLoc.neighbourhoods = listFrom(neighbourhoodsRes);
@@ -958,7 +958,7 @@
         const container = document.getElementById('poExpertiseGroups');
         container.innerHTML = '<p class="modal-hint">Loading services…</p>';
 
-        const res = await FolksAPI.viewCategories();
+        const res = await HearthAPI.viewCategories();
         if (!res.success) {
             container.innerHTML = '';
             showErr('poExpertiseError', res.message || 'Could not fetch categories. Please try again.');
@@ -1065,7 +1065,7 @@
                 neighbourhoodIds: servingNeighbourhoodIds
             };
 
-            const result = await FolksAPI.applyAsProfessional(payload);
+            const result = await HearthAPI.applyAsProfessional(payload);
 
             submitBtn.disabled = false;
             submitBtn.textContent = 'Submit Application';

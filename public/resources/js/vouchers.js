@@ -1,5 +1,5 @@
 /* =========================================================================
- FOLKS — vouchers.js
+ HEARTH — vouchers.js
  Renders the voucher list and wires up "Copy code" buttons. No backend
  endpoint was specified for vouchers, so this is a small curated set
  shown to every signed-in customer, in the same spirit as a real
@@ -15,7 +15,7 @@ const VOUCHERS = [
         expiry: 'No expiry',
     },
     {
-        code: 'FOLKS100',
+        code: 'HEARTH100',
         title: '₹100 off',
         description: '₹100 off any booking above ₹999.',
         terms: 'Valid on all categories. Cannot be combined with other offers.',
@@ -68,7 +68,7 @@ async function renderVouchers() {
     if (!grid)
         return;
 
-    const res = await FolksAPI.viewVouchers();
+    const res = await HearthAPI.viewVouchers();
     if (! res.success) {
         alert('Unable to fetch vouchers. Msg: ' + res.message);
         return;

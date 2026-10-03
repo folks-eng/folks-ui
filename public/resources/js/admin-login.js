@@ -1,5 +1,5 @@
 /* =========================================================================
- FOLKS — admin-login.js
+ HEARTH — admin-login.js
  Drives admin-login.html ONLY: the "already logged in? skip to dashboard"
  redirect and the login form submit handler. Loaded only on the login page
  — admin-dashboard.html must NOT include this file (it previously did, for
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Logging in…';
 
-        const res = await FolksAPI.adminLogin(userid, password);
+        const res = await HearthAPI.adminLogin(userid, password);
 
         if (res.success) {
             saveAdminSession(res.result);

@@ -11,7 +11,7 @@ async function viewAll(req, res) {
         // req.query is forwarded as-is, so the UI can narrow the list with
         // ?cityId=<id> once a city has been picked. Each item is expected to
         // carry a `serviceable` flag so the UI can tell the customer whether
-        // Folks has actually launched in that locality yet.
+        // Hearth has actually launched in that locality yet.
         const response = await httpClient.get(
             '/neighbourhoods'
             , {

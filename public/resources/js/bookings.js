@@ -1,7 +1,7 @@
 /* =========================================================================
- FOLKS — bookings.js
+ HEARTH — bookings.js
  Drives the My Bookings page: fetches booking history via
- FolksAPI.getBookings() (GET /api/v1/bookings) and splits it into
+ HearthAPI.getBookings() (GET /api/v1/bookings) and splits it into
  Upcoming vs Past based on each booking's latest scheduled service date.
  ========================================================================= */
 
@@ -57,7 +57,7 @@ async function loadBookings() {
     errorEl.hidden = true;
 
     const user = getCurrentUser();
-    const result = await FolksAPI.getBookings();
+    const result = await HearthAPI.getBookings();
 
     loading.hidden = true;
 
@@ -198,7 +198,7 @@ function wireCancelButtons() {
                     btn.disabled = true;
                     btn.textContent = 'Cancelling…';
 
-                    const result = await FolksAPI.cancelBooking(bookingId);
+                    const result = await HearthAPI.cancelBooking(bookingId);
 
                     if (!result.success) {
                         btn.disabled = false;

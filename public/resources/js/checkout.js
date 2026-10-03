@@ -1,8 +1,8 @@
 /* =========================================================================
- FOLKS — checkout.js
+ HEARTH — checkout.js
  Drives the Checkout page: order summary (editable), payment method
  selection, and booking completion. Reads the shared cart/session helpers
- from script.js and calls FolksAPI.createBooking() (api.js) — no network
+ from script.js and calls HearthAPI.createBooking() (api.js) — no network
  calls happen directly in this file.
  ========================================================================= */
 
@@ -263,7 +263,7 @@ function wireCompleteBooking() {
         btn.disabled = true;
         btn.textContent = 'Confirming your booking…';
 
-        const result = await FolksAPI.createBooking(payload[0]);
+        const result = await HearthAPI.createBooking(payload[0]);
         
         btn.disabled = false;
         btn.textContent = 'Complete Booking';
