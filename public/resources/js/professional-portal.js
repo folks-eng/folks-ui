@@ -47,16 +47,16 @@
     });
 
     async function initPortal() {
-        alert('Init Portal');
+        // alert('Init Portal');
         let loggedIn = false;
         try {
             loggedIn = await isLoggedIn();
-            alert('Is logged in: ' + loggedIn);
+            // alert('Is logged in: ' + loggedIn);
         } catch (err) {
             loggedIn = false;
         }
         const cachedUser = getCurrentUser();
-        alert('Cached User:\n' + JSON.stringify(cachedUser, null, 2));
+        // alert('Cached User:\n' + JSON.stringify(cachedUser, null, 2));
         
         if (!loggedIn || !cachedUser) {
             hide('ppLoading');
@@ -80,7 +80,7 @@
             showErr('ppLoadError', res.message || 'Could not load your dashboard. Please refresh and try again.');
             return;
         }
-        alert('Queried professional:\n' + JSON.stringify(res.result, null, 2));
+        // alert('Queried professional:\n' + JSON.stringify(res.result, null, 2));
         
         ctx.professional = res.result || {};
         ctx.user = ctx.professional.user || cachedUser;
@@ -131,7 +131,7 @@
      MY PROFILE
      ===================================================================== */
     function loadProfile() {
-        alert('Called loadProfile');
+        // alert('Called loadProfile');
         
         loadProfileDetails();
         loadProfessionalDetails();
@@ -173,7 +173,7 @@
         if (res.success && res.result && Array.isArray(res.result.items)) {
             doc = res.result.items[0] || null;
         }
-        alert('Queried Document(s):\n' + JSON.stringify(res.result.items, null, 2));
+        // alert('Queried Document(s):\n' + JSON.stringify(res.result.items, null, 2));
         
         const rawStatus = doc && doc.verificationStatus ? doc.verificationStatus : (pro.status || '');
         const status = String(rawStatus).toUpperCase() === 'PENDING' ? 'Pending Review' : (rawStatus || '—');
@@ -210,7 +210,7 @@
             showErr('ppAddressError', res.message || 'Could not fetch addresses. Please try again.');
             return;
         }
-        alert('Queried Addres(s):\n' + JSON.stringify(res.result.items, null, 2));
+        // alert('Queried Addres(s):\n' + JSON.stringify(res.result.items, null, 2));
         
         const addresses = (res.result && res.result.items) || [];
         if (addresses.length === 0) {
@@ -277,7 +277,7 @@
             showErr('ppBookingsError', result.message || 'Could not load your bookings. Please try again.');
             return;
         }
-        alert('Queried Bookings:\n' + JSON.stringify(result, null, 2));
+        // alert('Queried Bookings:\n' + JSON.stringify(result, null, 2));
         renderBookings();
     }
 
@@ -336,10 +336,7 @@
      MY NEIGHBOURHOODS
      ===================================================================== */
     async function loadNeighbourhoods() {
-        alert('Loading Neighbourhoods ...');
-        
-        const container = document.getElementById('ppNeighbourhoods');
-        const empty = document.getElementById('ppNeighbourhoodsEmpty');
+        // alert('Loading Neighbourhoods ...');
         
         const res = await FolksAPI.viewProfessionalNeighbourhoods();
         if (! res.success) {
@@ -347,25 +344,502 @@
             showErr('ppNeighbourhoodsError', res.message || 'Could not load your servicing localities. Please try again.');
             return;
         }
-        const nbhoods = (res.result && res.result.items) || [];
+        ctx.servedNbhoods = (res.result && res.result.items) || [];
+        wireNeighbourhoodsEditor();
+        renderNeighbourhoodsView();
+    }
+
+    /* ---- read view ------------------------------------------------------- */
+    function renderNeighbourhoodsView() {
+        const container = document.getElementById('ppNeighbourhoods');
+        const empty = document.getElementById('ppNeighbourhoodsEmpty');
+
+        document.getElementById('ppNeighbourhoodsEditor').hidden = true;
+        container.hidden = false;
+        document.getElementById('ppNbEditBtn').hidden = false;
+        document.getElementById('ppNbCancelBtn').hidden = true;
+        document.getElementById('ppNbSaveBtn').hidden = true;
+        document.getElementById('ppNeighbourhoodsHint').textContent = 'Localities you take bookings in, grouped by zone.';
+
+        const nbhoods = ctx.servedNbhoods || [];
         if (nbhoods.length === 0) {
             container.innerHTML = '';
             empty.hidden = false;
             return;
         }
         empty.hidden = true;
-        container.innerHTML = nbhoods
+        renderNeighbourhoodZones(container, nbhoods);
+    }
+
+    /* ---- edit: add / remove localities ------------------------------------
+     Same zone-wise picker as onboarding ("Localities you serve"): ★ All
+     Localities (sentinel -1, mutually exclusive), search, one collapsible
+     block per zone with a tri-state "Select all" and a checklist of
+     locality + pincode. Lists every locality in the professional's city
+     (GET /neighbourhoods?cityId=…), pre-ticked from what they serve now.
+     Save → PATCH /professionalNeighbourhoods with the id array, then the
+     view is rebuilt from a fresh GET (never from the local draft). */
+    async function professionalCityId() {
+        const pro = ctx.professional || {};
+        const cityName = String(pro.servingCities || '').split(',')[0].trim();
+        if (!cityName) {
+            return null;
+        }
+        const res = await FolksAPI.viewCities('cityName', cityName);
+        if (! res.success || !res.result || res.result.total !== 1) {
+            return null;
+        }
+        return res.result.items[0].cityId;
+    }
+
+    function wireNeighbourhoodsEditor() {
+        if (ctx.nbEditorWired)
+            return;
+        ctx.nbEditorWired = true;
+
+        const editBtn = document.getElementById('ppNbEditBtn');
+        const cancelBtn = document.getElementById('ppNbCancelBtn');
+        const saveBtn = document.getElementById('ppNbSaveBtn');
+
+        editBtn.addEventListener('click', async () => {
+            hide('ppNeighbourhoodsError');
+            const served = (ctx.servedNbhoods || []).map(n => String(n.neighbourhoodId));
+            ctx.nbDraft = {
+                ids: served.includes(ALL_LOCALITIES_ID) ? [ALL_LOCALITIES_ID] : served,
+                openZones: new Set(),
+                search: ''
+            };
+            // Open the zones the professional already serves.
+            (ctx.servedNbhoods || []).forEach(n => ctx.nbDraft.openZones.add(zoneOf(n)));
+
+            if (!ctx.cityNbhoods) {
+                const cityId = await professionalCityId();   // async — must be awaited
+                if (cityId === null) {
+                    showErr('ppNeighbourhoodsError', 'We couldn\'t work out your city, so localities can\'t be edited right now.');
+                    return;
+                }
+                editBtn.disabled = true;
+                editBtn.textContent = 'Loading…';
+                const res = await FolksAPI.viewNeighbourhoods(cityId);
+                editBtn.disabled = false;
+                editBtn.textContent = 'Edit';
+                if (!res.success) {
+                    showErr('ppNeighbourhoodsError', res.message || 'Could not load the localities in your city. Please try again.');
+                    return;
+                }
+                ctx.cityNbhoods = (res.result && (res.result.items || res.result)) || [];
+            }
+            if (ctx.cityNbhoods.length === 0) {
+                showErr('ppNeighbourhoodsError', 'No localities are set up for your city yet.');
+                return;
+            }
+            renderNeighbourhoodsEditor();
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            hide('ppNeighbourhoodsError');
+            renderNeighbourhoodsView();
+        });
+
+        saveBtn.addEventListener('click', async () => {
+            hide('ppNeighbourhoodsError');
+            const ids = ctx.nbDraft.ids;
+            if (ids.length === 0) {
+                showErr('ppNeighbourhoodsError', 'Select at least one locality to keep taking bookings.');
+                return;
+            }
+            // Numeric ids ([-1] = All Localities).
+            const payload = ids.map(id => (/^-?\d+$/.test(id) ? Number(id) : id));
+            // alert(JSON.stringify(payload));
+            // const res = {success:false};
+            
+            saveBtn.disabled = true;
+            cancelBtn.disabled = true;
+            saveBtn.textContent = 'Saving…';
+            const res = await FolksAPI.updateProfessionalNeighbourhoods(payload);
+            saveBtn.disabled = false;
+            cancelBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+
+            if (!res.success) {
+                showErr('ppNeighbourhoodsError', res.message || 'Could not save your localities. Please try again.');
+                return;
+            }
+
+            const fresh = await FolksAPI.viewProfessionalNeighbourhoods();
+            if (fresh.success) {
+                ctx.servedNbhoods = (fresh.result && fresh.result.items) || [];
+            } else {
+                const byId = new Map((ctx.cityNbhoods || []).map(n => [String(n.neighbourhoodId), n]));
+                ctx.servedNbhoods = ids.includes(ALL_LOCALITIES_ID)
+                        ? [{neighbourhoodId: -1, locality: 'All Localities'}]
+                        : ids.map(id => byId.get(id)).filter(Boolean);
+            }
+            renderNeighbourhoodsView();
+        });
+    }
+
+    function renderNeighbourhoodsEditor() {
+        document.getElementById('ppNeighbourhoods').hidden = true;
+        document.getElementById('ppNeighbourhoodsEmpty').hidden = true;
+        const editor = document.getElementById('ppNeighbourhoodsEditor');
+        editor.hidden = false;
+        document.getElementById('ppNbEditBtn').hidden = true;
+        document.getElementById('ppNbCancelBtn').hidden = false;
+        document.getElementById('ppNbSaveBtn').hidden = false;
+        document.getElementById('ppNeighbourhoodsHint').textContent =
+                'Tick localities to add them, untick to remove. Use “Select all” for a whole zone, or “All Localities” for the entire city.';
+
+        const draft = ctx.nbDraft;
+        const allSelected = draft.ids.includes(ALL_LOCALITIES_ID);
+        const selected = new Set(draft.ids);
+        const zones = groupByZone(ctx.cityNbhoods);
+        if (zones.length === 1)
+            draft.openZones.add(zones[0][0]);
+
+        const blocks = zones.map(([zone, list], idx) => {
+            const isOpen = draft.openZones.has(zone);
+            const bodyId = `ppNbEditBody${idx}`;
+            const rows = list.map(n => {
+                const id = String(n.neighbourhoodId);
+                const search = `${n.locality || ''} ${n.pincode || ''} ${zone}`.toLowerCase();
+                return `
+            <label class="po-loc" data-po-loc-search="${esc(search)}">
+              <input type="checkbox" value="${esc(id)}" data-po-serving ${allSelected ? 'disabled' : ''} ${!allSelected && selected.has(id) ? 'checked' : ''}>
+              <span class="po-loc-box" aria-hidden="true"></span>
+              <span class="po-loc-name">${esc(n.locality)}</span>
+              ${n.pincode ? `<span class="po-loc-pin">${esc(n.pincode)}</span>` : ''}
+            </label>`;
+            }).join('');
+            return `
+        <section class="po-zone${isOpen ? ' is-open' : ''}" data-po-zone="${esc(zone)}">
+          <div class="po-zone-head">
+            <button type="button" class="po-zone-toggle" data-po-zone-toggle aria-expanded="${isOpen}" aria-controls="${bodyId}">
+              <span class="po-zone-chevron" aria-hidden="true"></span>
+              <span class="po-zone-name">${esc(zone)}</span>
+              <span class="po-zone-count" data-po-zone-count></span>
+            </button>
+            <label class="po-zone-all">
+              <input type="checkbox" data-po-zone-all ${allSelected ? 'disabled' : ''}>
+              <span>Select all</span>
+            </label>
+          </div>
+          <div class="po-zone-body" id="${bodyId}" ${isOpen ? '' : 'hidden'}>${rows}
+          </div>
+        </section>`;
+        }).join('');
+
+        editor.innerHTML = `
+      <div class="po-zone-toolbar">
+        <label class="pro-expertise-chip pro-expertise-chip-all">
+          <input type="checkbox" value="${ALL_LOCALITIES_ID}" data-po-serving-all ${allSelected ? 'checked' : ''}>
+          <span>★ All Localities</span>
+        </label>
+        <input type="search" class="po-zone-search" data-po-zone-search placeholder="Search locality or pincode" autocomplete="off" aria-label="Search localities" value="${esc(draft.search)}" ${allSelected ? 'disabled' : ''}>
+      </div>
+      <div class="po-zone-summary">
+        <span data-po-zone-summary></span>
+        <button type="button" class="po-zone-clear" data-po-zone-clear hidden>Clear</button>
+      </div>
+      <div class="po-zone-list${allSelected ? ' is-disabled' : ''}">${blocks}
+        <p class="po-zone-empty" data-po-zone-empty hidden>No localities match your search.</p>
+      </div>`;
+
+        const setServing = (id, on) => {
+            id = String(id);
+            const has = draft.ids.includes(id);
+            if (on && !has)
+                draft.ids.push(id);
+            else if (!on && has)
+                draft.ids = draft.ids.filter(x => x !== id);
+        };
+
+        editor.querySelector('[data-po-serving-all]').addEventListener('change', e => {
+            draft.ids = e.target.checked ? [ALL_LOCALITIES_ID] : [];
+            hide('ppNeighbourhoodsError');
+            renderNeighbourhoodsEditor();
+        });
+
+        const searchInput = editor.querySelector('[data-po-zone-search]');
+        searchInput.addEventListener('input', () => {
+            draft.search = searchInput.value;
+            applyNbEditorSearch(editor);
+        });
+
+        editor.querySelector('[data-po-zone-clear]').addEventListener('click', () => {
+            draft.ids = [];
+            editor.querySelectorAll('[data-po-serving]').forEach(cb => { cb.checked = false; });
+            syncNbEditor(editor);
+        });
+
+        editor.querySelectorAll('[data-po-zone]').forEach(zoneEl => {
+            const zone = zoneEl.getAttribute('data-po-zone');
+            const toggle = zoneEl.querySelector('[data-po-zone-toggle]');
+            const body = zoneEl.querySelector('.po-zone-body');
+
+            toggle.addEventListener('click', () => {
+                const open = body.hidden;
+                body.hidden = !open;
+                zoneEl.classList.toggle('is-open', open);
+                toggle.setAttribute('aria-expanded', String(open));
+                if (open)
+                    draft.openZones.add(zone);
+                else
+                    draft.openZones.delete(zone);
+            });
+
+            const zoneAll = zoneEl.querySelector('[data-po-zone-all]');
+            zoneAll.addEventListener('change', () => {
+                zoneEl.querySelectorAll('[data-po-serving]').forEach(cb => {
+                    cb.checked = zoneAll.checked;
+                    setServing(cb.value, cb.checked);
+                });
+                hide('ppNeighbourhoodsError');
+                syncNbEditor(editor);
+            });
+
+            zoneEl.querySelectorAll('[data-po-serving]').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    setServing(cb.value, cb.checked);
+                    hide('ppNeighbourhoodsError');
+                    syncNbEditor(editor);
+                });
+            });
+        });
+
+        syncNbEditor(editor);
+        applyNbEditorSearch(editor);
+    }
+
+    /** Per-zone counts, tri-state "Select all", and the "+added / −removed" summary. */
+    function syncNbEditor(editor) {
+        const draft = ctx.nbDraft;
+        const summary = editor.querySelector('[data-po-zone-summary]');
+        const clearBtn = editor.querySelector('[data-po-zone-clear]');
+        const total = ctx.cityNbhoods.length;
+
+        if (draft.ids.includes(ALL_LOCALITIES_ID)) {
+            summary.textContent = `You'll serve every locality in your city (${total}).`;
+            clearBtn.hidden = true;
+            editor.querySelectorAll('[data-po-zone]').forEach(zoneEl => {
+                const boxes = zoneEl.querySelectorAll('[data-po-serving]');
+                zoneEl.querySelector('[data-po-zone-count]').textContent = `${boxes.length} localities`;
+                const zoneAll = zoneEl.querySelector('[data-po-zone-all]');
+                zoneAll.checked = true;
+                zoneAll.indeterminate = false;
+            });
+            return;
+        }
+
+        let zonesTouched = 0;
+        editor.querySelectorAll('[data-po-zone]').forEach(zoneEl => {
+            const boxes = Array.from(zoneEl.querySelectorAll('[data-po-serving]'));
+            const checked = boxes.filter(cb => cb.checked).length;
+            const zoneAll = zoneEl.querySelector('[data-po-zone-all]');
+            zoneAll.checked = checked > 0 && checked === boxes.length;
+            zoneAll.indeterminate = checked > 0 && checked < boxes.length;
+            zoneEl.classList.toggle('has-selection', checked > 0);
+            zoneEl.querySelector('[data-po-zone-count]').textContent =
+                    checked > 0 ? `${checked} of ${boxes.length} selected` : `${boxes.length} localities`;
+            if (checked > 0)
+                zonesTouched++;
+        });
+
+        // What changes against what is saved now.
+        const before = new Set((ctx.servedNbhoods || []).map(n => String(n.neighbourhoodId)));
+        const after = new Set(draft.ids);
+        const wasAll = before.has(ALL_LOCALITIES_ID);
+        const added = wasAll ? 0 : draft.ids.filter(id => !before.has(id)).length;
+        const removed = wasAll ? 0 : Array.from(before).filter(id => !after.has(id)).length;
+
+        const n = draft.ids.length;
+        let text = n === 0
+                ? 'No localities selected.'
+                : `${n} ${n === 1 ? 'locality' : 'localities'} selected across ${zonesTouched} ${zonesTouched === 1 ? 'zone' : 'zones'}.`;
+        const changes = [];
+        if (added)
+            changes.push(`+${added} added`);
+        if (removed)
+            changes.push(`−${removed} removed`);
+        if (changes.length)
+            text += ` (${changes.join(', ')})`;
+        summary.textContent = text;
+        clearBtn.hidden = n === 0;
+    }
+
+    function applyNbEditorSearch(editor) {
+        const query = (ctx.nbDraft.search || '').trim().toLowerCase();
+        let anyVisible = false;
+        editor.querySelectorAll('[data-po-zone]').forEach(zoneEl => {
+            const zone = zoneEl.getAttribute('data-po-zone');
+            let matches = 0;
+            zoneEl.querySelectorAll('.po-loc').forEach(row => {
+                const hit = !query || row.getAttribute('data-po-loc-search').includes(query);
+                row.hidden = !hit;
+                if (hit)
+                    matches++;
+            });
+            zoneEl.hidden = matches === 0;
+            anyVisible = anyVisible || matches > 0;
+            const open = query ? matches > 0 : ctx.nbDraft.openZones.has(zone);
+            zoneEl.querySelector('.po-zone-body').hidden = !open;
+            zoneEl.classList.toggle('is-open', open);
+            zoneEl.querySelector('[data-po-zone-toggle]').setAttribute('aria-expanded', String(open));
+        });
+        editor.querySelector('[data-po-zone-empty]').hidden = anyVisible;
+    }
+
+    /* Zone-wise view of the localities the professional serves — same
+     grouping as the onboarding picker ("Localities you serve"), read-only.
+     Each item carries `zone` (fks_neighbourhoods.zone); a blank zone falls
+     into "Other localities", listed last. The "All Localities" sentinel
+     (-1) is shown as a single banner instead of zone groups. */
+    const UNZONED_LABEL = 'Other localities';
+    const ZONES_OPEN_BY_DEFAULT_MAX = 40;   // collapse zones when the list is long
+
+    function zoneOf(n) {
+        const zone = n && n.zone != null ? String(n.zone).trim() : '';
+        return zone || UNZONED_LABEL;
+    }
+
+    function groupByZone(neighbourhoods) {
+        const groups = new Map();
+        neighbourhoods
                 .slice()
                 .sort((a, b) => String(a.locality || '').localeCompare(String(b.locality || ''), undefined, {numeric: true, sensitivity: 'base'}))
-                .map(n => chip(n.pincode ? `${n.locality} - ${n.pincode}` : (n.locality || n.name || n.neighbourhoodId)))
-                .join('');
+                .forEach(n => {
+                    const zone = zoneOf(n);
+                    if (!groups.has(zone))
+                        groups.set(zone, []);
+                    groups.get(zone).push(n);
+                });
+        return Array.from(groups.entries()).sort(([a], [b]) => {
+            if (a === UNZONED_LABEL)
+                return 1;
+            if (b === UNZONED_LABEL)
+                return -1;
+            return a.localeCompare(b, undefined, {sensitivity: 'base'});
+        });
+    }
+
+    function renderNeighbourhoodZones(container, nbhoods) {
+        const servesAll = nbhoods.some(n => String(n.neighbourhoodId) === ALL_LOCALITIES_ID);
+        if (servesAll) {
+            container.innerHTML = `
+      <div class="pp-zone-allbanner">
+        <span class="pp-zone-allbanner-icon" aria-hidden="true">★</span>
+        <div>
+          <strong>All Localities</strong>
+          <span>You take bookings in every locality of your city.</span>
+        </div>
+      </div>`;
+            return;
+        }
+
+        const zones = groupByZone(nbhoods);
+        const openByDefault = nbhoods.length <= ZONES_OPEN_BY_DEFAULT_MAX || zones.length === 1;
+        const total = nbhoods.length;
+
+        const blocks = zones.map(([zone, list], idx) => {
+            const bodyId = `ppZoneBody${idx}`;
+            const rows = list.map(n => {
+                const name = n.locality || n.name || n.neighbourhoodId;
+                const search = `${name} ${n.pincode || ''} ${zone}`.toLowerCase();
+                return `
+            <li class="pp-loc" data-pp-loc-search="${esc(search)}">
+              <span class="pp-loc-dot" aria-hidden="true"></span>
+              <span class="pp-loc-name">${esc(name)}</span>
+              ${n.pincode ? `<span class="pp-loc-pin">${esc(n.pincode)}</span>` : ''}
+            </li>`;
+            }).join('');
+            return `
+        <section class="pp-zone${openByDefault ? ' is-open' : ''}" data-pp-zone="${esc(zone)}">
+          <button type="button" class="pp-zone-toggle" data-pp-zone-toggle aria-expanded="${openByDefault}" aria-controls="${bodyId}">
+            <span class="pp-zone-chevron" aria-hidden="true"></span>
+            <span class="pp-zone-name">${esc(zone)}</span>
+            <span class="pp-zone-count">${list.length} ${list.length === 1 ? 'locality' : 'localities'}</span>
+          </button>
+          <ul class="pp-zone-body" id="${bodyId}" ${openByDefault ? '' : 'hidden'}>${rows}
+          </ul>
+        </section>`;
+        }).join('');
+
+        container.innerHTML = `
+      <div class="pp-zone-toolbar">
+        <input type="search" class="pp-zone-search" data-pp-zone-search placeholder="Search locality or pincode" autocomplete="off" aria-label="Search your localities">
+        <button type="button" class="pp-zone-expand" data-pp-zone-expand>${openByDefault ? 'Collapse all' : 'Expand all'}</button>
+      </div>
+      <p class="pp-zone-summary">${total} ${total === 1 ? 'locality' : 'localities'} across ${zones.length} ${zones.length === 1 ? 'zone' : 'zones'}</p>
+      <div class="pp-zone-list">${blocks}
+        <p class="pp-zone-empty" data-pp-zone-empty hidden>No localities match your search.</p>
+      </div>`;
+
+        const openZones = new Set(openByDefault ? zones.map(([z]) => z) : []);
+        const searchInput = container.querySelector('[data-pp-zone-search]');
+        const expandBtn = container.querySelector('[data-pp-zone-expand]');
+
+        const setOpen = (zoneEl, open) => {
+            zoneEl.querySelector('.pp-zone-body').hidden = !open;
+            zoneEl.classList.toggle('is-open', open);
+            zoneEl.querySelector('[data-pp-zone-toggle]').setAttribute('aria-expanded', String(open));
+        };
+
+        const syncExpandLabel = () => {
+            expandBtn.textContent = openZones.size === zones.length ? 'Collapse all' : 'Expand all';
+        };
+
+        // Filters rows; matching zones open while searching and go back to
+        // the user's own open/closed state once the search is cleared.
+        const applySearch = () => {
+            const query = searchInput.value.trim().toLowerCase();
+            let anyVisible = false;
+            container.querySelectorAll('[data-pp-zone]').forEach(zoneEl => {
+                let matches = 0;
+                zoneEl.querySelectorAll('.pp-loc').forEach(row => {
+                    const hit = !query || row.getAttribute('data-pp-loc-search').includes(query);
+                    row.hidden = !hit;
+                    if (hit)
+                        matches++;
+                });
+                zoneEl.hidden = matches === 0;
+                anyVisible = anyVisible || matches > 0;
+                setOpen(zoneEl, query ? matches > 0 : openZones.has(zoneEl.getAttribute('data-pp-zone')));
+            });
+            container.querySelector('[data-pp-zone-empty]').hidden = anyVisible;
+            expandBtn.disabled = !!query;
+        };
+
+        container.querySelectorAll('[data-pp-zone]').forEach(zoneEl => {
+            const zone = zoneEl.getAttribute('data-pp-zone');
+            zoneEl.querySelector('[data-pp-zone-toggle]').addEventListener('click', () => {
+                const open = !openZones.has(zone);
+                if (open)
+                    openZones.add(zone);
+                else
+                    openZones.delete(zone);
+                setOpen(zoneEl, open);
+                syncExpandLabel();
+            });
+        });
+
+        expandBtn.addEventListener('click', () => {
+            const openAll = openZones.size !== zones.length;
+            openZones.clear();
+            if (openAll)
+                zones.forEach(([z]) => openZones.add(z));
+            container.querySelectorAll('[data-pp-zone]').forEach(zoneEl =>
+                setOpen(zoneEl, openZones.has(zoneEl.getAttribute('data-pp-zone'))));
+            syncExpandLabel();
+        });
+
+        searchInput.addEventListener('input', applySearch);
     }
 
     /* =====================================================================
      MY SERVICES
      ===================================================================== */
     async function loadServices() {
-        alert('Loading Services ...');
+        // alert('Loading Services ...');
 
         hide('ppServicesError');
         show('ppServicesLoading');
@@ -561,7 +1035,7 @@
             cancelBtn.disabled = true;
             saveBtn.textContent = 'Saving…';
             
-            alert(JSON.stringify(ids));
+            // alert(JSON.stringify(ids));
             const res = await FolksAPI.updateProfessionalServices(ids);
             
             saveBtn.disabled = false;
@@ -589,7 +1063,7 @@
      MY EARNINGS
      ===================================================================== */
     async function loadEarnings() {
-        alert('Loading Earnings ...');
+        // alert('Loading Earnings ...');
         
         show('ppEarningsLoading');
         hide('ppEarningsError');

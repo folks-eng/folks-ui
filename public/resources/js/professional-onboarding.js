@@ -541,7 +541,7 @@
             }
             citySel.disabled = true;
             citySel.innerHTML = '<option value="">Loading cities…</option>';
-            const citiesRes = await FolksAPI.viewCities(proLoc.provinceId);
+            const citiesRes = await FolksAPI.viewCities('provinceId', proLoc.provinceId);
             if (citiesRes.success) {
                 proLoc.cities = listFrom(citiesRes);
                 citySel.innerHTML = cityOptions(proLoc.cities);
@@ -888,7 +888,7 @@
             return;
         citySel.disabled = true;
         citySel.innerHTML = '<option value="">Loading cities…</option>';
-        const citiesRes = await FolksAPI.viewCities(savedAddress.provinceId);
+        const citiesRes = await FolksAPI.viewCities('provinceId', savedAddress.provinceId);
         if (!citiesRes.success)
             return;
         proLoc.cities = listFrom(citiesRes);

@@ -717,7 +717,7 @@ async function initAddressSection() {
         if (loc.provinceId && loc.cities.length === 0) {
             loc.loadingCities = true;
             render();
-            const citiesRes = await FolksAPI.viewCities(loc.provinceId);
+            const citiesRes = await FolksAPI.viewCities('provinceId', loc.provinceId);
             loc.loadingCities = false;
             if (citiesRes.success) {
                 loc.cities = citiesRes.result.items || citiesRes.result || [];
@@ -768,7 +768,7 @@ async function initAddressSection() {
 
             if (!loc.provinceId)
                 return;
-            const citiesRes = await FolksAPI.viewCities(loc.provinceId);
+            const citiesRes = await FolksAPI.viewCities('provinceId', loc.provinceId);
             loc.loadingCities = false;
             if (citiesRes.success) {
                 loc.cities = citiesRes.result.items || citiesRes.result || [];

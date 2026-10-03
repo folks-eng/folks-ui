@@ -37,6 +37,46 @@ async function viewAll(req, res) {
     }
 }
 
+async function updateNeighbourhoods(req, res) {
+    let payload = req.body;
+
+    if (! payload || Object.keys(payload).length === 0) {
+        return res.status(400)
+                .set('Content-Type', 'application/json')
+                .json({message: 'Missing or empty json payload'});
+    }
+    
+    try {
+        const response = await httpClient.patch(
+            '/professionalNeighbourhoods'
+            , payload
+            , {
+                headers: {
+                    Authorization: `Bearer ${req.token}`
+                }
+            }
+        );
+        if (response.status === 200) {
+            let result = response.data;
+            if (log.isDebugEnabled()) {
+                log.debug('Successfully updated professional neighbourhoods');
+            }
+            return res.status(response.status)
+                    .json(result);
+        }
+        else {
+            let result = response.data;
+            log.error('Unable to update professional neighbourhoods. Status code: %d. Error Msg: %s', response.status, result);
+            
+            return res.status(response.status)
+                    .json(result);
+        }
+    }
+    catch (err) {
+        handleError(req, res, err, 'Error in modifying professional neighbourhood details');
+    }
+}
+
 async function handleError(req, res, err, msg) {
     log.error(msg, err);
     
@@ -50,5 +90,6 @@ async function handleError(req, res, err, msg) {
 }
 
 route.get('/', viewAll);
+route.patch('/', updateNeighbourhoods);
 
 module.exports = route;

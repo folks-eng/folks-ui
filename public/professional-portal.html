@@ -161,6 +161,364 @@
                 outline: 3px solid var(--color-clay);
                 outline-offset: -3px;
             }
+            /* My Neighbourhoods — zone-wise view (mirrors the onboarding picker) */
+            .pp-zone-toolbar {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 0.6rem;
+            }
+            .pp-zone-search {
+                flex: 1 1 220px;
+                min-width: 0;
+                padding: 0.55rem 0.85rem;
+                border: 1.5px solid var(--color-line);
+                border-radius: var(--radius-pill);
+                background: var(--color-white);
+                font: inherit;
+                font-size: 0.88rem;
+                color: var(--color-ink);
+            }
+            .pp-zone-search:focus {
+                outline: none;
+                border-color: var(--color-clay);
+                box-shadow: 0 0 0 3px var(--color-clay-10);
+            }
+            .pp-zone-expand {
+                flex: none;
+                padding: 0.5rem 0.9rem;
+                border: 1.5px solid var(--color-line);
+                border-radius: var(--radius-pill);
+                background: var(--color-white);
+                font: inherit;
+                font-size: 0.82rem;
+                font-weight: 700;
+                color: var(--color-clay);
+                cursor: pointer;
+            }
+            .pp-zone-expand:hover { border-color: var(--color-clay-20); }
+            .pp-zone-expand:disabled { opacity: 0.5; cursor: default; }
+            .pp-zone-summary {
+                margin: 0.7rem 0 0.6rem;
+                font-size: 0.82rem;
+                color: var(--color-espresso);
+            }
+            .pp-zone-list {
+                border: 1.5px solid var(--color-line);
+                border-radius: var(--radius-md);
+                overflow: hidden;
+                background: var(--color-white);
+            }
+            .pp-zone + .pp-zone { border-top: 1px solid var(--color-line); }
+            .pp-zone[hidden], .pp-loc[hidden], .pp-zone-body[hidden] { display: none; }
+            .pp-zone-toggle {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+                padding: 0.75rem 0.9rem;
+                border: 0;
+                background: none;
+                font: inherit;
+                text-align: left;
+                cursor: pointer;
+                color: var(--color-ink);
+            }
+            .pp-zone-toggle:hover { background: var(--color-clay-10); }
+            .pp-zone-toggle:focus-visible {
+                outline: 2.5px solid var(--color-clay);
+                outline-offset: -2.5px;
+            }
+            .pp-zone-chevron {
+                width: 8px;
+                height: 8px;
+                flex: none;
+                border-right: 2px solid currentColor;
+                border-bottom: 2px solid currentColor;
+                transform: rotate(-45deg);
+                transition: transform var(--dur-fast) var(--ease);
+            }
+            .pp-zone.is-open .pp-zone-chevron { transform: rotate(45deg); }
+            .pp-zone-name {
+                font-weight: 700;
+                font-size: 0.92rem;
+                white-space: nowrap;
+            }
+            .pp-zone-count {
+                margin-left: auto;
+                font-family: var(--font-mono);
+                font-size: 0.72rem;
+                color: var(--color-clay);
+                font-weight: 600;
+            }
+            .pp-zone-body {
+                list-style: none;
+                margin: 0;
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                gap: 0.1rem 0.75rem;
+                padding: 0.1rem 0.9rem 0.8rem 2.3rem;
+            }
+            .pp-loc {
+                display: flex;
+                align-items: center;
+                gap: 0.55rem;
+                min-width: 0;
+                padding: 0.4rem 0.45rem;
+                font-size: 0.86rem;
+                color: var(--color-ink);
+            }
+            .pp-loc-dot {
+                width: 7px;
+                height: 7px;
+                flex: none;
+                border-radius: 50%;
+                background: var(--color-clay);
+            }
+            .pp-loc-name {
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-weight: 600;
+            }
+            .pp-loc-pin {
+                flex: none;
+                font-family: var(--font-mono);
+                font-size: 0.72rem;
+                color: var(--color-espresso);
+            }
+            .pp-zone-empty {
+                margin: 0;
+                padding: 1rem;
+                font-size: 0.85rem;
+                color: var(--color-espresso);
+                text-align: center;
+            }
+            .pp-zone-allbanner {
+                display: flex;
+                align-items: center;
+                gap: 0.8rem;
+                padding: 0.9rem 1rem;
+                border: 1.5px solid var(--color-clay-20);
+                border-radius: var(--radius-md);
+                background: var(--color-clay-10);
+            }
+            .pp-zone-allbanner-icon {
+                width: 34px;
+                height: 34px;
+                flex: none;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--color-clay);
+                color: var(--color-cream);
+            }
+            .pp-zone-allbanner strong { display: block; color: var(--color-ink); }
+            .pp-zone-allbanner span { font-size: 0.85rem; color: var(--color-espresso); }
+            @media (max-width: 560px) {
+                .pp-zone-body { padding-left: 0.9rem; grid-template-columns: 1fr; }
+            }
+            /* My Neighbourhoods editor — zone-wise checklist (copied from professional-onboarding.html) */
+            .po-zone-toolbar {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 0.6rem;
+            }
+            .po-zone-search {
+                flex: 1 1 220px;
+                min-width: 0;
+                padding: 0.55rem 0.85rem;
+                border: 1.5px solid var(--color-line);
+                border-radius: var(--radius-pill);
+                background: var(--color-white);
+                font: inherit;
+                font-size: 0.88rem;
+                color: var(--color-ink);
+            }
+            .po-zone-search:focus {
+                outline: none;
+                border-color: var(--color-clay);
+                box-shadow: 0 0 0 3px var(--color-clay-10);
+            }
+            .po-zone-search:disabled { opacity: 0.5; }
+            .po-zone-summary {
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+                margin: 0.7rem 0 0.6rem;
+                font-size: 0.82rem;
+                color: var(--color-espresso);
+            }
+            .po-zone-clear {
+                border: 0;
+                background: none;
+                padding: 0;
+                font: inherit;
+                font-weight: 700;
+                color: var(--color-clay);
+                cursor: pointer;
+                text-decoration: underline;
+            }
+            .po-zone-list {
+                border: 1.5px solid var(--color-line);
+                border-radius: var(--radius-md);
+                overflow: hidden;
+                background: var(--color-white);
+            }
+            .po-zone-list.is-disabled .po-zone-body { opacity: 0.5; }
+            .po-zone + .po-zone { border-top: 1px solid var(--color-line); }
+            .po-zone[hidden], .po-loc[hidden] { display: none; }
+            .po-zone-head {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding-right: 0.9rem;
+            }
+            .po-zone.has-selection .po-zone-head { background: var(--color-clay-10); }
+            .po-zone-toggle {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+                padding: 0.75rem 0.9rem;
+                border: 0;
+                background: none;
+                font: inherit;
+                text-align: left;
+                cursor: pointer;
+                color: var(--color-ink);
+            }
+            .po-zone-toggle:focus-visible {
+                outline: 2.5px solid var(--color-clay);
+                outline-offset: -2.5px;
+            }
+            .po-zone-chevron {
+                width: 8px;
+                height: 8px;
+                flex: none;
+                border-right: 2px solid currentColor;
+                border-bottom: 2px solid currentColor;
+                transform: rotate(-45deg);
+                transition: transform var(--dur-fast) var(--ease);
+            }
+            .po-zone.is-open .po-zone-chevron { transform: rotate(45deg); }
+            .po-zone-name {
+                white-space: nowrap;
+                font-weight: 700;
+                font-size: 0.92rem;
+            }
+            .po-zone-count {
+                font-family: var(--font-mono);
+                font-size: 0.72rem;
+                color: var(--color-espresso);
+            }
+            .po-zone.has-selection .po-zone-count {
+                color: var(--color-clay);
+                font-weight: 600;
+            }
+            .po-zone-all {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.4rem;
+                flex: none;
+                font-size: 0.8rem;
+                font-weight: 600;
+                color: var(--color-espresso);
+                cursor: pointer;
+                white-space: nowrap;
+            }
+            .po-zone-all input {
+                width: 16px;
+                height: 16px;
+                margin: 0;
+                accent-color: var(--color-clay);
+                cursor: pointer;
+            }
+            .po-zone-body {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                gap: 0.1rem 0.75rem;
+                padding: 0.25rem 0.9rem 0.8rem 2.3rem;
+            }
+            .po-zone-body[hidden] { display: none; }
+            .po-loc {
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 0.55rem;
+                min-width: 0;
+                padding: 0.4rem 0.45rem;
+                border-radius: var(--radius-sm, 6px);
+                cursor: pointer;
+                font-size: 0.86rem;
+                color: var(--color-ink);
+            }
+            .po-loc:hover { background: var(--color-clay-10); }
+            .po-loc input {
+                position: absolute;
+                opacity: 0;
+                pointer-events: none;
+            }
+            .po-loc-box {
+                width: 16px;
+                height: 16px;
+                flex: none;
+                border: 1.5px solid var(--color-line);
+                border-radius: 4px;
+                background: var(--color-white);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .po-loc input:checked + .po-loc-box {
+                background: var(--color-clay);
+                border-color: var(--color-clay);
+            }
+            .po-loc input:checked + .po-loc-box::after {
+                content: "";
+                width: 4px;
+                height: 8px;
+                border: solid var(--color-cream);
+                border-width: 0 2px 2px 0;
+                transform: translateY(-1px) rotate(45deg);
+            }
+            .po-loc input:focus-visible + .po-loc-box {
+                outline: 2.5px solid var(--color-clay);
+                outline-offset: 2px;
+            }
+            .po-loc input:disabled + .po-loc-box { opacity: 0.6; }
+            .po-loc:has(input:disabled) { cursor: not-allowed; }
+            .po-loc-name {
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .po-loc input:checked ~ .po-loc-name { font-weight: 600; }
+            .po-loc-pin {
+                flex: none;
+                font-family: var(--font-mono);
+                font-size: 0.72rem;
+                color: var(--color-espresso);
+            }
+            .po-zone-empty {
+                margin: 0;
+                padding: 1rem;
+                font-size: 0.85rem;
+                color: var(--color-espresso);
+                text-align: center;
+            }
+            @media (max-width: 560px) {
+                .po-zone-toggle { flex-wrap: wrap; row-gap: 0.15rem; }
+                .po-zone-count { flex-basis: 100%; padding-left: calc(8px + 0.6rem); }
+                .po-zone-body { padding-left: 0.9rem; grid-template-columns: 1fr; }
+            }
         </style>
     </head>
     <body>
@@ -291,11 +649,20 @@
                             <!-- ============ MY NEIGHBOURHOODS ============ -->
                             <div data-pp-panel="neighbourhoods" hidden>
                                 <div class="profile-card">
-                                    <div class="profile-card-header"><h2>Neighbourhoods You Serve</h2></div>
-                                    <p class="modal-hint" style="margin-bottom: var(--space-sm);" id="ppNeighbourhoodsHint">Localities you take bookings in.</p>
+                                    <div class="profile-card-header">
+                                        <h2>Neighbourhoods You Serve</h2>
+                                        <div class="profile-card-actions" id="ppNbActions">
+                                            <button type="button" class="btn btn-ghost btn-sm" id="ppNbEditBtn" hidden>Edit</button>
+                                            <button type="button" class="btn btn-ghost btn-sm" id="ppNbCancelBtn" hidden>Cancel</button>
+                                            <button type="button" class="btn btn-primary btn-sm btn-ripple" id="ppNbSaveBtn" hidden>Save</button>
+                                        </div>
+                                    </div>
+                                    <p class="modal-hint" style="margin-bottom: var(--space-sm);" id="ppNeighbourhoodsHint">Localities you take bookings in, grouped by zone.</p>
                                     <p class="modal-error" id="ppNeighbourhoodsError" hidden></p>
-                                    <div id="ppNeighbourhoods" class="pro-expertise-chips"></div>
-                                    <p class="modal-hint" id="ppNeighbourhoodsEmpty" hidden>No neighbourhoods on file yet.</p>
+                                    <div id="ppNeighbourhoods" class="pp-zones"></div>
+                                    <p class="modal-hint" id="ppNeighbourhoodsEmpty" hidden>No neighbourhoods on file yet. Use Edit to choose the localities you serve.</p>
+                                    <!-- Edit view: zone-wise locality picker (same as onboarding) -->
+                                    <div id="ppNeighbourhoodsEditor" class="po-zones" hidden></div>
                                 </div>
                             </div>
 

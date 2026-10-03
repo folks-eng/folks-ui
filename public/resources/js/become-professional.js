@@ -88,7 +88,7 @@ async function initLocationPicker() {
         }
         citySel.disabled = true;
         citySel.innerHTML = '<option value="">Loading cities…</option>';
-        const citiesRes = await FolksAPI.viewCities(proLoc.provinceId);
+        const citiesRes = await FolksAPI.viewCities('provinceId', Loc.provinceId);
         if (citiesRes.success) {
             proLoc.cities = citiesRes.result.items || citiesRes.result || [];
             citySel.innerHTML = '<option value="">Select a city…</option>' +
@@ -267,7 +267,7 @@ async function primeLocationFromSavedAddress(savedAddress) {
         return;
     citySel.disabled = true;
     citySel.innerHTML = '<option value="">Loading cities…</option>';
-    const citiesRes = await FolksAPI.viewCities(savedAddress.provinceId);
+    const citiesRes = await FolksAPI.viewCities('provinceId', savedAddress.provinceId);
     if (!citiesRes.success)
         return;
     proLoc.cities = citiesRes.result.items || citiesRes.result || [];

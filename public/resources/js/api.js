@@ -295,8 +295,8 @@ const FolksAPI = (function () {
      * Returns the cities within the given state that Folks operates in.
      * @returns {Promise<{success: boolean, message?: string, result?: object}>}
      */
-    async function viewCities(provinceId) {
-        return await invoke('/cities?provinceId=' + encodeURIComponent(provinceId), 'GET');
+    async function viewCities(key, value) {
+        return await invoke('/cities?' + key + '=' + encodeURIComponent(value), 'GET');
     }
 
     /**
@@ -472,6 +472,18 @@ const FolksAPI = (function () {
      */
     async function viewProfessionalNeighbourhoods() {
         return await invoke('/professionalNeighbourhoods', 'GET');
+    }
+
+    /**
+     * PATCH /professionalNeighbourhoods
+     * Payload: neighbourhood ids (array), e.g. [12, 45, 78] — or [-1] for
+     * "All Localities". Replaces the localities the signed-in professional
+     * serves (same shape as updateProfessionalServices).
+     * @param {Array<number|string>} neighbourhoodIds
+     * @returns {Promise<{success: boolean, message?: string, result?: object}>}
+     */
+    async function updateProfessionalNeighbourhoods(neighbourhoodIds) {
+        return await invoke('/professionalNeighbourhoods', 'PATCH', neighbourhoodIds);
     }
 
     /**
@@ -676,6 +688,7 @@ const FolksAPI = (function () {
         viewProfessionalServices,
         updateProfessionalServices,
         viewProfessionalNeighbourhoods,
+        updateProfessionalNeighbourhoods,
         viewDocuments,
         viewVouchers,
         adminLogin,

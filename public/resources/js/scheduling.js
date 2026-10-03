@@ -289,7 +289,7 @@ function injectSchedulePickerMarkup() {
 
         addrCitySel.innerHTML = '<option value="">Loading cities…</option>';
         addrCitySel.disabled = true;
-        const citiesRes = await FolksAPI.viewCities(addressFormLoc.provinceId);
+        const citiesRes = await FolksAPI.viewCities('provinceId', addressFormLoc.provinceId);
         if (citiesRes.success) {
             addressFormLoc.cities = citiesRes.result.items || citiesRes.result || [];
         } else {
